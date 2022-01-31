@@ -116,7 +116,6 @@ class ExamplePatch:
                         #  self.write_log(log)
 
                 pbar.update(1)
-                break
 
         self.write_log('running_time_for_computing: {}sec'.format(time() - tic))
 

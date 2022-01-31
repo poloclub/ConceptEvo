@@ -1,0 +1,9 @@
+Example patches
+model_nickname: vgg16-512-0.01-0.9-5
+model_path: ../data/model/vgg16-512-0.01-0.9/data/model-5.pth
+
+method=example_patch
+num_features=15
+ex_patch_size_ratio=0.3
+
+

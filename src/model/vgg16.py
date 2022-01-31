@@ -78,7 +78,7 @@ class Vgg16:
     
     def load_checkpoint(self):
         if self.need_loading_a_saved_model:
-            self.ckpt = torch.load(self.args.starting_model_path)
+            self.ckpt = torch.load(self.args.model_path)
 
 
     def set_all_parameter_requires_grad(self):

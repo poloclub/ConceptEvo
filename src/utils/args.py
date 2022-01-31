@@ -96,9 +96,9 @@ class ArgParser:
             opt_lower = opt.lower()
             opt_upper = opt.upper()
             opt_lower_with_fst_upper = opt_upper[0] + opt_lower[1:]
-            all_valid_opts.append([
+            all_valid_opts += [
                 opt_lower, opt_upper, opt_lower_with_fst_upper
-            ])
+            ]
         return all_valid_opts
 
     

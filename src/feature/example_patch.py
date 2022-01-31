@@ -13,9 +13,9 @@ from utils.utils import *
 class ExamplePatch:
     """Generate example patches for each neuron"""
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args, data_path, model):
         self.args = args
         self.data_path = data_path
@@ -33,18 +33,18 @@ class ExamplePatch:
         self.ex_patch = {}
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called by main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_neuron_feature(self):
         self.init_setting()
         self.get_layer_info()
         self.compute_example_patches()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Initial setting
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def init_setting(self):
         data_transform = transforms.Compose([
             transforms.Resize((self.S, self.S)),
@@ -84,9 +84,9 @@ class ExamplePatch:
         self.num_neurons = self.model.num_neurons
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Compute example patches
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_example_patches(self):
         self.write_first_log()
         self.init_example_patches()
@@ -116,6 +116,7 @@ class ExamplePatch:
                         #  self.write_log(log)
 
                 pbar.update(1)
+                break
 
         self.write_log('running_time_for_computing: {}sec'.format(time() - tic))
 
@@ -191,9 +192,9 @@ class ExamplePatch:
                     )
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Handle external files (e.g., output, log, ...)
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         with open(self.data_path.get_path('neuron_feature-log'), log_opt) as f:

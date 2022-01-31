@@ -6,9 +6,9 @@ from time import time
 class Emb:
     """Generate neuron embeddings."""
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args, data_path, model):
         self.args = args
         self.data_path = data_path
@@ -21,17 +21,17 @@ class Emb:
         self.num_total_neurons = 0
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called by main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_neuron_embedding(self):
         self.compute_co_activated_neurons()
         self.compute_embedding_of_neurons()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Find co-activated neurons
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_co_activated_neurons(self):
         # Load stimulus
         self.load_stimulus()
@@ -72,9 +72,9 @@ class Emb:
             self.co_act_neurons = self.load_json(file_path)
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Compute neuron embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_embedding_of_neurons(self):
         # Write log header
         self.write_first_log()
@@ -183,9 +183,9 @@ class Emb:
         self.save_json(self.emb, self.data_path.get_path('neuron_emb'))
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Handle external files (e.g., output, log, ...)
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         with open(self.data_path.get_path('neuron_emb-log'), log_opt) as f:

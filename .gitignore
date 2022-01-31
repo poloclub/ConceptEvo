@@ -3,3 +3,9 @@
 
 # Ignore __pycache__
 __pycache__/
+
+# Ignore trained models' checkpoint
+*.pth
+
+# Ignore neuron feature images
+*.jpg

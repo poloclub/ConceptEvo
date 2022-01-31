@@ -6,9 +6,9 @@ from time import time
 class ImageEmb:
     """Generate image embeddings."""
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args, data_path, model):
         self.args = args
         self.data_path = data_path
@@ -24,9 +24,9 @@ class ImageEmb:
         self.img_emb = None
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called in main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_img_embedding(self):
         self.load_neuron_emb()
         self.init_img_emb()
@@ -36,9 +36,9 @@ class ImageEmb:
         self.save_img_emb()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Utils
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
@@ -75,9 +75,9 @@ class ImageEmb:
         return sampled_imgs
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Compute image embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def init_img_emb(self):
         self.img_emb = np.random.random((self.num_imgs, self.args.dim)) - 0.5
 
@@ -149,9 +149,9 @@ class ImageEmb:
         np.savetxt(file_path, self.img_emb, fmt='%.3f')
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Handle external files (e.g., output, log, ...)
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def load_json(self, file_path):
         with open(file_path, 'r') as f:
             data = json.load(f)

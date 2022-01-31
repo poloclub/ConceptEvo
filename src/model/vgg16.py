@@ -28,7 +28,7 @@ class Vgg16:
         self.conv_layers = []
         self.num_neurons = {}
 
-        self.continuing_from_a_model = len(self.args.model_path) > 0
+        self.need_loading_a_saved_model = len(self.args.model_path) > 0
         self.ckpt = None
 
         self.device = None
@@ -50,8 +50,8 @@ class Vgg16:
         # Initialize an empty model
         self.model = models.vgg16(pretrained=False)
 
-        # Load a saved model if we continue the training from it
-        if self.continuing_from_a_model:
+        # Load a saved model
+        if self.need_loading_a_saved_model:
             self.model.load_state_dict(self.ckpt['model_state_dict'])
 
         # Reset the final layer
@@ -77,7 +77,7 @@ class Vgg16:
 
     
     def load_checkpoint(self):
-        if self.continuing_from_a_model:
+        if self.need_loading_a_saved_model:
             self.ckpt = torch.load(self.args.starting_model_path)
 
 
@@ -136,7 +136,7 @@ class Vgg16:
             lr=self.args.lr, 
             momentum=self.args.momentum
         )
-        if self.continuing_from_a_model:
+        if self.need_loading_a_saved_model:
             self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
             for param_group in self.optimizer.state_dict()['param_groups']:
                 param_group['lr'] = self.args.lr
@@ -144,7 +144,7 @@ class Vgg16:
 
 
     def init_criterion(self):
-        if self.continuing_from_a_model:
+        if self.need_loading_a_saved_model:
             self.criterion = self.ckpt['loss']
         else:
             self.criterion = nn.CrossEntropyLoss()

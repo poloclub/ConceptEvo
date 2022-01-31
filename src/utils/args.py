@@ -8,9 +8,9 @@ class ArgParser:
     documented in `../../docs`.
     """
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='NeuEvo')
         self.parse_basic_setting()
@@ -26,17 +26,17 @@ class ArgParser:
         self.parse_neuron_feature_setting()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called in main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def get_args(self):
         """Returns parsed arguments"""
         return self.parser.parse_args()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Utils
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_bool_arg(self, arg):
         """Parse boolean argument
         
@@ -102,9 +102,9 @@ class ArgParser:
         return all_valid_opts
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Basic settings
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_basic_setting(self):
         """Parse arguments for basic settings."""
 
@@ -123,9 +123,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for models to use
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_model_setting(self):
         """Parse arguments for a model's name to use or its metadata."""
 
@@ -159,9 +159,9 @@ class ArgParser:
         )
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for whether to do an action
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_action_setting(self):
         """Parse arguments for setting which actions to do."""
 
@@ -217,9 +217,9 @@ class ArgParser:
         )
     
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for data path
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_data_path_setting(self):
         """Parse arguments for path of data (both input and output)."""
 
@@ -245,9 +245,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for training models
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_model_training_setting(self):
         """Parse arguments for training models."""
 
@@ -280,9 +280,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for finding stimulus
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_stimulus_setting(self):
         """Parse arguments for finding stimulus."""
 
@@ -294,9 +294,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for embedding for general
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_embedding_setting(self):
         """Parse arguments for embedding in general."""
 
@@ -315,9 +315,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for neuron embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_neuron_embedding_setting(self):
         """Parse arguments for neuron embedding."""
 
@@ -343,9 +343,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for image embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_image_embedding_setting(self):
         """Parse arguments for image embedding."""
 
@@ -392,9 +392,9 @@ class ArgParser:
         )
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for dimensionality reduction of embeddings
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_dim_reduction_setting(self):
         """Parse arguments for dimensionality reduction."""
 
@@ -406,9 +406,9 @@ class ArgParser:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Settings for neurons' feature visualization
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def parse_neuron_feature_setting(self):
         """Parse arguments for neurons' feature visualization."""
 

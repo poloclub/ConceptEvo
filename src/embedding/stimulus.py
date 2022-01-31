@@ -11,9 +11,9 @@ from utils.utils import *
 class Stimulus:
     """Find stimulus for each neuron"""
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args, data_path, model):
         self.args = args
         self.data_path = data_path
@@ -30,9 +30,9 @@ class Stimulus:
         self.stimulus = {}
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called by main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_stimulus(self):
         self.init_setting()
         self.get_layer_info()
@@ -40,9 +40,9 @@ class Stimulus:
         self.save_stimulus()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Initial setting
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def init_setting(self):
         data_transform = transforms.Compose([
             transforms.Resize((self.model.input_size, self.model.input_size)),
@@ -72,9 +72,9 @@ class Stimulus:
         self.num_neurons = self.model.num_neurons
         
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Find stimulus (i.e., inputs that activate neurons the most) for each neuron
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def find_stimulus(self):
         self.write_first_log()
         self.init_stimulus()
@@ -165,9 +165,9 @@ class Stimulus:
             json.dump(data, f)
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Handle external files (e.g., output, log, ...)
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         with open(self.data_path.get_path('stimulus-log'), log_opt) as f:

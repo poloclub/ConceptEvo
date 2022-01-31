@@ -9,9 +9,9 @@ class DataPath:
     `../../docs`.
     """
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args):
         self.args = args
         self.path = {}
@@ -26,13 +26,14 @@ class DataPath:
         self.action_to_args = {}
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called in main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def gen_data_dirs(self):
         """Generate data directories"""
         self.make_dir(self.args.output_dir)
         self.find_actions_and_necessary_paths()
+        self.map_action_to_args()
         self.set_input_data_path()
         self.set_model_path()
         self.set_stimulus_path()
@@ -43,9 +44,9 @@ class DataPath:
         self.set_neuron_feature_path()
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Utils
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def get_path(self, path_key):
         """Return path for given path_key"""
         return self.path[path_key]
@@ -182,7 +183,9 @@ class DataPath:
             'dim': self.args.dim
         }
 
-        self.action_to_args['dim_reduction'] = {}
+        self.action_to_args['dim_reduction'] = {
+            'dim': self.args.dim
+        }
 
         self.action_to_args['neuron_feature'] = {
             'method': self.args.neuron_feature,
@@ -360,36 +363,41 @@ class DataPath:
         setting_info = self.action_to_args[action]
         setting_list = [
             '{}={}'.format(arg, setting_info[arg])
-            for arg in setting_info]
+            for arg in setting_info
         ]
         arg_s = delimiter.join(setting_list)
 
         return arg_s
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for input data
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_input_data_path(self):
         """Set paths for image input data."""
         self.path['train_data'] = self.args.training_data
         self.path['test_data'] = self.args.test_data
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for a model to use or train
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_model_path(self):
         """Set paths for models."""
 
+        if not self.check_if_arg_given(self.args.model_path):
+            if self.args.train:
+                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
+        
         self.check_model_nickname_and_path()
 
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
-        train_log_path = os.path.join(log_dir_path 'training-log.txt')
-
-        self.path['model-dir'] = data_dir_path
+        if self.args.train:
+            data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
+            train_log_path = os.path.join(log_dir_path, 'training-log.txt')
+            self.path['model-dir'] = data_dir_path
+            self.path['train-log'] = train_log_path
+        
         self.path['model-file'] = self.args.model_path
-        self.path['train-log'] = train_log_path
     
 
     def get_model_path_during_training(self, epoch):
@@ -412,9 +420,9 @@ class DataPath:
         return model_path
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for finding stimulus
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_stimulus_path(self):
         """Set paths for stimulus."""
 
@@ -436,9 +444,9 @@ class DataPath:
         self.path['stimulus-log'] = log_path
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for neuron embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_co_act_neurons_path(self):
         """Set paths for finding co-activated neurons."""
 
@@ -476,9 +484,9 @@ class DataPath:
         self.path['neuron_emb-log'] = log_path
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for image embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_img_emb_path(self):
         if not self.check_need_to_gen_path('img_emb'):
             return
@@ -497,9 +505,9 @@ class DataPath:
         self.path['img_emb-log'] = log_path
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for approximate projected neuron embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_proj_emb_path(self):
         if not self.check_need_to_gen_path('proj_neuron_emb'):
             return
@@ -521,9 +529,9 @@ class DataPath:
         self.path['proj_neuron_emb-log'] = log_path
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for dimensionality reduction of embeddings
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_emb2d_path(self):
         # TODO: will update this later
         if not self.check_need_to_gen_path('emb2d'):
@@ -549,9 +557,9 @@ class DataPath:
 
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Setting paths for generating neurons' feature
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def set_neuron_feature_path(self):
         if not self.check_need_to_gen_path('neuron_feature'):
             return
@@ -562,12 +570,11 @@ class DataPath:
         )
 
         d_dir_path, l_dir_path = self.gen_data_log_sub_dir('neuron_feature')
-        apdx = self.gen_act_setting_str('proj_neuron_emb')
-        d_subdir_path = os.path.join(d_dir_path, apdx)
+        apdx = self.gen_act_setting_str('neuron_feature')
         log_path = os.path.join(
-            l_dir_path, 'proj_neuron-log-{}.txt'.format(apdx)
+            l_dir_path, 'neuron_feature-log-{}.txt'.format(apdx)
         )
-        self.make_dir(d_subdir_path)
+        self.make_dir(d_dir_path)
 
-        self.path['neuron_feature'] = d_subdir_path
+        self.path['neuron_feature'] = d_dir_path
         self.path['neuron_feature-log'] = log_path

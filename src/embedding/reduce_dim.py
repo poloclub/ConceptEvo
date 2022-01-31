@@ -9,9 +9,9 @@ class Reducer:
 
     # TODO: Need to update this class later
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args, data_path):
         self.args = args
         self.data_path = data_path
@@ -25,9 +25,9 @@ class Reducer:
         self.num_neurons = -1
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Wrapper function called by main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def reduce_dim(self):
         self.init_reducer()
         self.load_embedding()
@@ -35,9 +35,9 @@ class Reducer:
         self.save_json(self.emb2d, self.data_path.get_path('emb2d'))
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Initial setting
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def init_reducer(self):
         if self.args.dim_reduction == 'UMAP':
             self.reducer = umap.UMAP(n_components=2)
@@ -63,9 +63,9 @@ class Reducer:
                 self.idx2id[idx] = neuron
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Project the embdding to 2D
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def run_dim_reduction(self):
         # Fit reducer
         tic = time()
@@ -99,9 +99,9 @@ class Reducer:
         return sampled_X
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Handle external files (e.g., output, log, ...)
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         with open(self.data_path.get_path('dim-reduction'), log_opt) as f:

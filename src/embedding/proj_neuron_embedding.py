@@ -6,9 +6,9 @@ from time import time
 class ProjNeuronEmb:
     """Generate neuron embeddings that projected on shared space."""
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Constructor
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def __init__(self, args, data_path, model):
         self.args = args
         self.data_path = data_path
@@ -18,9 +18,9 @@ class ProjNeuronEmb:
         self.neuron_emb = {}
 
     
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     A wrapper function called by main.py
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def compute_projected_neuron_emb(self):
         self.load_img_emb()
         self.load_stimulus()
@@ -29,9 +29,9 @@ class ProjNeuronEmb:
         self.save_projected_neuron_embedding()
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Utils
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def load_img_emb(self):
         file_path = self.data_path.get_path('img_emb')
         self.img_emb = np.loadtxt(file_path)
@@ -54,9 +54,9 @@ class ProjNeuronEmb:
         )
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Compute projected neuron embedding
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def init_neuron_embedding(self):
         for layer in self.stimulus:
             num_neurons = len(self.stimulus[layer])
@@ -89,9 +89,9 @@ class ProjNeuronEmb:
         self.write_log('running_time: {}sec'.format(toc - tic))
 
 
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     Handle external files (e.g., output, log, ...)
-    """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+    """
     def load_json(self, file_path):
         with open(file_path, 'r') as f:
             data = json.load(f)

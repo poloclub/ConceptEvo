@@ -22,5 +22,4 @@ NeuEvo was created by ... .
 [MIT](https://choosealicense.com/licenses/mit/)
 
 ## Contact
-Please open an issue or contact [Haekyu Park](https://haekyu.com) 
-for any questions.
+Please open an issue or contact Anonymous author for any questions.

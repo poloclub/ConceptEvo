@@ -311,7 +311,7 @@ class ArgParser:
             '--emb_set_dir', 
             default='', 
             type=str,
-            help='Name of a directory for a set of embeddings'
+            help='Name of directory for a set of embeddings of multiple models'
         )
 
 

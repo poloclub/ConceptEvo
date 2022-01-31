@@ -26,9 +26,6 @@ class DataPath:
         self.action_to_args = {}
 
 
-        # self.actions_needed_to_gen_metadata = {}
-
-
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     A wrapper function called in main.py
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -194,7 +191,6 @@ class DataPath:
         }
 
 
-
     def check_need_to_gen_path(self, path_key):
         """Check if data paths of a given path_key needs to be generated.
 
@@ -228,13 +224,13 @@ class DataPath:
             os.makedirs(dir_path)
 
 
-    def gen_data_log_sub_dir(self, dir_name):
+    def gen_data_log_sub_dir(self, dir_name, inner_dirname=None):
         """Generate sub-directories for data and log for a given directory name.
 
         For a given dir_path, it generates 
             self.args.output_dir
                 └── dir_name
-                    └── self.args.model_nickname
+                    └── inner_dirname
                         ├── data
                         └── log
 
@@ -248,9 +244,10 @@ class DataPath:
                 (self.args.output_dir/self.args.model_nickname/dir_name/log)
         """
 
-        dir_path = os.path.join(
-            self.args.output_dir, dir_name, self.args.model_nickname
-        )
+        if inner_dirname is None:
+            inner_dirname = self.args.model_nickname
+
+        dir_path = os.path.join(self.args.output_dir, dir_name, inner_dirname)
         data_dir_path = os.path.join(dir_path, 'data')
         log_dir_path = os.path.join(dir_path, 'log')
         self.make_dir(dir_path)
@@ -280,7 +277,7 @@ class DataPath:
         return given_or_not
 
 
-    def auto_fill_model_nickname(self):
+    def auto_fill_model_nickname_and_model_path(self):
         """Automatically fill model_nickname in the input argument.
 
         Automatically fill model_nickname in the input argument, when the 
@@ -290,6 +287,19 @@ class DataPath:
         if not self.check_if_arg_given(self.args.model_nickname):
             if 'pretrained' in self.args.model_name:
                 self.args.model_nickname = self.args.model_name
+                self.args.model_path = self.args.model_name
+
+
+    def check_model_nickname_and_path(self):
+        """Check if model nickname and model path is given."""
+
+        self.auto_fill_model_nickname_and_model_path()
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.model_path, 'model_path'
+        )
 
 
     def raise_err_for_ungiven_arg(self, arg, arg_name):
@@ -326,17 +336,19 @@ class DataPath:
         return time_stamp
 
     
-    def gen_act_setting_str(self, action):
+    def gen_act_setting_str(self, action, delimiter='-'):
         """Generate a string for showing input argument settings for an action.
 
         Args:
             - action: a type of action defined in args.py. It should be one of 
                 ['train', 'stimulus', 'neuron_emb', 'img_emb, 
                 'proj_neuron_emb', 'dim_reduction'].
+            - delimiter: delimiter between settings
 
         Returns:
             - arg_s: a string that shows the input argument settings for action.
-                The format of this string is '<arg1>=<val1>-<arg2>-<val2>-...'.
+                The format of this string is 
+                    '<arg1>=<val1><delimiter><arg2>=<val2><delimiter>...'.
 
         Example:
             If action is 'train', the input arguments that need to be given
@@ -345,11 +357,13 @@ class DataPath:
                 `lr=0.01-momentum=0.9-num_epochs=300-topk=5`.
         """
 
-        arg_s = ''
-        for arg in self.action_to_args[action]]:
-            key = arg
-            val = self.action_to_args[action][key]
-            arg_s += '{}={}'.format(key, val)
+        setting_info = self.action_to_args[action]
+        setting_list = [
+            '{}={}'.format(arg, setting_info[arg])
+            for arg in setting_info]
+        ]
+        arg_s = delimiter.join(setting_list)
+
         return arg_s
 
 
@@ -368,10 +382,7 @@ class DataPath:
     def set_model_path(self):
         """Set paths for models."""
 
-        self.auto_fill_model_nickname()
-        self.raise_err_for_ungiven_arg(
-            self.args.model_nickname, 'model_nickname'
-        )
+        self.check_model_nickname_and_path()
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
         train_log_path = os.path.join(log_dir_path 'training-log.txt')
@@ -410,10 +421,7 @@ class DataPath:
         if not self.check_need_to_gen_path('stimulus'):
             return
 
-        self.auto_fill_model_nickname()
-        self.raise_err_for_ungiven_arg(
-            self.args.model_nickname, 'model_nickname'
-        )
+        self.check_model_nickname_and_path()
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('stimulus')
         apdx = self.gen_act_setting_str('stimulus')
@@ -437,10 +445,7 @@ class DataPath:
         if not self.check_need_to_gen_path('co_act'):
             return
 
-        self.auto_fill_model_nickname()
-        self.raise_err_for_ungiven_arg(
-            self.args.model_nickname, 'model_nickname'
-        )
+        self.check_model_nickname_and_path()
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('co_act')
         file_path = os.path.join(data_dir_path, 'co-activated-neurons.json')
@@ -456,10 +461,7 @@ class DataPath:
         if not self.check_need_to_gen_path('neuron_emb'):
             return
 
-        self.auto_fill_model_nickname()
-        self.raise_err_for_ungiven_arg(
-            self.args.model_nickname, 'model_nickname'
-        )
+        self.check_model_nickname_and_path()
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
         apdx = self.gen_act_setting_str('neuron_emb')
@@ -481,10 +483,7 @@ class DataPath:
         if not self.check_need_to_gen_path('img_emb'):
             return
 
-        self.auto_fill_model_nickname()
-        self.raise_err_for_ungiven_arg(
-            self.args.model_nickname, 'model_nickname'
-        )
+        self.check_model_nickname_and_path()
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
         apdx = self.gen_act_setting_str('img_emb')
@@ -505,18 +504,18 @@ class DataPath:
         if not self.check_need_to_gen_path('proj_neuron_emb'):
             return
 
-        self.auto_fill_model_nickname()
-        self.raise_err_for_ungiven_arg(
-            self.args.model_nickname, 'model_nickname'
-        )
+        self.check_model_nickname_and_path()
+        self.raise_err_for_ungiven_arg(self.args.emb_set_dir, 'emb_set_dir')
 
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
+        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', inner_dirname=self.args.emb_set_dir
+        )
         apdx = self.gen_act_setting_str('proj_neuron_emb')
         file_path = os.path.join(
             data_dir_path, 'proj_neuron_emb-{}.json'.format(apdx)
         )
         log_path = os.path.join(
-            log_dir_path, 'proj_neuron-log-{}.txt'.format(apdx)
+            log_dir_path, 'proj_neuron_emb-log-{}.txt'.format(apdx)
         )
         self.path['proj_neuron_emb'] = file_path
         self.path['proj_neuron_emb-log'] = log_path
@@ -526,13 +525,13 @@ class DataPath:
     Setting paths for dimensionality reduction of embeddings
     """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     def set_emb2d_path(self):
-        # TODO: will update this
+        # TODO: will update this later
         if not self.check_need_to_gen_path('emb2d'):
             return
     
     
     def find_emb2d_path(self, model_name, lr, momentum, topk_s, epoch):
-        # TODO: will update this
+        # TODO: will update this later
         dir_path = os.path.join(
             self.get_path('neuron_emb'),
             model_name,
@@ -557,7 +556,7 @@ class DataPath:
         if not self.check_need_to_gen_path('neuron_feature'):
             return
 
-        self.auto_fill_model_nickname()
+        self.auto_fill_model_nickname_and_model_path()
         self.raise_err_for_ungiven_arg(
             self.args.model_nickname, 'model_nickname'
         )

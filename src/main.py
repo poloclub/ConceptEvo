@@ -14,11 +14,11 @@ from utils.args import *
 from utils.datapath import *
 
 # Embedding
-# from embedding.stimulus import *
-# from embedding.reduce_dim import *
-# from embedding.image_embedding import *
-# from embedding.neuron_embedding import *
-# from embedding.proj_neuron_embedding import *
+from embedding.stimulus import *
+from embedding.reduce_dim import *
+from embedding.image_embedding import *
+from embedding.neuron_embedding import *
+from embedding.proj_neuron_embedding import *
 
 # # Concept images of neurons
 # from feature.example_patch import *

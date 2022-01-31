@@ -9,3 +9,6 @@ __pycache__/
 
 # Ignore neuron feature images
 *.jpg
+
+# Ignore script file in src/
+src/*.sh

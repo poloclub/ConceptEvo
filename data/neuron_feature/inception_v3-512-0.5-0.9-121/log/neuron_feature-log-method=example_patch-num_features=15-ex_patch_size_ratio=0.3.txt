@@ -7,3 +7,5 @@ num_features=15
 ex_patch_size_ratio=0.3
 
 
+running_time_for_computing: 41419.2846031189sec
+running_time_for_saving: 4906.190200090408sec

@@ -1,0 +1,8 @@
+Find Stimulus
+model_nickname: vgg16-512-0.01-0.9-21
+model_path: ../data/model/vgg16-512-0.01-0.9/data/model-21.pth
+
+topk_s=10
+
+
+cumulative_time_sec: 6655.05

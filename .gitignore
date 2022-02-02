@@ -12,3 +12,7 @@ __pycache__/
 
 # Ignore script file in src/
 src/*.sh
+
+# Ignore big data
+data/neuron_feature/
+data/embedding/

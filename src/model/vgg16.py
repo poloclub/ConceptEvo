@@ -332,7 +332,7 @@ class Vgg16:
             'lr': self.args.lr,
             'momentum': self.args.momentum,
             'k': self.args.topk,
-            'start_model_path': self.args.starting_model_path
+            'start_model_path': self.args.model_path
         }
         first_log = ', '.join(
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]

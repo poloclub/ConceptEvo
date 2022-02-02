@@ -365,7 +365,7 @@ class ArgParser:
 
         self.parser.add_argument(
             '--thr_img_emb', 
-            default=0.1, 
+            default=0.05, 
             type=float,
             help='Threshold for convergence in image embedding'
         )
@@ -381,14 +381,14 @@ class ArgParser:
             '--sample_rate_img_emb', 
             default=0.01, 
             type=float,
-            help='Sampling rate for image embedding'
+            help='Sampling rate for image embedding (It is not used)'
         )
 
         self.parser.add_argument(
             '--k', 
-            default=5, 
+            default=10, 
             type=int,
-            help='The number of stimulus to use for each neuron for image embedding'
+            help='The number of stimulating images used in image embedding.'
         )
 
     

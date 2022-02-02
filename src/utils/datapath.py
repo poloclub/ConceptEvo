@@ -151,47 +151,45 @@ class DataPath:
             }
         """
 
-        self.action_to_args = {}
+        self.action_to_args['train'] = [
+            ['lr', self.args.lr],
+            ['momentum', self.args.momentum],
+            ['num_epochs', self.args.num_epochs],
+            ['topk', self.args.topk]
+        ]
+        
+        self.action_to_args['stimulus'] = [
+            ['topk_s', self.args.topk_s]
+        ]
 
-        self.action_to_args['train'] = {
-            'lr': self.args.lr,
-            'momentum': self.args.momentum,
-            'num_epochs': self.args.num_epochs,
-            'topk': self.args.topk
-        }
+        self.action_to_args['neuron_emb'] = [
+            ['dim', self.args.dim],
+            ['lr_emb', self.args.lr_emb],
+            ['num_emb_epochs', self.args.num_emb_epochs],
+            ['num_emb_negs', self.args.num_emb_negs]
+        ]
 
-        self.action_to_args['stimulus'] = {
-            'topk_s': self.args.topk_s
-        }
+        self.action_to_args['img_emb'] = [
+            ['dim', self.args.dim],
+            ['lr_img_emb', self.args.lr_img_emb],
+            ['thr_img_emb', self.args.thr_img_emb],
+            ['max_iter_img_emb', self.args.max_iter_img_emb],
+            ['k', self.args.k]
+        ]
 
-        self.action_to_args['neuron_emb'] = {
-            'dim': self.args.dim,
-            'lr_emb': self.args.lr_emb,
-            'num_emb_epochs': self.args.num_emb_epochs,
-            'num_emb_negs': self.args.num_emb_negs
-        }
+        self.action_to_args['proj_neuron_emb'] = [
+            ['dim', self.args.dim]
+        ]
 
-        self.action_to_args['img_emb'] = {
-            'dim': self.args.dim,
-            'lr_img_emb': self.args.lr_img_emb,
-            'thr_img_emb': self.args.thr_img_emb,
-            'max_iter_img_emb': self.args.max_iter_img_emb,
-            'k': self.args.k
-        }
+        self.action_to_args['dim_reduction'] = [
+            ['dim', self.args.dim]
+        ]
 
-        self.action_to_args['proj_neuron_emb'] = {
-            'dim': self.args.dim
-        }
-
-        self.action_to_args['dim_reduction'] = {
-            'dim': self.args.dim
-        }
-
-        self.action_to_args['neuron_feature'] = {
-            'method': self.args.neuron_feature,
-            'num_features': self.args.num_features,
-            'ex_patch_size_ratio': self.args.ex_patch_size_ratio
-        }
+        self.action_to_args['neuron_feature'] = [
+            ['method', self.args.neuron_feature],
+            ['num_features', self.args.num_features],
+            ['ex_patch_size_ratio', self.args.ex_patch_size_ratio]
+        ]
 
 
     def check_need_to_gen_path(self, path_key):
@@ -290,7 +288,7 @@ class DataPath:
         if not self.check_if_arg_given(self.args.model_nickname):
             if 'pretrained' in self.args.model_name:
                 self.args.model_nickname = self.args.model_name
-                self.args.model_path = self.args.model_name
+                # self.args.model_path = self.args.model_name
 
 
     def check_model_nickname_and_path(self):
@@ -300,9 +298,13 @@ class DataPath:
         self.raise_err_for_ungiven_arg(
             self.args.model_nickname, 'model_nickname'
         )
-        self.raise_err_for_ungiven_arg(
-            self.args.model_path, 'model_path'
-        )
+
+        use_pretrained = (self.args.model_nickname == self.args.model_name)
+        use_pretrained = use_pretrained and 'pretrained' in self.args.model_name
+        if not use_pretrained:
+            self.raise_err_for_ungiven_arg(
+                self.args.model_path, 'model_path'
+            )
 
 
     def raise_err_for_ungiven_arg(self, arg, arg_name):
@@ -361,10 +363,7 @@ class DataPath:
         """
 
         setting_info = self.action_to_args[action]
-        setting_list = [
-            '{}={}'.format(arg, setting_info[arg])
-            for arg in setting_info
-        ]
+        setting_list = ['{}={}'.format(arg, val) for arg, val in setting_info]
         arg_s = delimiter.join(setting_list)
 
         return arg_s

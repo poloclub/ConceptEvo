@@ -5,3 +5,4 @@ model_path: ../data/model/inception_v3-512-0.5-0.9/data/model-3.pth
 topk_s=10
 
 
+cumulative_time_sec: 16449.40

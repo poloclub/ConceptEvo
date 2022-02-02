@@ -1,0 +1,7 @@
+Find Stimulus
+model_nickname: inception_v3-512-1.5-0.9-71
+model_path: ../data/model/inception_v3-512-1.5-0.9/data/model-71.pth
+
+topk_s=10
+
+

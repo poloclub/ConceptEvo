@@ -19,8 +19,5 @@ src/*.sh
 # Ignore big data
 data/neuron_feature/
 data/embedding/
-<<<<<<< HEAD
 src/utils/analyze-data.ipynb
-=======
 data/neuron_feature-old/
->>>>>>> f0b275e (pull)

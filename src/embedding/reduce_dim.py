@@ -1,3 +1,4 @@
+import os
 import json
 import umap
 import numpy as np
@@ -7,22 +8,22 @@ from time import time
 class Reducer:
     """Dimensionality reduction"""
 
-    # TODO: Need to update this class later
-
     """
     Constructor
     """
     def __init__(self, args, data_path):
         self.args = args
         self.data_path = data_path
+
+        self.model_code_to_file_path = {}
+
+        self.X = None
+        self.idx2id = {}
+        self.num_instances = 0
     
         self.reducer = None
         self.emb = {}
         self.emb2d = {}
-        self.X = None
-        self.idx2id = {}
-
-        self.num_neurons = -1
 
 
     """
@@ -32,7 +33,7 @@ class Reducer:
         self.init_reducer()
         self.load_embedding()
         self.run_dim_reduction()
-        self.save_json(self.emb2d, self.data_path.get_path('emb2d'))
+        self.save_results()
 
 
     """
@@ -44,29 +45,56 @@ class Reducer:
 
     
     def load_embedding(self):
-        # Load embedding vectors from files
-        for epoch in range(self.args.num_epochs):
-            self.emb[epoch] = self.load_json(
-                self.data_path.get_path('emb', epoch)
-            )
+        # Assign model code and load embedding
+        i = 0
+        for dirpath, dnames, fnames in os.walk(self.args.emb_set_dir):
+            for f in fnames:
+                if '-log-' in f:
+                    continue
+                if 'emb2d' in f:
+                    continue
+                
+                file_path = os.path.join(dirpath, f)
+                if f.endswith('.json'):
+                    # Assign model code
+                    model_code = 'model_{}'.format(i)
+                    self.model_code_to_file_path[model_code] = file_path
+                    i += 1
+
+                    # Load embedding
+                    self.emb[model_code] = self.load_json(file_path)
+                    self.num_instances += len(self.emb[model_code])
+
+                elif f.endswith('.txt') and ('img_emb' in f):
+                    # Assign model code
+                    model_code = 'img'
+                    self.model_code_to_file_path[model_code] = file_path
+
+                    # Load embedding
+                    self.emb[model_code] = np.loadtxt(file_path)
+                    self.num_instances += len(self.emb[model_code])
 
         # Generate matrix X for all neurons' vectors
-        self.num_neurons = len(self.emb[0])
-        self.X = np.zeros((
-            self.num_neurons * self.args.num_epochs, 
-            self.args.dim
-        ))
-        for epoch in range(self.args.num_epochs):
-            for i, neuron in enumerate(self.emb[epoch]):
-                idx = (epoch * self.num_neurons) + i
-                self.X[idx] = self.emb[epoch][neuron][:]
-                self.idx2id[idx] = neuron
+        self.X = np.zeros((self.num_instances, self.args.dim))
+        idx = 0
+        for model_code in self.emb:
+            if 'img' in model_code:
+                num_imgs = len(self.emb[model_code])
+                for i in range(num_imgs):
+                    self.idx2id[idx] = '{}-{}'.format(model_code, i)
+                    idx += 1
+            else:
+                for neuron in self.emb[model_code]:
+                    self.idx2id[idx] = '{}-{}'.format(model_code, neuron)
+                    idx += 1
 
     
     """
     Project the embdding to 2D
     """
     def run_dim_reduction(self):
+        self.write_first_log()
+
         # Fit reducer
         tic = time()
         sampled_X = self.sample_points()
@@ -76,38 +104,40 @@ class Reducer:
         self.write_log(log)
 
         # Get 2D vectors of all neurons for all epochs
-        total = self.args.num_emb_epochs * self.num_neurons
-        with tqdm(total=total) as pbar:
-            for epoch in range(self.args.num_epochs):
-                self.emb2d[epoch] = {}
-                f, t = self.num_neurons * epoch, self.num_neurons * (epoch + 1)
-                emb2d_epoch = self.reducer.transform(self.X[f: t]).tolist()
-                for i, emb_arr in enumerate(emb2d_epoch):
-                    neuron_id = self.idx2id[f + i]
-                    self.emb2d[epoch][neuron_id] = emb_arr
-                    pbar.update(1)
-    
+        tic = time()
+        emb2d = self.reducer.transform(self.X).tolist()
+        for i, emb_arr in enumerate(emb2d):
+            instance_id = self.idx2id[i]
+            self.emb2d[instance_id] = emb_arr
+        toc = time()
+        log = '2D Projection: {:.2f} sec'.format(toc - tic)
+        self.write_log(log)
 
+    
     def sample_points(self):
-        num_points = self.num_neurons * self.args.num_epochs
         rand_indices = np.random.choice(
-            num_points, 
-            size=int(self.args.sample_rate * num_points), 
+            self.num_instances, 
+            size=int(self.args.sample_rate * self.num_instances), 
             replace=False
         )
         sampled_X = self.X[rand_indices]
         return sampled_X
 
+    
+    def save_results(self):
+        self.save_json(
+            self.emb2d, 
+            self.data_path.get_path('dim_reduction')
+        )
+        self.save_json(
+            self.model_code_to_file_path, 
+            self.data_path.get_path('dim_reduction-model_code')
+        )
+
 
     """
     Handle external files (e.g., output, log, ...)
     """
-    def write_log(self, log, append=True):
-        log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('dim-reduction'), log_opt) as f:
-            f.write(log + '\n')
-
-
     def load_json(self, file_path):
         with open(file_path, 'r') as f:
             data = json.load(f)
@@ -117,3 +147,19 @@ class Reducer:
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
             json.dump(data, f)
+
+
+    def write_first_log(self):
+        hyperpara_setting = self.data_path.gen_act_setting_str(
+            'dim_reduction', '\n'
+        )
+        
+        log = 'Dimensionality reduction\n\n'
+        log += 'emb_set_dir: {}\n'.format(self.args.emb_set_dir)
+        log += hyperpara_setting + '\n\n'
+        self.write_log(log, False)
+
+    def write_log(self, log, append=True):
+        log_opt = 'a' if append else 'w'
+        with open(self.data_path.get_path('dim_reduction-log'), log_opt) as f:
+            f.write(log + '\n')

@@ -22,6 +22,7 @@ class ArgParser:
         self.parse_embedding_setting()
         self.parse_neuron_embedding_setting()
         self.parse_image_embedding_setting()
+        self.parse_proj_neuron_embedding_setting()
         self.parse_dim_reduction_setting()
         self.parse_neuron_feature_setting()
 
@@ -307,13 +308,6 @@ class ArgParser:
             help='Embedding dimension'
         )
 
-        self.parser.add_argument(
-            '--emb_set_dir', 
-            default='', 
-            type=str,
-            help='Name of directory for a set of embeddings of multiple models'
-        )
-
 
     """
     Settings for neuron embedding
@@ -391,6 +385,20 @@ class ArgParser:
             help='The number of stimulating images used in image embedding.'
         )
 
+
+    """
+    Settings for approximate projected embedding
+    """
+    def parse_proj_neuron_embedding_setting(self):
+        """Parse arguments for approximate projected embedding."""
+
+        self.parser.add_argument(
+            '--img_emb_path', 
+            default='', 
+            type=str,
+            help='Path of img embedding file'
+        )
+
     
     """
     Settings for dimensionality reduction of embeddings
@@ -403,6 +411,13 @@ class ArgParser:
             default=0.3, 
             type=float,
             help='Sampling rate for 2D projection'
+        )
+
+        self.parser.add_argument(
+            '--emb_set_dir', 
+            default='', 
+            type=str,
+            help='Name of directory for a set of embeddings of multiple models'
         )
 
 

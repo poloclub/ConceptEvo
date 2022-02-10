@@ -61,6 +61,14 @@ def main():
 
 
 def load_model(args, data_path):
+
+    when_to_skip_loading_model = [
+        len(args.dim_reduction) > 0
+    ]
+
+    if True in when_to_skip_loading_model:
+        return
+
     if args.model_name == 'vgg16':
         model = Vgg16(args, data_path)
     elif args.model_name == 'inception_v3':

@@ -41,6 +41,7 @@ class DataPath:
         self.set_neuron_emb_path()
         self.set_img_emb_path()
         self.set_proj_emb_path()
+        self.set_emb2d_path()
         self.set_neuron_feature_path()
 
     
@@ -182,7 +183,8 @@ class DataPath:
         ]
 
         self.action_to_args['dim_reduction'] = [
-            ['dim', self.args.dim]
+            ['dim', self.args.dim],
+            ['sample_rate', self.args.sample_rate]
         ]
 
         self.action_to_args['neuron_feature'] = [
@@ -387,7 +389,10 @@ class DataPath:
         if not self.check_if_arg_given(self.args.model_path):
             if self.args.train:
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
-        
+            elif self.check_if_arg_given(self.args.dim_reduction):
+                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
+                self.args.model_nickname = 'DO_NOT_NEED_CURRENTLY'
+
         self.check_model_nickname_and_path()
 
         if self.args.train:
@@ -495,7 +500,7 @@ class DataPath:
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
         apdx = self.gen_act_setting_str('img_emb')
         file_path = os.path.join(
-            data_dir_path, 'img_emb-{}.json'.format(apdx)
+            data_dir_path, 'img_emb-{}.txt'.format(apdx)
         )
         log_path = os.path.join(
             log_dir_path, 'img_emb-log-{}.txt'.format(apdx)
@@ -512,10 +517,10 @@ class DataPath:
             return
 
         self.check_model_nickname_and_path()
-        self.raise_err_for_ungiven_arg(self.args.emb_set_dir, 'emb_set_dir')
+        self.raise_err_for_ungiven_arg(self.args.img_emb_path, 'img_emb_path')
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
-            'embedding', inner_dirname=self.args.emb_set_dir
+            'embedding', inner_dirname=self.args.model_nickname
         )
         apdx = self.gen_act_setting_str('proj_neuron_emb')
         file_path = os.path.join(
@@ -532,28 +537,30 @@ class DataPath:
     Setting paths for dimensionality reduction of embeddings
     """
     def set_emb2d_path(self):
-        # TODO: will update this later
-        if not self.check_need_to_gen_path('emb2d'):
+        if not self.check_need_to_gen_path('dim_reduction'):
             return
-    
-    
-    def find_emb2d_path(self, model_name, lr, momentum, topk_s, epoch):
-        # TODO: will update this later
-        dir_path = os.path.join(
-            self.get_path('neuron_emb'),
-            model_name,
-            lr,
-            momentum,
-            topk_s
-        )
-        self.make_dir(dir_path)
 
+        self.raise_err_for_ungiven_arg(self.args.emb_set_dir, 'emb_set_dir')
+        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', inner_dirname='emb2d'
+        )
+        apdx = self.gen_act_setting_str('dim_reduction')
         file_path = os.path.join(
-            dir_path,
-            f'emb2d-{epoch}.json'
+            data_dir_path, 'emb2d-{}.json'.format(apdx)
         )
-        return file_path
-
+        log_path = os.path.join(
+            log_dir_path, 'emb2d-log-{}.txt'.format(apdx)
+        )
+        idx_path = os.path.join(
+            log_dir_path, 'emb2d-idx2id-{}.json'.format(apdx)
+        )
+        code_path = os.path.join(
+            data_dir_path, 'model_code-{}.json'.format(apdx)
+        )
+        self.path['dim_reduction'] = file_path
+        self.path['dim_reduction-log'] = log_path
+        self.path['dim_reduction-idx2id'] = idx_path
+        self.path['dim_reduction-model_code'] = code_path
 
 
     """

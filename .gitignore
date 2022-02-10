@@ -1,6 +1,9 @@
 # Ignore .DS_Store
 .DS_Store
 
+# Ignore .ipynb_checkpoint
+.ipynb_checkpoints/
+
 # Ignore __pycache__
 __pycache__/
 
@@ -16,3 +19,4 @@ src/*.sh
 # Ignore big data
 data/neuron_feature/
 data/embedding/
+src/utils/analyze-data.ipynb

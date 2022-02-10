@@ -33,8 +33,7 @@ class ProjNeuronEmb:
     Utils
     """
     def load_img_emb(self):
-        file_path = self.data_path.get_path('img_emb')
-        self.img_emb = np.loadtxt(file_path)
+        self.img_emb = np.loadtxt(self.args.img_emb_path)
 
     
     def load_stimulus(self):
@@ -107,22 +106,16 @@ class ProjNeuronEmb:
         hyperpara_setting = self.data_path.gen_act_setting_str(
             'proj_neuron_emb', '\n'
         )
-
-        with open(self.data_path.get_path('img_emb-log'), 'r') as f:
-            space_model_info = f.readlines()
         
         log = 'Projected Neuron Embedding\n\n'
-        log += 'Information of the model for the shared semantic space\n'
-        log += space_model_info[1]
-        log += space_model_info[2]
-        log += '\nInformation of the projected model\n'
         log += 'model_nickname: {}\n'.format(self.args.model_nickname)
-        log += 'model_path: {}\n\n'.format(self.args.model_path)
+        log += 'model_path: {}\n'.format(self.args.model_path)
+        log += 'img_emb_path: {}\n\n'.format(self.args.img_emb_path)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
 
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('img_emb-log'), log_opt) as f:
+        with open(self.data_path.get_path('proj_neuron_emb-log'), log_opt) as f:
             f.write(log + '\n')

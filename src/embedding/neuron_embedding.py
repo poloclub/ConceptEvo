@@ -84,16 +84,18 @@ class Emb:
 
         # Load co-activated neurons
         self.load_co_activated_neurons()
+        co_act_neurons = [
+            self.co_act_neurons[img]
+            for img in self.co_act_neurons
+            if len(self.co_act_neurons[img]) > 1
+        ]
 
         # Learn neuron embedding
         tic, total = time(), self.args.num_emb_epochs * len(self.co_act_neurons)
         with tqdm(total=total) as pbar:
             for emb_epoch in range(self.args.num_emb_epochs):
-                imgs = list(self.co_act_neurons.keys())
-                np.random.shuffle(imgs)
-                for img in imgs:
+                for neurons in co_act_neurons:
                     # Shuffle neurons
-                    neurons = self.co_act_neurons[img]
                     np.random.shuffle(neurons)
 
                     # Compute neuron embedding
@@ -108,19 +110,24 @@ class Emb:
                         )
 
                         # Update gradients through negative sampling
-                        g_u = -coeff * v_next_neuron
-                        g_v = -coeff * v_neuron
+                        g_u = coeff * v_next_neuron
                         for neg_i in range(self.args.num_emb_negs):
                             neg_neuron = self.sample_neg_neuron()
                             v_neg_neuron = self.emb[neg_neuron]
                             dot_u = v_neg_neuron.dot(v_neuron)
+                            g_u -= self.sigmoid(dot_u) * v_neg_neuron
+
+                        # Update gradients through negative sampling
+                        g_v = coeff * v_neuron
+                        for neg_i in range(self.args.num_emb_negs):
+                            neg_neuron = self.sample_neg_neuron()
+                            v_neg_neuron = self.emb[neg_neuron]
                             dot_v = v_neg_neuron.dot(v_next_neuron)
-                            g_u += self.sigmoid(dot_u) * v_neg_neuron
-                            g_v += self.sigmoid(dot_v) * v_neg_neuron
+                            g_v -= self.sigmoid(dot_v) * v_neg_neuron
 
                         # Update embedding
-                        self.emb[neuron] -= self.args.lr_emb * g_u
-                        self.emb[next_neuron] -= self.args.lr_emb * g_v
+                        self.emb[neuron] += self.args.lr_emb * g_u
+                        self.emb[next_neuron] += self.args.lr_emb * g_v
 
                     pbar.update(1)
 

@@ -1,6 +1,10 @@
+import os
 import json
 import requests
-from flask import Flask
+import numpy as np
+from PIL import Image
+from flask import Flask, request
+from src.utils.utils import load_all_2d_embedding, load_neuron_feature
 
 app = Flask(__name__)
 
@@ -9,20 +13,26 @@ def home():
     return 'NeuEvo server to handle data'
 
 
-@app.route('/send_post', methods=['GET'])
-def send_post():
-    params = {
-        "param1": "test1",
-        "param2": 123
-    }
-    res = requests.post(
-        "http://127.0.0.1:3000/handle_post", 
-        data=json.dumps(params)
-    )
-    print('???')
-    return res.text
+@app.route('/send_emb_data', methods=['GET', 'POST'])
+def send_emb_data():
+
+    embs = load_all_2d_embedding()
+    return embs, 201
+
+
+@app.route('/send_neuron_feature_data', methods=['GET', 'POST'])
+def send_neuron_feature_data():
+    data = request.form
+    selected_model, instance = data['model'], data['instance']
+    dir_path = f'./data/neuron_feature/{selected_model}/data/'
+    img_paths = []
+    for i in range(15):
+        path = os.path.join(dir_path, f'{instance}-{i}.jpg')
+        if os.path.exists(path):
+            img_paths.append(path)
+    imgs = [np.array(Image.open(path)).tolist() for path in img_paths]
+    return {'imgs': imgs}, 201
 
 
 if __name__ == '__main__':
-    print('Host the server at http://localhost:5000')
     app.run(debug=True)

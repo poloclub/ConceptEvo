@@ -7,6 +7,10 @@
 # Ignore __pycache__
 __pycache__/
 
+# Ignore node_modules/
+node_modules/
+yarn.lock
+
 # Ignore trained models' checkpoint
 *.pth
 

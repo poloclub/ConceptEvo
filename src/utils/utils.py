@@ -1,3 +1,32 @@
+import os
+import json
+
+def load_all_2d_embedding():
+
+    # File path
+    dir_path = './data/embedding/inception_v3_pretrained/emb2d_data'
+    input_names = os.listdir(dir_path)
+
+    # Load embeddings
+    embs = {}
+    for input_name in input_names:
+        input_path = os.path.join(dir_path, input_name)
+        model_name = input_name[:-5]
+        embs[model_name] = load_json(input_path)
+
+    return embs
+
+
+def load_neuron_feature(model_code, neuron_id):
+    return
+
+
+def load_json(file_path):
+    with open(file_path, 'r') as f:
+        data = json.load(f)
+    return data
+
+
 class TopKKeeper:
     """
     Keep k (key, val, content) paris, where they are sorted in the descending 

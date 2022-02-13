@@ -2,9 +2,9 @@ python main.py \
     --gpu 0 \
     --neuron_emb T \
     --model_name inception_v3_pretrained \
-    --dim 30 \
+    --dim 80 \
     --lr_emb 0.1 \
-    --num_emb_epochs 1000 \
+    --num_emb_epochs 3000 \
     --num_emb_negs 4 
 
 # echo "example_patch vgg16-512-0.01-0.9-5"

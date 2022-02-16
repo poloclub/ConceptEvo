@@ -20,6 +20,7 @@ class DataPath:
             'train-data', 'test-data', 'label-data',
             'stimulus', 'co_act', 'neuron_emb', 'img_emb',
             'proj_neuron_emb', 'dim_reduction', 'neuron_feature', 
+            'find_important_evo'
         ]
 
         self.path_key_to_actions = {}
@@ -123,6 +124,10 @@ class DataPath:
             self.args.neuron_feature
         ]
 
+        self.path_key_to_actions['find_important_evo'] = [
+            self.args.find_important_evo
+        ]
+
 
     def map_action_to_args(self):
         """Find arguments necessary for an action.
@@ -191,6 +196,9 @@ class DataPath:
             ['method', self.args.neuron_feature],
             ['num_features', self.args.num_features],
             ['ex_patch_size_ratio', self.args.ex_patch_size_ratio]
+        ]
+
+        self.action_to_args['find_important_evo'] = [
         ]
 
 

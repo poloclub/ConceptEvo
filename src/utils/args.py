@@ -25,6 +25,7 @@ class ArgParser:
         self.parse_proj_neuron_embedding_setting()
         self.parse_dim_reduction_setting()
         self.parse_neuron_feature_setting()
+        self.parse_important_evolution_setting()
 
 
     """
@@ -216,6 +217,13 @@ class ArgParser:
             type=str,
             help='Method to compute visualized features for neurons'
         )
+
+        self.parser.add_argument(
+            '--find_important_evo', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to find concept evolution for a class prediction'
+        )
     
 
     """
@@ -227,6 +235,13 @@ class ArgParser:
         self.parser.add_argument(
             '--training_data', 
             default='../../ILSVRC2012/train', 
+            type=str,                
+            help='Training data path'
+        )
+
+        self.parser.add_argument(
+            '--data_label_path', 
+            default='../../ILSVRC2012/imagenet-labels.txt', 
             type=str,                
             help='Training data path'
         )
@@ -439,4 +454,18 @@ class ArgParser:
             default=0.3, 
             type=float,
             help='Ratio of the size of example patches to input size'
+        )
+
+
+    """
+    Settings for finding important concept evolution
+    """
+    def parse_important_evolution_setting(self):
+        """Parse arguments for finding important concept evolution."""
+
+        self.parser.add_argument(
+            '--label', 
+            default=1, 
+            type=int,
+            help='Class label'
         )

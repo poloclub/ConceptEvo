@@ -23,6 +23,9 @@ from embedding.proj_neuron_embedding import *
 # Concept images of neurons
 from feature.example_patch import *
 
+# Find concept evolution for class predictions
+from importantevo.important_evo import *
+
 
 def main():
     # Parse input arguments
@@ -59,11 +62,15 @@ def main():
     if args.neuron_feature != 'None':
         compute_neuron_feature(args, data_path, model)
 
+    # Find concept evolution for class predictions
+    if args.find_important_evo:
+        find_important_evolution(args, data_path, model)
+
 
 def load_model(args, data_path):
 
     when_to_skip_loading_model = [
-        len(args.dim_reduction) > 0
+        args.dim_reduction != 'None'
     ]
 
     if True in when_to_skip_loading_model:
@@ -117,8 +124,13 @@ def reduce_embedding_dim(args, data_path):
 
 def compute_neuron_feature(args, data_path, model):
     if args.neuron_feature == 'example_patch':
-        exPatch = ExamplePatch(args, data_path, model)
-        exPatch.compute_neuron_feature()
+        ex_patch = ExamplePatch(args, data_path, model)
+        ex_patch.compute_neuron_feature()
+
+
+def find_important_evolution(args, data_path, model):
+    imp_evo = ImportantEvo(args, data_path, model)
+    imp_evo.find_important_evolution()
 
 
 

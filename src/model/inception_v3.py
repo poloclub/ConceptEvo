@@ -279,7 +279,7 @@ class InceptionV3:
         # Update parameters with one epoch's data
         for imgs, labels in self.training_data_loader:
 
-            # Get input image and its label
+            # Send input images and their labels to GPU
             imgs = imgs.to(self.device)
             labels = labels.to(self.device)
 

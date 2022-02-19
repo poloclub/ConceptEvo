@@ -414,19 +414,27 @@ class ArgParser:
             help='Path of img embedding file'
         )
 
+        self.parser.add_argument(
+            '--emb_store_dirname', 
+            default='', 
+            type=str,
+            help='Directory name to store the embedding'
+        )
+
+        self.parser.add_argument(
+            '--model_for_emb_space', 
+            default='base', 
+            choices=['all', 'base'],
+            type=str,
+            help='Models to generate the embedding space'
+        )
+
     
     """
     Settings for dimensionality reduction of embeddings
     """
     def parse_dim_reduction_setting(self):
         """Parse arguments for dimensionality reduction."""
-
-        self.parser.add_argument(
-            '--sample_rate', 
-            default=0.3, 
-            type=float,
-            help='Sampling rate for 2D projection'
-        )
 
         self.parser.add_argument(
             '--emb_set_dir', 

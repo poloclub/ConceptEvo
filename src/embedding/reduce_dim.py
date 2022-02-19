@@ -21,6 +21,7 @@ class Reducer:
         self.X = None
         self.X_all = None
         self.idx2id = {}
+        self.idx2id_all = {}
         self.num_instances = 0
         self.base_model_nickname = ''
     
@@ -79,7 +80,12 @@ class Reducer:
                     self.num_instances += len(self.emb['img'])
                     
                 else:
-                    print(f'Err. Unknown file type: {f}')
+                    log = f'Err. Unknown file type: {f}'
+                    raise ValueError(log)
+
+        if len(self.base_model_nickname) == 0:
+            log = 'A base model file is not given, starting with "neuron_emb"'
+            raise ValueError(log)
 
         # Generate matrix X for all neurons' vectors
         num_base_instances = len(self.emb[self.base_model_nickname])
@@ -90,14 +96,18 @@ class Reducer:
             if 'img' in model_code:
                 num_imgs = len(self.emb[model_code])
                 for i in range(num_imgs):
-                    self.idx2id[idx] = '{}-{}'.format(model_code, i)
+                    self.idx2id_all[idx] = '{}-{}'.format(model_code, i)
                     self.X_all[idx] = self.emb[model_code][i]
                     idx += 1
             else:
-                for neuron in self.emb[model_code]:
-                    self.idx2id[idx] = '{}-{}'.format(model_code, neuron)
+                for neuron_i, neuron in enumerate(self.emb[model_code]):
+                    neuron_id = '{}-{}'.format(model_code, neuron)
+                    self.idx2id_all[idx] = neuron_id
                     self.X_all[idx] = self.emb[model_code][neuron]
                     idx += 1
+                    if model_code == self.base_model_nickname:
+                        self.X[neuron_i] = self.emb[model_code][neuron]
+                        self.idx2id[neuron_i] = neuron_id
 
     
     """
@@ -106,12 +116,15 @@ class Reducer:
     def run_dim_reduction(self):
         self.write_first_log()
 
-        # Fit reducer on base model
+        # Fit reducer and get all 2d embeddings
         tic = time()
-        sampled_X = self.sample_points()
-        self.reducer.fit_transform(sampled_X)
+        if self.args.model_for_emb_space == 'base':
+            fitted_emb2d = self.reducer.fit_transform(self.X)
+            emb2d = self.reducer.transform(self.X_all)
+        elif self.args.model_for_emb_space == 'all':
+            emb2d = self.reducer.fit_transform(self.X_all)
         toc = time()
-        log = 'Fit reducer: {:.2f} sec'.format(toc - tic)
+        log = 'Fit and transform: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
         # Save the reducer
@@ -121,28 +134,41 @@ class Reducer:
         log = 'Save reducer: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
-        # Get 2D vectors of all neurons for all epochs
+        # Parse embeddings into self.emb2d
         tic = time()
-        emb2d = self.reducer.transform(self.X_all).tolist()
-        for i, emb_arr in enumerate(emb2d):
-            instance_id = self.idx2id[i]
-            model_code = instance_id.split('-')[0]
-            if model_code != 'img':
-                instance_id = '-'.join(instance_id.split('-')[1:])
-            self.emb2d[model_code][instance_id] = emb_arr
+        with tqdm(total = len(emb2d)) as pbar:
+            for i, emb in enumerate(emb2d):
+                emb_arr = emb.tolist()
+                instance_id = self.idx2id_all[i]
+                model_code = instance_id.split('-')[0]
+                if model_code != 'img':
+                    instance_id = '-'.join(instance_id.split('-')[1:])
+                if model_code not in self.emb2d:
+                    self.emb2d[model_code] = {}
+                self.emb2d[model_code][instance_id] = emb_arr
+                pbar.update(1)
         toc = time()
         log = '2D Projection: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
     
     def sample_points(self):
-        num_base_instances = len(self.X)
-        rand_indices = np.random.choice(
-            num_base_instances, 
-            size=int(self.args.sample_rate * num_base_instances), 
-            replace=False
-        )
-        sampled_X = self.X[rand_indices]
+        if self.args.model_for_emb_space == 'base':
+            num_base_instances = len(self.X)
+            rand_indices = np.random.choice(
+                num_base_instances, 
+                size=int(self.args.sample_rate * num_base_instances), 
+                replace=False
+            )
+            sampled_X = self.X[rand_indices]
+        elif self.args.model_for_emb_space == 'all':
+            num_base_instances = self.num_instances
+            rand_indices = np.random.choice(
+                num_base_instances, 
+                size=int(self.args.sample_rate * num_base_instances), 
+                replace=False
+            )
+            sampled_X = self.X_all[rand_indices]
         return sampled_X
 
     

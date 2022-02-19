@@ -29,7 +29,7 @@ class ImportantEvo:
     """
     def find_important_evolution(self):
         self.init_setting()
-        self.test_input()
+        # self.test_input()
 
 
     """
@@ -82,6 +82,33 @@ class ImportantEvo:
                 pbar.update(1)
 
 
+    """
+    Get gradient for each layer
+    """
+    def get_gradients(self):
+        for imgs, labels in self.training_data_loader:
+
+            # Send input images and their labels to GPU
+            imgs = imgs.to(self.device)
+            labels = labels.to(self.device)
+
+            # Forward
+            # TODO: Check this
+            outputs = self.model(imgs).logits
+            loss = outputs[self.args.label]
+
+            # Backward
+            loss.backward()
+
+            # Get gradient for each layer
+            for layer in self.model:
+                print(layer)
+                print(layer.grad)
+    
+    
+    """
+    Utils
+    """
     def test_input(self):
         for batch_idx, (imgs, labels) in enumerate(self.data_loader):
             for idx in range(5):
@@ -93,38 +120,3 @@ class ImportantEvo:
                     cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                 )
 
-
-        # for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-        #     class_labels = []
-        #     class_imgs = []
-        #     for i, label in enumerate(labels):
-        #         if label == self.args.label:
-        #             class_labels.append(label)
-        #             class_imgs.append(imgs[i])
-
-        #     if len(class_labels) > 0:
-        #         self.data_loader_for_class.append(
-        #             [class_imgs, class_labels]
-        #         )
-            
-        #         for idx in range(5):
-        #             img = class_imgs[idx] * 255
-        #             img = np.einsum('kij->ijk', img)
-        #             file_path = f'img-{class_labels[idx]}.jpg'
-        #             cv2.imwrite(
-        #                 file_path, 
-        #                 cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        #             )
-        #         sdf
-
-
-        # for idx in range(5):
-        #     img, _ = self.training_dataset[idx]
-        #     img = img * 255
-        #     img = img.cpu().data.numpy()
-        #     img = np.einsum('kij->ijk', img)
-        #     file_path = f'b-{idx}.jpg'
-        #     cv2.imwrite(
-        #         file_path, 
-        #         cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        #     )

@@ -1,11 +1,12 @@
 import os
 import json
 
-def load_all_2d_embedding():
+def load_all_2d_embedding(selected_model):
 
     # File path
-    dir_path = './data/embedding/inception_v3_pretrained/emb2d_data'
+    dir_path = f'./data/embedding/{selected_model}/emb2d_data'
     input_names = os.listdir(dir_path)
+    print(input_names)
 
     # Load embeddings
     embs = {}

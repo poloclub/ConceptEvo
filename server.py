@@ -15,8 +15,9 @@ def home():
 
 @app.route('/send_emb_data', methods=['GET', 'POST'])
 def send_emb_data():
-
-    embs = load_all_2d_embedding()
+    data = request.form
+    selected_model = data['model']
+    embs = load_all_2d_embedding(selected_model)
     return embs, 201
 
 

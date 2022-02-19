@@ -486,10 +486,16 @@ class DataPath:
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
         apdx = self.gen_act_setting_str('neuron_emb')
         file_path = os.path.join(
-            data_dir_path, 'neuron_emb-{}.json'.format(apdx)
+            data_dir_path, 'neuron_emb-{}-{}.json'.format(
+                self.args.model_nickname.replace('-', '_'),
+                apdx
+            )
         )
         log_path = os.path.join(
-            log_dir_path, 'neuron_emb-log-{}.txt'.format(apdx)
+            log_dir_path, 'neuron_emb-log-{}-{}.txt'.format(
+                self.args.model_nickname.replace('-', '_'),
+                apdx
+            )
         )
 
         self.path['neuron_emb'] = file_path
@@ -532,10 +538,16 @@ class DataPath:
         )
         apdx = self.gen_act_setting_str('proj_neuron_emb')
         file_path = os.path.join(
-            data_dir_path, 'proj_neuron_emb-{}.json'.format(apdx)
+            data_dir_path, 'proj_neuron_emb-{}-{}.json'.format(
+                self.args.model_nickname.replace('-', '_'),
+                apdx
+            )
         )
         log_path = os.path.join(
-            log_dir_path, 'proj_neuron_emb-log-{}.txt'.format(apdx)
+            log_dir_path, 'proj_neuron_emb-log-{}-{}.txt'.format(
+                self.args.model_nickname.replace('-', '_'),
+                apdx
+            )
         )
         self.path['proj_neuron_emb'] = file_path
         self.path['proj_neuron_emb-log'] = log_path
@@ -552,23 +564,31 @@ class DataPath:
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
             'embedding', inner_dirname='emb2d'
         )
+        
+        emb_set_dir_name = self.args.emb_set_dir.split('/')[-1]
+        data_dir_path = os.path.join(data_dir_path, emb_set_dir_name)
+        self.make_dir(data_dir_path)
+
         apdx = self.gen_act_setting_str('dim_reduction')
-        file_path = os.path.join(
-            data_dir_path, 'emb2d-{}.json'.format(apdx)
-        )
         log_path = os.path.join(
-            log_dir_path, 'emb2d-log-{}.txt'.format(apdx)
+            log_dir_path, 
+            'emb2d-log-{}-{}.txt'.format(apdx, emb_set_dir_name)
         )
         idx_path = os.path.join(
-            log_dir_path, 'emb2d-idx2id-{}.json'.format(apdx)
+            data_dir_path, 'emb2d-idx2id-{}.json'.format(apdx)
         )
         code_path = os.path.join(
             data_dir_path, 'model_code-{}.json'.format(apdx)
         )
-        self.path['dim_reduction'] = file_path
+        reducer_path = os.path.join(
+            data_dir_path, 'reducer-{}.sav'.format(apdx)
+        )
+        self.path['dim_reduction-dir'] = data_dir_path
+        self.path['dim_reduction-apdx'] = apdx
         self.path['dim_reduction-log'] = log_path
         self.path['dim_reduction-idx2id'] = idx_path
         self.path['dim_reduction-model_code'] = code_path
+        self.path['dim_reduction-reducer'] = reducer_path
 
 
     """

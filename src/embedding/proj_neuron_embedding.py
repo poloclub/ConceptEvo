@@ -48,9 +48,12 @@ class ProjNeuronEmb:
             ]
 
         self.save_json(
-            self.neuron_emb, 
-            self.data_path.get_path('proj_neuron_emb')
+            self.neuron_emb, self.data_path.get_path('proj_neuron_emb')
         )
+
+        store_path = self.data_path.get_path('proj_neuron_emb-store')
+        if store_path != None:
+            self.save_json(self.neuron_emb, store_path)
 
 
     """

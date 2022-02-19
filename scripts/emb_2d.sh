@@ -3,6 +3,7 @@
 python main.py \
     --gpu 3 \
     --dim_reduction UMAP \
-    --emb_set_dir ../data/embedding/emb-0 \
+    --emb_set_dir ../data/embedding/emb-1 \
     --dim 30 \
-    --sample_rate 1
+    --model_for_emb_space base
+

@@ -51,7 +51,10 @@ class DataPath:
     """
     def get_path(self, path_key):
         """Return path for given path_key"""
-        return self.path[path_key]
+        if path_key in self.path:
+            return self.path[path_key]
+        else:
+            return None
 
 
     def find_actions_and_necessary_paths(self):
@@ -189,7 +192,7 @@ class DataPath:
 
         self.action_to_args['dim_reduction'] = [
             ['dim', self.args.dim],
-            ['sample_rate', self.args.sample_rate]
+            ['model_for_emb_space', self.args.model_for_emb_space]
         ]
 
         self.action_to_args['neuron_feature'] = [
@@ -537,12 +540,11 @@ class DataPath:
             'embedding', inner_dirname=self.args.model_nickname
         )
         apdx = self.gen_act_setting_str('proj_neuron_emb')
-        file_path = os.path.join(
-            data_dir_path, 'proj_neuron_emb-{}-{}.json'.format(
-                self.args.model_nickname.replace('-', '_'),
-                apdx
-            )
+        file_name = 'proj_neuron_emb-{}-{}.json'.format(
+            self.args.model_nickname.replace('-', '_'),
+            apdx
         )
+        file_path = os.path.join(data_dir_path, file_name)
         log_path = os.path.join(
             log_dir_path, 'proj_neuron_emb-log-{}-{}.txt'.format(
                 self.args.model_nickname.replace('-', '_'),
@@ -551,6 +553,15 @@ class DataPath:
         )
         self.path['proj_neuron_emb'] = file_path
         self.path['proj_neuron_emb-log'] = log_path
+
+        if self.check_if_arg_given(self.args.emb_store_dirname):
+            dir_path = os.path.join(
+                self.args.output_dir, 'embedding', self.args.emb_store_dirname
+            )
+            self.make_dir(dir_path)
+            self.path['proj_neuron_emb-store'] = os.path.join(
+                dir_path, file_name
+            )
 
 
     """

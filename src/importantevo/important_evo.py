@@ -9,6 +9,7 @@ from time import time
 from model.vgg16 import *
 from model.inception_v3 import *
 
+import gc
 import torch
 from torch import autograd
 from torchvision import datasets, transforms
@@ -132,19 +133,14 @@ class ImportantEvo:
         tic = time()
         total = len(self.training_dataset)
         unit = int(total / self.num_classes)
-        # start = max(0, unit * (self.args.label - 1))
-        start = max(0, unit * (self.args.label))
+        start = max(0, unit * (self.args.label - 1))
         end = min(total, unit * (self.args.label + 2))
 
-        num = 0
         with tqdm(total=(end - start)) as pbar:
             for i in range(start, end):
                 img, label = self.training_dataset[i]
                 if label == self.args.label:
                     self.class_training_dataset.append([img, label])
-                    num += 1
-                    if num == 10:
-                        break
                 elif label > self.args.label:
                     break
                 pbar.update(1)
@@ -217,7 +213,17 @@ class ImportantEvo:
                                 self.sensitivity[layer_name][neuron_id] = []
                             self.sensitivity[layer_name][neuron_id].append(sens)
 
-                pbar.update(1)
+                # for act_map in f_maps['from']:
+                #     del act_map
+                # for act_map in f_maps['to']:
+                #     del act_map
+                # del from_f_map
+                # del to_f_map
+                # del delta_f_map
+                # gc.collect()
+                # torch.cuda.empty_cache()
+
+                pbar.update(self.args.batch_size)
 
         toc = time()
         log = 'Find important evo: {:.2f} sec'.format(toc - tic)

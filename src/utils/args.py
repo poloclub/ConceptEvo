@@ -477,3 +477,31 @@ class ArgParser:
             type=int,
             help='Class label'
         )
+
+        self.parser.add_argument(
+            '--from_model_nickname', 
+            default='', 
+            type=str,
+            help='Nickname of model before evolution'
+        )
+
+        self.parser.add_argument(
+            '--from_model_path', 
+            default='', 
+            type=str,
+            help='Path of model before evolution'
+        )
+
+        self.parser.add_argument(
+            '--to_model_nickname', 
+            default='', 
+            type=str,
+            help='Nickname of model after evolution'
+        )
+
+        self.parser.add_argument(
+            '--to_model_path', 
+            default='', 
+            type=str,
+            help='Path of model after evolution'
+        )        

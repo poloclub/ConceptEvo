@@ -44,6 +44,7 @@ class DataPath:
         self.set_proj_emb_path()
         self.set_emb2d_path()
         self.set_neuron_feature_path()
+        self.set_important_evolution_path()
 
     
     """
@@ -403,6 +404,8 @@ class DataPath:
             elif self.check_if_arg_given(self.args.dim_reduction):
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
                 self.args.model_nickname = 'DO_NOT_NEED_CURRENTLY'
+            elif self.check_if_arg_given(self.args.find_important_evo):
+                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
 
         self.check_model_nickname_and_path()
 
@@ -606,7 +609,7 @@ class DataPath:
     Setting paths for generating neurons' feature
     """
     def set_neuron_feature_path(self):
-        if not self.check_need_to_gen_path('neuron_feature'):
+        if not self.check_need_to_gen_path('find_important_evo'):
             return
 
         self.auto_fill_model_nickname_and_model_path()
@@ -623,3 +626,43 @@ class DataPath:
 
         self.path['neuron_feature'] = d_dir_path
         self.path['neuron_feature-log'] = log_path
+
+
+    """
+    Setting paths for finding important evolution
+    """
+    def set_important_evolution_path(self):
+        if not self.check_need_to_gen_path('neuron_feature'):
+            return
+
+        self.auto_fill_model_nickname_and_model_path()
+        self.raise_err_for_ungiven_arg(
+            self.args.model_name, 'model_name'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.from_model_nickname, 'from_model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.from_model_path, 'from_model_path'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.to_model_nickname, 'to_model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.to_model_path, 'to_model_path'
+        )
+
+        d_dir_path, l_dir_path = self.gen_data_log_sub_dir('find_important_evo')
+        log_path = os.path.join(
+            l_dir_path, 
+            'find_important_evo-log-{}.txt'.format(self.args.model_nickname)
+        )
+        self.make_dir(d_dir_path)
+
+        self.path['find_important_evo'] = d_dir_path
+        self.path['find_important_evo-log'] = log_path
+
+       

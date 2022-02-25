@@ -147,19 +147,11 @@ class InceptionV3:
     def get_layer_info(self):
         model_children = list(self.model.children())
         for i, child in enumerate(model_children):
-            if type(child) == nn.Sequential:
-                for j, layer in enumerate(child.children()):
-                    layer_name = '{}_{}_{}_{}'.format(
-                        type(child).__name__, i,
-                        type(layer).__name__, j
-                    )
-                    self.update_layer_info(layer_name, layer)
-            else:
-                child_name = type(child).__name__
-                if self.is_inceptionV3_aux(child_name):
-                    continue
-                layer_name = '{}_{}'.format(child_name, i)
-                self.update_layer_info(layer_name, child)
+            child_name = type(child).__name__
+            if self.is_inceptionV3_aux(child_name):
+                continue
+            layer_name = '{}_{}'.format(child_name, i)
+            self.update_layer_info(layer_name, child)
 
     
     def is_inceptionV3_aux(self, blk_name):

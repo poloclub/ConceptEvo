@@ -64,13 +64,14 @@ def main():
 
     # Find concept evolution for class predictions
     if args.find_important_evo:
-        find_important_evolution(args, data_path, model)
+        find_important_evolution(args, data_path)
 
 
 def load_model(args, data_path):
 
     when_to_skip_loading_model = [
-        args.dim_reduction != 'None'
+        args.dim_reduction != 'None',
+        args.find_important_evo
     ]
 
     if True in when_to_skip_loading_model:
@@ -128,8 +129,8 @@ def compute_neuron_feature(args, data_path, model):
         ex_patch.compute_neuron_feature()
 
 
-def find_important_evolution(args, data_path, model):
-    imp_evo = ImportantEvo(args, data_path, model)
+def find_important_evolution(args, data_path):
+    imp_evo = ImportantEvo(args, data_path)
     imp_evo.find_important_evolution()
 
 

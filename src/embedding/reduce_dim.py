@@ -226,6 +226,7 @@ class Reducer:
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
 
+
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         with open(self.data_path.get_path('dim_reduction-log'), log_opt) as f:

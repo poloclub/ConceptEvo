@@ -203,6 +203,9 @@ class DataPath:
         ]
 
         self.action_to_args['find_important_evo'] = [
+            ['label', self.args.label],
+            ['from', self.args.from_model_nickname.replace('-', '_')],
+            ['to', self.args.to_model_nickname.replace('-', '_')]
         ]
 
 
@@ -632,7 +635,7 @@ class DataPath:
     Setting paths for finding important evolution
     """
     def set_important_evolution_path(self):
-        if not self.check_need_to_gen_path('neuron_feature'):
+        if not self.check_need_to_gen_path('find_important_evo'):
             return
 
         self.auto_fill_model_nickname_and_model_path()
@@ -656,13 +659,18 @@ class DataPath:
         )
 
         d_dir_path, l_dir_path = self.gen_data_log_sub_dir('find_important_evo')
+        apdx = self.gen_act_setting_str('find_important_evo')
         log_path = os.path.join(
             l_dir_path, 
-            'find_important_evo-log-{}.txt'.format(self.args.model_nickname)
+            'find_important_evo-log-{}.txt'.format(apdx)
         )
         self.make_dir(d_dir_path)
 
-        self.path['find_important_evo'] = d_dir_path
+        self.path['find_important_evo-sensitivity'] = os.path.join(
+            d_dir_path, 'sensitivity-{}.json'.format(apdx)
+        )
+        self.path['find_important_evo-score'] = os.path.join(
+            d_dir_path, 'score-{}.json'.format(apdx)
+        )
         self.path['find_important_evo-log'] = log_path
-
        

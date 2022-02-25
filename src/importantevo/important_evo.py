@@ -31,14 +31,17 @@ class ImportantEvo:
         self.num_classes = 1000
 
         self.label_to_synset = {}
+        self.sensitivity = {}
 
 
     """
     A wrapper function called by main.py
     """
     def find_important_evolution(self):
+        self.write_first_log()
         self.init_setting()
-        self.get_gradients()
+        self.find_imp_evo()
+        self.save_sensitivity()
 
 
     """
@@ -126,6 +129,7 @@ class ImportantEvo:
 
 
     def gen_training_dataset_of_class(self):
+        tic = time()
         total = len(self.training_dataset)
         unit = int(total / self.num_classes)
         # start = max(0, unit * (self.args.label - 1))
@@ -144,54 +148,128 @@ class ImportantEvo:
                 elif label > self.args.label:
                     break
                 pbar.update(1)
+        toc = time()
+        log = 'Filter images for the label: {} sec'.format(toc - tic)
                 
 
     """
-    Get gradient for each layer
+    Find important evolution
     """
-    def get_gradients(self):
-        for batch_idx, (imgs, labels) in enumerate(self.data_loader):
+    def find_imp_evo(self):
+        tic, total = time(), len(self.class_training_dataset)
+        with tqdm(total=total) as pbar:
+            for batch_idx, (imgs, labels) in enumerate(self.data_loader):
 
-            # Send input images and their labels to GPU
-            imgs = imgs.to(self.device)
-            labels = labels.to(self.device)
+                # Send input images and their labels to GPU
+                imgs = imgs.to(self.device)
+                labels = labels.to(self.device)
 
-            # Forward
-            from_model_layers = list(self.from_model.model.children())
-            to_model_layers = list(self.to_model.model.children())
-            num_layers = len(from_model_layers)
-            from_f_map, to_f_map = imgs, imgs
-            f_maps, layer_names = {'from': [], 'to': []}, []
-            for i in range(num_layers):
-                from_layer = from_model_layers[i]
-                to_layer = to_model_layers[i]
-                child_name = type(from_layer).__name__
-                if 'Aux' in child_name:
-                    continue
-                layer_name = '{}_{}'.format(child_name, i)
-                layer_names.append(layer_name)
-                if i == num_layers - 1:
-                    from_f_map = torch.flatten(from_f_map, 1)
-                    to_f_map = torch.flatten(to_f_map, 1)
-                from_f_map = from_layer(from_f_map)
-                to_f_map = to_layer(to_f_map)
-                f_maps['from'].append(from_f_map)
-                f_maps['to'].append(to_f_map)
-
-            # Gradient of all layers
-            grads = []
-            for img_idx, img in enumerate(imgs):
+                # Forward
+                from_model_layers = list(self.from_model.model.children())
+                to_model_layers = list(self.to_model.model.children())
+                num_layers = len(from_model_layers)
+                from_f_map, to_f_map = imgs, imgs
+                f_maps, layer_info = {'from': [], 'to': []}, []
                 for i in range(num_layers):
-                    # Gradient of the layer (B, N, W, H)
-                    # where B = batch size and N = the number of neurons
-                    grad = autograd.grad(
-                        f_maps['from'][-1][img_idx, self.args.label], 
-                        f_maps['from'][i]
-                    )
-                    grad = grad[0]
-                    grads.append(grad)
+                    from_layer = from_model_layers[i]
+                    to_layer = to_model_layers[i]
+                    child_name = type(from_layer).__name__
+                    if 'Aux' in child_name:
+                        continue
+                    if i == num_layers - 1:
+                        from_f_map = torch.flatten(from_f_map, 1)
+                        to_f_map = torch.flatten(to_f_map, 1)
+                    from_f_map = from_layer(from_f_map)
+                    to_f_map = to_layer(to_f_map)
+                    f_maps['from'].append(from_f_map)
+                    f_maps['to'].append(to_f_map)
+                    layer_name = '{}_{}'.format(child_name, i)
+                    layer_info.append({
+                        'name': layer_name,
+                        'num_neurons': from_f_map.shape[1]
+                    })
+
+                # Compute the sensitivity
+                for img_idx, img in enumerate(imgs):
+                    for layer_idx in range(num_layers - 1):
+                        # Gradient (N, W, H)
+                        grad = autograd.grad(
+                            f_maps['from'][-1][img_idx, self.args.label], 
+                            f_maps['from'][layer_idx],
+                            retain_graph=True
+                        )
+                        grad = grad[0][img_idx]
+
+                        layer_name = layer_info[layer_idx]['name']
+                        num_neurons = layer_info[layer_idx]['num_neurons']
+                        if layer_name not in self.sensitivity:
+                            self.sensitivity[layer_name] = {}
+                        for neuron_idx in range(num_neurons):
+                            neuron_grad = grad[neuron_idx]
+                            from_f_map = f_maps['from'][layer_idx][img_idx]
+                            to_f_map = f_maps['to'][layer_idx][img_idx]
+                            delta_f_map = to_f_map - from_f_map
+                            delta_f_map = delta_f_map[neuron_idx]
+                            sens = torch.mul(neuron_grad, delta_f_map)
+                            sens = torch.sum(sens)
+                            neuron_id = '{}-{}'.format(layer_name, neuron_idx)
+                            if neuron_id not in self.sensitivity[layer_name]:
+                                self.sensitivity[layer_name][neuron_id] = []
+                            self.sensitivity[layer_name][neuron_id].append(sens)
+
+                pbar.update(1)
+
+        toc = time()
+        log = 'Find important evo: {:.2f} sec'.format(toc - tic)
+        self.write_log(log)
+
+
+    def save_sensitivity(self):
+        path = self.data_path.get_path('find_important_evo-sensitivity')
+        for layer_name in self.sensitivity:
+            for neuron_id in self.sensitivity[layer_name]:
+                scores = self.sensitivity[layer_name][neuron_id]
+                score_vals = []
+                for score in scores:
+                    score_vals.append(score.item())
+                self.sensitivity[layer_name][neuron_id] = score_vals
+        self.save_json(self.sensitivity, path)
+
     
+    """
+    Handle external files (e.g., output, log, ...)
+    """
+    def load_json(self, file_path):
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        return data
+
+
+    def save_json(self, data, file_path):
+        with open(file_path, 'w') as f:
+            json.dump(data, f)
+
     
+    def write_first_log(self):
+        hyperpara_setting = self.data_path.gen_act_setting_str(
+            'find_important_evo', '\n'
+        )
+        
+        log = 'Find important evolution\n\n'
+        log += 'from_model_nickname: {}\n'.format(self.args.from_model_nickname)
+        log += 'to_model_nickname: {}\n'.format(self.args.to_model_nickname)
+        log += 'label: {}\n'.format(self.args.label)
+        log += hyperpara_setting + '\n\n'
+        self.write_log(log, False)
+
+    
+    def write_log(self, log, append=True):
+        log_opt = 'a' if append else 'w'
+        path = self.data_path.get_path('find_important_evo-log')
+        with open(path, log_opt) as f:
+            f.write(log + '\n')
+
+
     """
     Utils
     """
@@ -205,4 +283,3 @@ class ImportantEvo:
                     file_path, 
                     cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
                 )
-

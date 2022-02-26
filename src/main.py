@@ -25,6 +25,7 @@ from feature.example_patch import *
 
 # Find concept evolution for class predictions
 from importantevo.important_evo import *
+from importantevo.important_evo_vgg16 import *
 
 
 def main():
@@ -130,8 +131,12 @@ def compute_neuron_feature(args, data_path, model):
 
 
 def find_important_evolution(args, data_path):
-    imp_evo = ImportantEvo(args, data_path)
-    imp_evo.find_important_evolution()
+    if 'inception_v3' in args.model_name:
+        imp_evo = ImportantEvo(args, data_path)
+        imp_evo.find_important_evolution()
+    else:
+        imp_evo = ImportantEvoVgg16(args, data_path)
+        imp_evo.find_important_evolution()
 
 
 

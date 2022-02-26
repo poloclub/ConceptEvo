@@ -14,7 +14,7 @@ import torch
 from torch import autograd
 from torchvision import datasets, transforms
 
-class ImportantEvo:
+class ImportantEvoVgg16:
     """Find important evolution."""
 
     """
@@ -133,14 +133,18 @@ class ImportantEvo:
         tic = time()
         total = len(self.training_dataset)
         unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label - 1))
+        start = max(0, unit * (self.args.label))
         end = min(total, unit * (self.args.label + 2))
+        num = 0
 
         with tqdm(total=(end - start)) as pbar:
             for i in range(start, end):
                 img, label = self.training_dataset[i]
                 if label == self.args.label:
                     self.class_training_dataset.append([img, label])
+                    num += 1 
+                    if num >= 10:
+                        break
                 elif label > self.args.label:
                     break
                 pbar.update(1)
@@ -155,14 +159,89 @@ class ImportantEvo:
         tic, total = time(), len(self.class_training_dataset)
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                self.find_imp_evo_one_batch(imgs, labels)
+                if self.args.model_name == 'vgg16':
+                    self.find_imp_evo_one_batch_vgg16(imgs, labels)
+                elif self.args.model_name == 'inception_v3':
+                    self.find_imp_evo_one_batch_inception_v3(imgs, labels)
                 pbar.update(self.args.batch_size)
         toc = time()
         log = 'Find important evo: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
 
-    def find_imp_evo_one_batch(self, imgs, labels):
+    def find_imp_evo_one_batch_vgg16(self, imgs, labels):
+        # Send input images and their labels to GPU
+        imgs = imgs.to(self.device)
+        labels = labels.to(self.device)
+
+        # Forward
+        from_model_children = list(self.from_model.model.children())
+        to_model_children = list(self.to_model.model.children())
+        from_f_map, to_f_map = imgs, imgs
+        f_maps, layer_info = {'from': [], 'to': []}, []
+        for i, child in enumerate(from_model_children):
+            if type(child) == nn.Sequential:
+                for j, from_layer in enumerate(child.children()):
+                    to_layer = to_model_children[i][j]
+                    from_f_map = from_layer(from_f_map)
+                    to_f_map = to_layer(to_f_map)
+                    f_maps['from'].append(from_f_map)
+                    f_maps['to'].append(to_f_map)
+                    layer_name = '{}_{}_{}_{}'.format(
+                        type(child).__name__, i,
+                        type(from_layer).__name__, j
+                    )
+                    layer_info.append({
+                        'name': layer_name,
+                        'num_neurons': from_f_map.shape[1]
+                    })
+            else:
+                to_layer = to_model_children[i]
+                from_f_map = child(from_f_map)
+                to_f_map = to_layer(to_f_map)
+                if type(child) == nn.AdaptiveAvgPool2d:
+                    from_f_map = torch.flatten(from_f_map, 1)
+                    to_f_map = torch.flatten(to_f_map, 1)
+                f_maps['from'].append(from_f_map)
+                f_maps['to'].append(to_f_map)
+                child_name = type(child).__name__
+                layer_name = '{}_{}'.format(child_name, i)
+                layer_info.append({
+                    'name': layer_name,
+                    'num_neurons': from_f_map.shape[1]
+                })
+
+        # Compute the sensitivity
+        num_layers = len(layer_info)
+        for img_idx, img in enumerate(imgs):
+            for layer_idx in range(num_layers - 1):
+                # Gradient (N, W, H)
+                grad = autograd.grad(
+                    f_maps['from'][-1][img_idx, self.args.label], 
+                    f_maps['from'][layer_idx],
+                    retain_graph=True
+                )
+                grad = grad[0][img_idx]
+
+                layer_name = layer_info[layer_idx]['name']
+                num_neurons = layer_info[layer_idx]['num_neurons']
+                if layer_name not in self.sensitivity:
+                    self.sensitivity[layer_name] = {}
+                for neuron_idx in range(num_neurons):
+                    neuron_grad = grad[neuron_idx]
+                    from_f_map = f_maps['from'][layer_idx][img_idx]
+                    to_f_map = f_maps['to'][layer_idx][img_idx]
+                    delta_f_map = to_f_map - from_f_map
+                    delta_f_map = delta_f_map[neuron_idx]
+                    sens = torch.mul(neuron_grad, delta_f_map)
+                    sens = torch.sum(sens).item()
+                    neuron_id = '{}-{}'.format(layer_name, neuron_idx)
+                    if neuron_id not in self.sensitivity[layer_name]:
+                        self.sensitivity[layer_name][neuron_id] = []
+                    self.sensitivity[layer_name][neuron_id].append(sens)
+
+
+    def find_imp_evo_one_batch_inception_v3(self, imgs, labels):
         # Send input images and their labels to GPU
         imgs = imgs.to(self.device)
         labels = labels.to(self.device)
@@ -247,7 +326,9 @@ class ImportantEvo:
         
         log = 'Find important evolution\n\n'
         log += 'from_model_nickname: {}\n'.format(self.args.from_model_nickname)
+        log += 'from_model_path: {}\n'.format(self.args.from_model_path)
         log += 'to_model_nickname: {}\n'.format(self.args.to_model_nickname)
+        log += 'to_model_path: {}\n'.format(self.args.to_model_path)
         log += 'label: {}\n'.format(self.args.label)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)

@@ -133,18 +133,14 @@ class ImportantEvoVgg16:
         tic = time()
         total = len(self.training_dataset)
         unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label))
+        start = max(0, unit * (self.args.label - 1))
         end = min(total, unit * (self.args.label + 2))
-        num = 0
 
         with tqdm(total=(end - start)) as pbar:
             for i in range(start, end):
                 img, label = self.training_dataset[i]
                 if label == self.args.label:
                     self.class_training_dataset.append([img, label])
-                    num += 1 
-                    if num >= 10:
-                        break
                 elif label > self.args.label:
                     break
                 pbar.update(1)

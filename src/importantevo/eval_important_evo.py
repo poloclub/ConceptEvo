@@ -32,6 +32,7 @@ class EvalImportantEvo:
     Initial setting
     """
     def init_setting(self):
+        self.init_global_vars()
         self.set_input_size()
         self.init_device()
         self.get_synset_info()
@@ -129,6 +130,17 @@ class EvalImportantEvo:
                 pbar.update(1)
         toc = time()
         log = 'Filter images for the label: {} sec'.format(toc - tic)
+        self.write_log(log)
+
+    
+    def init_global_vars(self):
+        self.pred_without_evo = {
+            'from': {'correct': 0, 'incorrect': 0},
+            'to': {'correct': 0, 'incorrect': 0},
+            'important': {},
+            'least-important': {},
+            'random': {}
+        }
 
 
     """
@@ -139,10 +151,7 @@ class EvalImportantEvo:
         self.load_imp_evo()
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                if self.args.model_name == 'vgg16':
-                    self.eval_imp_evo_one_batch_vgg16(imgs, labels)
-                elif self.args.model_name == 'inception_v3':
-                    self.eval_imp_evo_one_batch_inception_v3(imgs, labels)
+                self.eval_imp_evo_one_batch(imgs, labels)
                 pbar.update(self.args.batch_size)
         toc = time()
         log = 'Evaluate important evo: {:.2f} sec'.format(toc - tic)
@@ -152,68 +161,26 @@ class EvalImportantEvo:
     def load_imp_evo(self):
         pass
 
-    
-    def forward_vgg16(self, imgs, labels):
-        from_model_children = list(self.from_model.model.children())
-        to_model_children = list(self.to_model.model.children())
-        from_f_map, to_f_map = imgs, imgs
-        f_maps, layer_info = {'from': [], 'to': []}, []
-        for i, child in enumerate(from_model_children):
-            if type(child) == nn.Sequential:
-                for j, from_layer in enumerate(child.children()):
-                    to_layer = to_model_children[i][j]
-                    from_f_map = from_layer(from_f_map)
-                    to_f_map = to_layer(to_f_map)
-                    f_maps['from'].append(from_f_map)
-                    f_maps['to'].append(to_f_map)
-                    layer_name = '{}_{}_{}_{}'.format(
-                        type(child).__name__, i,
-                        type(from_layer).__name__, j
-                    )
-                    layer_info.append({
-                        'name': layer_name,
-                        'num_neurons': from_f_map.shape[1],
-                        'layer': to_layer
-                    })
-            else:
-                to_layer = to_model_children[i]
-                from_f_map = child(from_f_map)
-                to_f_map = to_layer(to_f_map)
-                if type(child) == nn.AdaptiveAvgPool2d:
-                    from_f_map = torch.flatten(from_f_map, 1)
-                    to_f_map = torch.flatten(to_f_map, 1)
-                f_maps['from'].append(from_f_map)
-                f_maps['to'].append(to_f_map)
-                child_name = type(child).__name__
-                layer_name = '{}_{}'.format(child_name, i)
-                layer_info.append({
-                    'name': layer_name,
-                    'num_neurons': from_f_map.shape[1],
-                    'layer': to_layer
-                })
-        
-        return f_maps, layer_info
+
+    def eval_prediction_one_batch(self, f_maps):
+        print(f_maps[-1].shape)
 
 
-    def eval_imp_evo_one_batch_vgg16(self, imgs, labels):
+    def eval_imp_evo_one_batch(self, imgs, labels):
         # Send input images and their labels to GPU
         imgs = imgs.to(self.device)
         labels = labels.to(self.device)
 
         # Forward
-        f_maps, layer_info = self.forward_vgg16(imgs, labels)
-
+        if self.args.model_name == 'vgg16':
+            f_maps, layer_info = self.forward_vgg16(imgs, labels)
+        elif self.args.model_name == 'inception_v3':
+            f_maps, layer_info = self.forward_inception_v3(imgs, labels)
+        else:
+            raise ValueError(f'Error: unkonwn model {self.args.model_name}')
+        
         # Measure prediction accuracy before prevention
-        # Check the last layer of f_maps and count the correct and incorrect cases
-        self.pred_without_evo['from'] = {
-            'correct': 0, 'incorrect': 0
-        }
-        self.pred_without_evo['to'] = {
-            'correct': 0, 'incorrect': 0
-        }
-        self.pred_without_evo['important'] = {}
-        self.pred_without_evo['least-important'] = {}
-        self.pred_without_evo['random'] = {}
+        self.eval_prediction_one_batch(f_maps)
 
         # Evaluate the most important evolutions
         num_layers = len(layer_info)
@@ -267,8 +234,78 @@ class EvalImportantEvo:
         # Evaluate random evolutions
 
 
-    def eval_imp_evo_one_batch_inception_v3(self, imgs, labels):
-        pass
+    # def 
+
+    
+    def forward_vgg16(self, imgs, labels):
+        from_model_children = list(self.from_model.model.children())
+        to_model_children = list(self.to_model.model.children())
+        from_f_map, to_f_map = imgs, imgs
+        f_maps, layer_info = {'from': [], 'to': []}, []
+        for i, child in enumerate(from_model_children):
+            if type(child) == nn.Sequential:
+                for j, from_layer in enumerate(child.children()):
+                    to_layer = to_model_children[i][j]
+                    from_f_map = from_layer(from_f_map)
+                    to_f_map = to_layer(to_f_map)
+                    f_maps['from'].append(from_f_map)
+                    f_maps['to'].append(to_f_map)
+                    layer_name = '{}_{}_{}_{}'.format(
+                        type(child).__name__, i,
+                        type(from_layer).__name__, j
+                    )
+                    layer_info.append({
+                        'name': layer_name,
+                        'num_neurons': from_f_map.shape[1],
+                        'layer': to_layer
+                    })
+            else:
+                to_layer = to_model_children[i]
+                from_f_map = child(from_f_map)
+                to_f_map = to_layer(to_f_map)
+                if type(child) == nn.AdaptiveAvgPool2d:
+                    from_f_map = torch.flatten(from_f_map, 1)
+                    to_f_map = torch.flatten(to_f_map, 1)
+                f_maps['from'].append(from_f_map)
+                f_maps['to'].append(to_f_map)
+                child_name = type(child).__name__
+                layer_name = '{}_{}'.format(child_name, i)
+                layer_info.append({
+                    'name': layer_name,
+                    'num_neurons': from_f_map.shape[1],
+                    'layer': to_layer
+                })
+        
+        return f_maps, layer_info
+
+    
+    def forward_inception_v3(self, imgs, labels):
+        from_model_layers = list(self.from_model.model.children())
+        to_model_layers = list(self.to_model.model.children())
+        num_layers = len(from_model_layers)
+        from_f_map, to_f_map = imgs, imgs
+        f_maps, layer_info = {'from': [], 'to': []}, []
+        for i in range(num_layers):
+            from_layer = from_model_layers[i]
+            to_layer = to_model_layers[i]
+            child_name = type(from_layer).__name__
+            if 'Aux' in child_name:
+                continue
+            if i == num_layers - 1:
+                from_f_map = torch.flatten(from_f_map, 1)
+                to_f_map = torch.flatten(to_f_map, 1)
+            from_f_map = from_layer(from_f_map)
+            to_f_map = to_layer(to_f_map)
+            f_maps['from'].append(from_f_map)
+            f_maps['to'].append(to_f_map)
+            layer_name = '{}_{}'.format(child_name, i)
+            layer_info.append({
+                'name': layer_name,
+                'num_neurons': from_f_map.shape[1],
+                'layer': to_layer
+            })
+
+        return f_maps, layer_info
 
     
     """

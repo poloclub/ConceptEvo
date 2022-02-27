@@ -233,6 +233,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--save_important_evo', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to find concept evolution for a class prediction'
+        )
+
+        self.parser.add_argument(
             '--eval_important_evo', 
             default='None', 
             choices=['None', 'perturbation', 'freezing'],

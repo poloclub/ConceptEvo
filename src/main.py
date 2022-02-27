@@ -65,7 +65,7 @@ def main():
         compute_neuron_feature(args, data_path, model)
 
     # Find concept evolution for class predictions
-    if args.find_important_evo:
+    if args.find_important_evo or args.save_important_evo:
         find_important_evolution(args, data_path)
 
     # Evaluate important concept evolution for class predictions
@@ -77,7 +77,8 @@ def load_model(args, data_path):
 
     when_to_skip_loading_model = [
         args.dim_reduction != 'None',
-        args.find_important_evo
+        args.find_important_evo,
+        args.save_important_evo
     ]
 
     if True in when_to_skip_loading_model:

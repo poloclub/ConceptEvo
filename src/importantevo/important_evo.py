@@ -32,6 +32,7 @@ class ImportantEvo:
 
         self.label_to_synset = {}
         self.sensitivity = {}
+        self.importance_score = {}
 
 
     """
@@ -41,7 +42,7 @@ class ImportantEvo:
         self.write_first_log()
         self.init_setting()
         self.find_imp_evo()
-        self.save_sensitivity()
+        self.save_results()
 
 
     """
@@ -145,6 +146,7 @@ class ImportantEvo:
                 pbar.update(1)
         toc = time()
         log = 'Filter images for the label: {} sec'.format(toc - tic)
+        self.write_log(log)
                 
 
     """
@@ -156,17 +158,71 @@ class ImportantEvo:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
                 self.find_imp_evo_one_batch(imgs, labels)
                 pbar.update(self.args.batch_size)
+        self.compute_importance_score()
         toc = time()
         log = 'Find important evo: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
-
+    
     def find_imp_evo_one_batch(self, imgs, labels):
-        # Send input images and their labels to GPU
-        imgs = imgs.to(self.device)
-        labels = labels.to(self.device)
+        if self.args.find_important_evo:
+            # Send input images and their labels to GPU
+            imgs = imgs.to(self.device)
+            labels = labels.to(self.device)
 
-        # Forward
+            # Forward
+            if self.args.model_name == 'vgg16':
+                f_maps, layer_info = self.forward_vgg16(imgs, labels)
+            elif self.args.model_name == 'inception_v3':
+                f_maps, layer_info = self.forward_inception_v3(imgs, labels)
+            else:
+                raise ValueError(f'Error: unkonwn model {self.args.model_name}')
+                
+            # Compute importance score
+            self.compute_sensitivity(imgs, f_maps, layer_info)
+
+
+    def forward_vgg16(self, imgs, labels):
+        from_model_children = list(self.from_model.model.children())
+        to_model_children = list(self.to_model.model.children())
+        from_f_map, to_f_map = imgs, imgs
+        f_maps, layer_info = {'from': [], 'to': []}, []
+        for i, child in enumerate(from_model_children):
+            if type(child) == nn.Sequential:
+                for j, from_layer in enumerate(child.children()):
+                    to_layer = to_model_children[i][j]
+                    from_f_map = from_layer(from_f_map)
+                    to_f_map = to_layer(to_f_map)
+                    f_maps['from'].append(from_f_map)
+                    f_maps['to'].append(to_f_map)
+                    layer_name = '{}_{}_{}_{}'.format(
+                        type(child).__name__, i,
+                        type(from_layer).__name__, j
+                    )
+                    layer_info.append({
+                        'name': layer_name,
+                        'num_neurons': from_f_map.shape[1]
+                    })
+            else:
+                to_layer = to_model_children[i]
+                from_f_map = child(from_f_map)
+                to_f_map = to_layer(to_f_map)
+                if type(child) == nn.AdaptiveAvgPool2d:
+                    from_f_map = torch.flatten(from_f_map, 1)
+                    to_f_map = torch.flatten(to_f_map, 1)
+                f_maps['from'].append(from_f_map)
+                f_maps['to'].append(to_f_map)
+                child_name = type(child).__name__
+                layer_name = '{}_{}'.format(child_name, i)
+                layer_info.append({
+                    'name': layer_name,
+                    'num_neurons': from_f_map.shape[1]
+                })
+
+        return f_maps, layer_info
+
+
+    def forward_inception_v3(self, imgs, labels):
         from_model_layers = list(self.from_model.model.children())
         to_model_layers = list(self.to_model.model.children())
         num_layers = len(from_model_layers)
@@ -191,7 +247,11 @@ class ImportantEvo:
                 'num_neurons': from_f_map.shape[1]
             })
 
-        # Compute the sensitivity
+        return f_maps, layer_info
+
+
+    def compute_sensitivity(self, imgs, f_maps, layer_info):
+        num_layers = len(layer_info)
         for img_idx, img in enumerate(imgs):
             for layer_idx in range(num_layers - 1):
                 # Gradient (N, W, H)
@@ -202,6 +262,7 @@ class ImportantEvo:
                 )
                 grad = grad[0][img_idx]
 
+                # Compute sensitivity
                 layer_name = layer_info[layer_idx]['name']
                 num_neurons = layer_info[layer_idx]['num_neurons']
                 if layer_name not in self.sensitivity:
@@ -219,10 +280,46 @@ class ImportantEvo:
                         self.sensitivity[layer_name][neuron_id] = []
                     self.sensitivity[layer_name][neuron_id].append(sens)
 
+    
+    def compute_importance_score(self):
+        # Load sensitivity 
+        if len(self.sensitivity) == 0:
+            path = self.data_path.get_path('find_important_evo-sensitivity')
+            self.sensitivity = self.load_json(path)
 
-    def save_sensitivity(self):
-        path = self.data_path.get_path('find_important_evo-sensitivity')
-        self.save_json(self.sensitivity, path)
+        # Compute score
+        for layer_name in self.sensitivity:
+            self.importance_score[layer_name] = []
+            for neuron_id in self.sensitivity[layer_name]:
+                sensitivities = self.sensitivity[layer_name][neuron_id]
+                num_pos = len([s for s in sensitivities if s > 0])
+                total_num = len(sensitivities)
+                self.importance_score[layer_name].append({
+                    'neuron': neuron_id,
+                    'score': num_pos / total_num,
+                    'total_num': total_num,
+                    'num_positives': num_pos
+                })
+
+        # Sort score
+        for layer_name in self.sensitivity:
+            sorted_scores = sorted(
+                self.importance_score[layer_name],
+                key=lambda score_info: score_info['score'],
+                reverse=True
+            )
+            self.importance_score[layer_name] = sorted_scores
+
+
+    def save_results(self):
+        if self.args.find_important_evo:
+            # Save sensitivity score
+            path = self.data_path.get_path('find_important_evo-sensitivity')
+            self.save_json(self.sensitivity, path)
+
+        # Save importance score
+        path = self.data_path.get_path('find_important_evo-score')
+        self.save_json(self.importance_score, path)
 
     
     """
@@ -255,10 +352,11 @@ class ImportantEvo:
 
     
     def write_log(self, log, append=True):
-        log_opt = 'a' if append else 'w'
-        path = self.data_path.get_path('find_important_evo-log')
-        with open(path, log_opt) as f:
-            f.write(log + '\n')
+        if self.args.find_important_evo:
+            log_opt = 'a' if append else 'w'
+            path = self.data_path.get_path('find_important_evo-log')
+            with open(path, log_opt) as f:
+                f.write(log + '\n')
 
 
     """

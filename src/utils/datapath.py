@@ -20,7 +20,7 @@ class DataPath:
             'train-data', 'test-data', 'label-data',
             'stimulus', 'co_act', 'neuron_emb', 'img_emb',
             'proj_neuron_emb', 'dim_reduction', 'neuron_feature', 
-            'find_important_evo'
+            'find_important_evo', 'eval_important_evo'
         ]
 
         self.path_key_to_actions = {}
@@ -130,7 +130,8 @@ class DataPath:
         ]
 
         self.path_key_to_actions['find_important_evo'] = [
-            self.args.find_important_evo
+            self.args.find_important_evo,
+            self.args.save_important_evo,
         ]
 
         self.path_key_to_actions['eval_important_evo'] = [
@@ -422,6 +423,8 @@ class DataPath:
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
                 self.args.model_nickname = 'DO_NOT_NEED_CURRENTLY'
             elif self.check_if_arg_given(self.args.find_important_evo):
+                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
+            elif self.check_if_arg_given(self.args.save_important_evo):
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
 
         self.check_model_nickname_and_path()

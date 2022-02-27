@@ -9,7 +9,6 @@ from time import time
 from model.vgg16 import *
 from model.inception_v3 import *
 
-import gc
 import torch
 from torch import autograd
 from torchvision import datasets, transforms
@@ -125,7 +124,7 @@ class ImportantEvo:
 
     def get_synset_info(self):
         df = pd.read_csv(self.args.data_label_path, sep='\t')
-        for synset, label in zip(df['synset'], df['tfrecord_label']):
+        for synset, label in zip(df['synset'], df['training_label']):
             self.label_to_synset[int(label) - 1] = synset
 
 
@@ -247,7 +246,9 @@ class ImportantEvo:
         
         log = 'Find important evolution\n\n'
         log += 'from_model_nickname: {}\n'.format(self.args.from_model_nickname)
+        log += 'from_model_path: {}\n'.format(self.args.from_model_path)
         log += 'to_model_nickname: {}\n'.format(self.args.to_model_nickname)
+        log += 'to_model_path: {}\n'.format(self.args.to_model_path)
         log += 'label: {}\n'.format(self.args.label)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)

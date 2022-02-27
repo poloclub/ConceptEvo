@@ -1,20 +1,5 @@
-import os
-import cv2
-import json
-import numpy as np
-import pandas as pd
-from tqdm import tqdm
-from time import time
-
-from model.vgg16 import *
-from model.inception_v3 import *
-
-import torch
-from torch import autograd
-from torchvision import datasets, transforms
-
-class ImportantEvoVgg16:
-    """Find important evolution."""
+class EvalImportantEvo:
+    """Evaluate how well our method finds important evolutions"""
 
     """
     Constructor
@@ -30,20 +15,19 @@ class ImportantEvoVgg16:
         self.input_size = -1        
         self.num_classes = 1000
 
-        self.label_to_synset = {}
-        self.sensitivity = {}
+        self.imp_evo = {}
+        self.pred_without_evo = {}
 
 
     """
     A wrapper function called by main.py
     """
-    def find_important_evolution(self):
+    def eval_important_evolution(self):
         self.write_first_log()
         self.init_setting()
-        self.find_imp_evo()
-        self.save_sensitivity()
+        self.eval_imp_evo()
 
-
+    
     """
     Initial setting
     """
@@ -145,31 +129,31 @@ class ImportantEvoVgg16:
                 pbar.update(1)
         toc = time()
         log = 'Filter images for the label: {} sec'.format(toc - tic)
-                
+
 
     """
-    Find important evolution
+    Evaluate important evolution
     """
-    def find_imp_evo(self):
+    def eval_imp_evo(self):
         tic, total = time(), len(self.class_training_dataset)
+        self.load_imp_evo()
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
                 if self.args.model_name == 'vgg16':
-                    self.find_imp_evo_one_batch_vgg16(imgs, labels)
+                    self.eval_imp_evo_one_batch_vgg16(imgs, labels)
                 elif self.args.model_name == 'inception_v3':
-                    self.find_imp_evo_one_batch_inception_v3(imgs, labels)
+                    self.eval_imp_evo_one_batch_inception_v3(imgs, labels)
                 pbar.update(self.args.batch_size)
         toc = time()
-        log = 'Find important evo: {:.2f} sec'.format(toc - tic)
+        log = 'Evaluate important evo: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
+    
+    def load_imp_evo(self):
+        pass
 
-    def find_imp_evo_one_batch_vgg16(self, imgs, labels):
-        # Send input images and their labels to GPU
-        imgs = imgs.to(self.device)
-        labels = labels.to(self.device)
-
-        # Forward
+    
+    def forward_vgg16(self, imgs, labels):
         from_model_children = list(self.from_model.model.children())
         to_model_children = list(self.to_model.model.children())
         from_f_map, to_f_map = imgs, imgs
@@ -188,7 +172,8 @@ class ImportantEvoVgg16:
                     )
                     layer_info.append({
                         'name': layer_name,
-                        'num_neurons': from_f_map.shape[1]
+                        'num_neurons': from_f_map.shape[1],
+                        'layer': to_layer
                     })
             else:
                 to_layer = to_model_children[i]
@@ -203,101 +188,87 @@ class ImportantEvoVgg16:
                 layer_name = '{}_{}'.format(child_name, i)
                 layer_info.append({
                     'name': layer_name,
-                    'num_neurons': from_f_map.shape[1]
+                    'num_neurons': from_f_map.shape[1],
+                    'layer': to_layer
                 })
-
-        # Compute the sensitivity
-        num_layers = len(layer_info)
-        for img_idx, img in enumerate(imgs):
-            for layer_idx in range(num_layers - 1):
-                # Gradient (N, W, H)
-                grad = autograd.grad(
-                    f_maps['from'][-1][img_idx, self.args.label], 
-                    f_maps['from'][layer_idx],
-                    retain_graph=True
-                )
-                grad = grad[0][img_idx]
-
-                layer_name = layer_info[layer_idx]['name']
-                num_neurons = layer_info[layer_idx]['num_neurons']
-                if layer_name not in self.sensitivity:
-                    self.sensitivity[layer_name] = {}
-                for neuron_idx in range(num_neurons):
-                    neuron_grad = grad[neuron_idx]
-                    from_f_map = f_maps['from'][layer_idx][img_idx]
-                    to_f_map = f_maps['to'][layer_idx][img_idx]
-                    delta_f_map = to_f_map - from_f_map
-                    delta_f_map = delta_f_map[neuron_idx]
-                    sens = torch.mul(neuron_grad, delta_f_map)
-                    sens = torch.sum(sens).item()
-                    neuron_id = '{}-{}'.format(layer_name, neuron_idx)
-                    if neuron_id not in self.sensitivity[layer_name]:
-                        self.sensitivity[layer_name][neuron_id] = []
-                    self.sensitivity[layer_name][neuron_id].append(sens)
+        
+        return f_maps, layer_info
 
 
-    def find_imp_evo_one_batch_inception_v3(self, imgs, labels):
+    def eval_imp_evo_one_batch_vgg16(self, imgs, labels):
         # Send input images and their labels to GPU
         imgs = imgs.to(self.device)
         labels = labels.to(self.device)
 
         # Forward
-        from_model_layers = list(self.from_model.model.children())
-        to_model_layers = list(self.to_model.model.children())
-        num_layers = len(from_model_layers)
-        from_f_map, to_f_map = imgs, imgs
-        f_maps, layer_info = {'from': [], 'to': []}, []
-        for i in range(num_layers):
-            from_layer = from_model_layers[i]
-            to_layer = to_model_layers[i]
-            child_name = type(from_layer).__name__
-            if 'Aux' in child_name:
-                continue
-            if i == num_layers - 1:
-                from_f_map = torch.flatten(from_f_map, 1)
-                to_f_map = torch.flatten(to_f_map, 1)
-            from_f_map = from_layer(from_f_map)
-            to_f_map = to_layer(to_f_map)
-            f_maps['from'].append(from_f_map)
-            f_maps['to'].append(to_f_map)
-            layer_name = '{}_{}'.format(child_name, i)
-            layer_info.append({
-                'name': layer_name,
-                'num_neurons': from_f_map.shape[1]
-            })
+        f_maps, layer_info = self.forward_vgg16(imgs, labels)
 
-        # Compute the sensitivity
-        for img_idx, img in enumerate(imgs):
-            for layer_idx in range(num_layers - 1):
-                # Gradient (N, W, H)
-                grad = autograd.grad(
-                    f_maps['from'][-1][img_idx, self.args.label], 
-                    f_maps['from'][layer_idx],
-                    retain_graph=True
-                )
-                grad = grad[0][img_idx]
+        # Measure prediction accuracy before prevention
+        # Check the last layer of f_maps and count the correct and incorrect cases
+        self.pred_without_evo['from'] = {
+            'correct': 0, 'incorrect': 0
+        }
+        self.pred_without_evo['to'] = {
+            'correct': 0, 'incorrect': 0
+        }
+        self.pred_without_evo['important'] = {}
+        self.pred_without_evo['least-important'] = {}
+        self.pred_without_evo['random'] = {}
 
-                layer_name = layer_info[layer_idx]['name']
-                num_neurons = layer_info[layer_idx]['num_neurons']
-                if layer_name not in self.sensitivity:
-                    self.sensitivity[layer_name] = {}
-                for neuron_idx in range(num_neurons):
-                    neuron_grad = grad[neuron_idx]
-                    from_f_map = f_maps['from'][layer_idx][img_idx]
-                    to_f_map = f_maps['to'][layer_idx][img_idx]
-                    delta_f_map = to_f_map - from_f_map
-                    delta_f_map = delta_f_map[neuron_idx]
-                    sens = torch.mul(neuron_grad, delta_f_map)
-                    sens = torch.sum(sens).item()
-                    neuron_id = '{}-{}'.format(layer_name, neuron_idx)
-                    if neuron_id not in self.sensitivity[layer_name]:
-                        self.sensitivity[layer_name][neuron_id] = []
-                    self.sensitivity[layer_name][neuron_id].append(sens)
+        # Evaluate the most important evolutions
+        num_layers = len(layer_info)
+        to_model_children = list(self.to_model.model.children())
+        for layer_idx in range(num_layers):
+            # Get ready
+            layer_name = layer_info[layer_idx]['name']
+            num_neurons = layer_info[layer_idx]['num_neurons']
+            num_sampled_neurons = int(num_neurons * self.args.eval_sample_ratio)
+            sampled_neuron_info = self.imp_evo[layer_name][:num_sampled_neurons]
+            if layer_name not in self.pred_without_evo['important']:
+                self.pred_without_evo['important'][layer_name] = {
+                    'correct': 0, 'incorrect': 0
+                }
+
+            # Apply prevention on the sampled neurons
+            from_f_map = f_maps['from'][layer_idx][img_idx]
+            to_f_map = f_maps['to'][layer_idx][img_idx]
+            if self.args.eval_important_evo == 'perturbation':
+                delta_f_map = to_f_map - from_f_map
+                for neuron_info in sampled_neuron_info:
+                    neuron_id = neuron_info['neuron']
+                    neuron_i = int(neuron_id.split('-')[-1])
+                    neuron_delta = delta_f_map[:, neuron_i, :, :]
+                    norm_delta = torch.norm(neuron_delta)
+                    noise = torch.rand(neuron_delta.shape) - 0.5
+                    norm_noise = torch.norm(noise)
+                    noise = noise / norm_noise * norm_delta * self.args.eps
+                    to_f_map[:, neuron_i, :, :] = \
+                        to_f_map[:, neuron_i, :, :] + noise
+            elif self.args.eval_important_evo == 'freezing':
+                for neuron_info in sampled_neuron_info:
+                    neuron_id = neuron_info['neuron']
+                    neuron_i = int(neuron_id.split('-')[-1])
+                    to_f_map[:, neuron_i, :, :] = from_f_map[:, neuron_i, :, :]
+            else:
+                log = f'Error: unkonwn option {self.args.eval_important_evo}'
+                raise ValueError(log)
+
+            # Measure prediction accuracy after prevention
+            for next_layer_idx in range(layer_idx, num_layers):
+                next_layer = layer_info[next_layer_idx]['layer']
+                to_f_map = next_layer(next_layer_idx)
+                if type(next_layer) == nn.AdaptiveAvgPool2d:
+                    to_f_map = torch.flatten(to_f_map, 1)
+            print(to_f_map.shape)
+            # Count correct and incorrect in to_f_map
+
+        # Evaluate the least important evolutions
+
+        # Evaluate random evolutions
 
 
-    def save_sensitivity(self):
-        path = self.data_path.get_path('find_important_evo-sensitivity')
-        self.save_json(self.sensitivity, path)
+    def eval_imp_evo_one_batch_inception_v3(self, imgs, labels):
+        pass
 
     
     """
@@ -316,10 +287,10 @@ class ImportantEvoVgg16:
     
     def write_first_log(self):
         hyperpara_setting = self.data_path.gen_act_setting_str(
-            'find_important_evo', '\n'
+            'eval_important_evo', '\n'
         )
         
-        log = 'Find important evolution\n\n'
+        log = 'Evaluate important evolution\n\n'
         log += 'from_model_nickname: {}\n'.format(self.args.from_model_nickname)
         log += 'from_model_path: {}\n'.format(self.args.from_model_path)
         log += 'to_model_nickname: {}\n'.format(self.args.to_model_nickname)
@@ -331,21 +302,6 @@ class ImportantEvoVgg16:
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        path = self.data_path.get_path('find_important_evo-log')
+        path = self.data_path.get_path('eval_important_evo-log')
         with open(path, log_opt) as f:
             f.write(log + '\n')
-
-
-    """
-    Utils
-    """
-    def test_input(self):
-        for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-            for idx in range(5):
-                img = imgs[idx] * 255
-                img = np.einsum('kij->ijk', img)
-                file_path = f'img-{idx}.jpg'
-                cv2.imwrite(
-                    file_path, 
-                    cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                )

@@ -112,7 +112,7 @@ class ArgParser:
 
         self.parser.add_argument(
             '--gpu', 
-            default='7', 
+            default='0', 
             type=str,
             help='GPU number'
         )
@@ -175,6 +175,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--test', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to test a model'
+        )
+
+        self.parser.add_argument(
             '--stimulus', 
             default=False, 
             type=self.parse_bool_arg,
@@ -224,6 +231,14 @@ class ArgParser:
             type=self.parse_bool_arg,
             help='Whether to find concept evolution for a class prediction'
         )
+
+        self.parser.add_argument(
+            '--eval_important_evo', 
+            default='None', 
+            choices=['None', 'perturbation', 'freezing'],
+            type=str,
+            help='Option to evaluate important evolution'
+        )
     
 
     """
@@ -249,7 +264,7 @@ class ArgParser:
         self.parser.add_argument(
             '--test_data', 
             default='../../ILSVRC2012/val-by-class', 
-            type=str,                
+            type=str,
             help='Test data path'
         )
 
@@ -504,4 +519,18 @@ class ArgParser:
             default='', 
             type=str,
             help='Path of model after evolution'
-        )        
+        )
+
+        self.parser.add_argument(
+            '--eps', 
+            default=0.3, 
+            type=float,
+            help='Perturbation strength'
+        )
+
+        self.parser.add_argument(
+            '--eval_sample_ratio', 
+            default=0.3, 
+            type=float,
+            help='Ratio of neurons to be evaluated for given layer'
+        )

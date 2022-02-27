@@ -23,9 +23,10 @@ from embedding.proj_neuron_embedding import *
 # Concept images of neurons
 from feature.example_patch import *
 
-# Find concept evolution for class predictions
+# Find and evaluate concept evolution for class predictions
 from importantevo.important_evo import *
 from importantevo.important_evo_vgg16 import *
+from importantevo.eval_important_evo import *
 
 
 def main():
@@ -66,6 +67,10 @@ def main():
     # Find concept evolution for class predictions
     if args.find_important_evo:
         find_important_evolution(args, data_path)
+
+    # Evaluate important concept evolution for class predictions
+    if args.eval_important_evo != 'None':
+        eval_important_evolution(args, data_path)
 
 
 def load_model(args, data_path):
@@ -137,6 +142,11 @@ def find_important_evolution(args, data_path):
     else:
         imp_evo = ImportantEvoVgg16(args, data_path)
         imp_evo.find_important_evolution()
+
+
+def eval_important_evolution(args, data_path):
+    eval_evo = EvalImportantEvo(args, data_path)
+    eval_evo.eval_important_evolution()
 
 
 

@@ -1,22 +1,37 @@
+import cv2
+import numpy as np
+import json
+from tqdm import tqdm
+from time import time
+
+from model.vgg16 import *
+from model.inception_v3 import *
+
+import torch
+from torchvision import datasets, transforms
+
 class EvalImportantEvo:
     """Evaluate how well our method finds important evolutions"""
 
     """
     Constructor
     """
-    def __init__(self, args, data_path):
+    def __init__(self, args, data_path, from_model, to_model):
         self.args = args
         self.data_path = data_path
 
-        self.device = None
-        self.from_model = None
-        self.to_model = None
+        self.from_model = from_model
+        self.to_model = to_model
 
         self.input_size = -1        
         self.num_classes = 1000
+        self.label_to_synset = {}
 
         self.imp_evo = {}
-        self.pred_without_evo = {}
+        self.pred = {}
+
+        self.start_idx = -1
+        self.end_idx = -1
 
 
     """
@@ -26,6 +41,7 @@ class EvalImportantEvo:
         self.write_first_log()
         self.init_setting()
         self.eval_imp_evo()
+        self.save_results()
 
     
     """
@@ -36,30 +52,10 @@ class EvalImportantEvo:
         self.set_input_size()
         self.init_device()
         self.get_synset_info()
-        self.load_models()
-
-        data_transform = transforms.Compose([
-            transforms.Resize((self.input_size, self.input_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                [0.485, 0.456, 0.406], 
-                [0.229, 0.224, 0.225]
-            )
-        ])
-
-        self.training_dataset = datasets.ImageFolder(
-            self.data_path.get_path('train_data'), data_transform
-        )
-
-        self.class_training_dataset = []
-        self.gen_training_dataset_of_class()
-
-        self.data_loader = torch.utils.data.DataLoader(
-            self.class_training_dataset,
-            batch_size=self.args.batch_size,
-            shuffle=False,
-            num_workers=4
-        )
+        # self.load_models()
+        self.data_loader = self.from_model.training_data_loader
+        self.start_idx = self.from_model.start_idx
+        self.end_idx = self.from_model.end_idx
 
     
     def set_input_size(self):
@@ -88,17 +84,27 @@ class EvalImportantEvo:
         else:
             raise ValueError(f'Error: unkonwn model {self.args.model_name}')
         
-        # Set both models need checkpoints
+        # Set attributes
         self.from_model.need_loading_a_saved_model = True
         self.to_model.need_loading_a_saved_model = True
+        self.from_model.args.model_path = self.args.from_model_path
+        self.to_model.args.model_path = self.args.to_model_path
+
+        # Initialize model
+        self.from_model.init_basic_setting()
+        self.to_model.init_basic_setting()
+
+        # Initialize device of self.from_model and self.to_model
+        # self.from_model.init_device()
+        # self.to_model.init_device()
+        self.from_model.device = self.device
+        self.to_model.device = self.device
 
         # Load checkpoints
         self.from_model.ckpt = torch.load(self.args.from_model_path)
         self.to_model.ckpt = torch.load(self.args.to_model_path)
 
         # Initialize the models
-        self.from_model.device = self.device
-        self.to_model.device = self.device
         self.from_model.init_model()
         self.to_model.init_model()
 
@@ -112,31 +118,17 @@ class EvalImportantEvo:
         for synset, label in zip(df['synset'], df['training_label']):
             self.label_to_synset[int(label) - 1] = synset
 
-
-    def gen_training_dataset_of_class(self):
-        tic = time()
-        total = len(self.training_dataset)
-        unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label - 1))
-        end = min(total, unit * (self.args.label + 2))
-
-        with tqdm(total=(end - start)) as pbar:
-            for i in range(start, end):
-                img, label = self.training_dataset[i]
-                if label == self.args.label:
-                    self.class_training_dataset.append([img, label])
-                elif label > self.args.label:
-                    break
-                pbar.update(1)
-        toc = time()
-        log = 'Filter images for the label: {} sec'.format(toc - tic)
-        self.write_log(log)
-
     
     def init_global_vars(self):
-        self.pred_without_evo = {
-            'from': {'correct': 0, 'incorrect': 0},
-            'to': {'correct': 0, 'incorrect': 0},
+        self.pred = {
+            'from': {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            },
+            'to': {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            },
             'important': {},
             'least-important': {},
             'random': {}
@@ -147,10 +139,20 @@ class EvalImportantEvo:
     Evaluate important evolution
     """
     def eval_imp_evo(self):
-        tic, total = time(), len(self.class_training_dataset)
+        tic, total = time(), len(self.data_loader.dataset)
         self.load_imp_evo()
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
+                # Check if the current batch includes the label
+                img_start_idx = batch_idx * self.args.batch_size
+                img_end_idx = (batch_idx + 1) * self.args.batch_size
+                if img_end_idx < self.start_idx:
+                    pbar.update(self.args.batch_size)
+                    continue
+                if self.end_idx < img_start_idx:
+                    break
+                
+                # Evaluate important evolution for one batch
                 self.eval_imp_evo_one_batch(imgs, labels)
                 pbar.update(self.args.batch_size)
         toc = time()
@@ -159,85 +161,32 @@ class EvalImportantEvo:
 
     
     def load_imp_evo(self):
-        pass
-
-
-    def eval_prediction_one_batch(self, f_maps):
-        print(f_maps[-1].shape)
+        path = self.data_path.get_path('find_important_evo-score')
+        self.imp_evo = self.load_json(path)
 
 
     def eval_imp_evo_one_batch(self, imgs, labels):
         # Send input images and their labels to GPU
-        imgs = imgs.to(self.device)
-        labels = labels.to(self.device)
+        # imgs = imgs.to(self.device)
+        # labels = labels.to(self.device)
 
         # Forward
-        if self.args.model_name == 'vgg16':
-            f_maps, layer_info = self.forward_vgg16(imgs, labels)
-        elif self.args.model_name == 'inception_v3':
-            f_maps, layer_info = self.forward_inception_v3(imgs, labels)
-        else:
-            raise ValueError(f'Error: unkonwn model {self.args.model_name}')
-        
+        # if self.args.model_name == 'vgg16':
+        #     f_maps, layer_info = self.forward_vgg16(imgs)
+        # elif self.args.model_name == 'inception_v3':
+        #     f_maps, layer_info = self.forward_inception_v3(imgs)
+        # else:
+        #     raise ValueError(f'Error: unkonwn model {self.args.model_name}')
+
         # Measure prediction accuracy before prevention
-        self.eval_prediction_one_batch(f_maps)
-
-        # Evaluate the most important evolutions
-        num_layers = len(layer_info)
-        to_model_children = list(self.to_model.model.children())
-        for layer_idx in range(num_layers):
-            # Get ready
-            layer_name = layer_info[layer_idx]['name']
-            num_neurons = layer_info[layer_idx]['num_neurons']
-            num_sampled_neurons = int(num_neurons * self.args.eval_sample_ratio)
-            sampled_neuron_info = self.imp_evo[layer_name][:num_sampled_neurons]
-            if layer_name not in self.pred_without_evo['important']:
-                self.pred_without_evo['important'][layer_name] = {
-                    'correct': 0, 'incorrect': 0
-                }
-
-            # Apply prevention on the sampled neurons
-            from_f_map = f_maps['from'][layer_idx][img_idx]
-            to_f_map = f_maps['to'][layer_idx][img_idx]
-            if self.args.eval_important_evo == 'perturbation':
-                delta_f_map = to_f_map - from_f_map
-                for neuron_info in sampled_neuron_info:
-                    neuron_id = neuron_info['neuron']
-                    neuron_i = int(neuron_id.split('-')[-1])
-                    neuron_delta = delta_f_map[:, neuron_i, :, :]
-                    norm_delta = torch.norm(neuron_delta)
-                    noise = torch.rand(neuron_delta.shape) - 0.5
-                    norm_noise = torch.norm(noise)
-                    noise = noise / norm_noise * norm_delta * self.args.eps
-                    to_f_map[:, neuron_i, :, :] = \
-                        to_f_map[:, neuron_i, :, :] + noise
-            elif self.args.eval_important_evo == 'freezing':
-                for neuron_info in sampled_neuron_info:
-                    neuron_id = neuron_info['neuron']
-                    neuron_i = int(neuron_id.split('-')[-1])
-                    to_f_map[:, neuron_i, :, :] = from_f_map[:, neuron_i, :, :]
-            else:
-                log = f'Error: unkonwn option {self.args.eval_important_evo}'
-                raise ValueError(log)
-
-            # Measure prediction accuracy after prevention
-            for next_layer_idx in range(layer_idx, num_layers):
-                next_layer = layer_info[next_layer_idx]['layer']
-                to_f_map = next_layer(next_layer_idx)
-                if type(next_layer) == nn.AdaptiveAvgPool2d:
-                    to_f_map = torch.flatten(to_f_map, 1)
-            print(to_f_map.shape)
-            # Count correct and incorrect in to_f_map
-
-        # Evaluate the least important evolutions
-
-        # Evaluate random evolutions
-
-
-    # def 
+        f_maps = {}
+        self.eval_prediction_before_prevention_one_batch(f_maps, imgs, labels)
+        
+        # Evaluate evolutions
+        self.eval_evol_with_baseline_one_epoch(f_maps, layer_info)
 
     
-    def forward_vgg16(self, imgs, labels):
+    def forward_vgg16(self, imgs):
         from_model_children = list(self.from_model.model.children())
         to_model_children = list(self.to_model.model.children())
         from_f_map, to_f_map = imgs, imgs
@@ -257,7 +206,6 @@ class EvalImportantEvo:
                     layer_info.append({
                         'name': layer_name,
                         'num_neurons': from_f_map.shape[1],
-                        'layer': to_layer
                     })
             else:
                 to_layer = to_model_children[i]
@@ -273,13 +221,12 @@ class EvalImportantEvo:
                 layer_info.append({
                     'name': layer_name,
                     'num_neurons': from_f_map.shape[1],
-                    'layer': to_layer
                 })
         
         return f_maps, layer_info
 
     
-    def forward_inception_v3(self, imgs, labels):
+    def forward_inception_v3(self, imgs):
         from_model_layers = list(self.from_model.model.children())
         to_model_layers = list(self.to_model.model.children())
         num_layers = len(from_model_layers)
@@ -302,12 +249,239 @@ class EvalImportantEvo:
             layer_info.append({
                 'name': layer_name,
                 'num_neurons': from_f_map.shape[1],
-                'layer': to_layer
             })
 
         return f_maps, layer_info
 
+
+    def eval_prediction_before_prevention_one_batch(self, f_maps, imgs=None, labels=None):
+        imgs = imgs.to(self.device)
+        labels = labels.to(self.device)
+
+        print(labels)
+        outputs = self.to_model.model(imgs).logits
+        _, topk_preds = outputs.topk(
+            k=self.args.topk, dim=1
+        )
+        print(topk_preds)
+        print(topk_preds.shape)
+        sdfsss
+
+        for key in ['from', 'to']:
+            top1_correct, top1_incorr, topk_correct, topk_incorr = \
+                self.eval_prediction(f_maps[key][-1])
+            self.pred[key]['top1']['correct'] += top1_correct
+            self.pred[key]['top1']['incorrect'] += top1_incorr
+            self.pred[key]['topk']['correct'] += topk_correct
+            self.pred[key]['topk']['incorrect'] += topk_incorr
+
+
+    def eval_prediction(self, outputs):
+        print(outputs.shape)
+
+        num_inputs = outputs.shape[0]
+        _, topk_preds = outputs.topk(
+            k=self.args.topk, dim=1
+        )
+
+        print(topk_preds)
+
+        # Top-1 prediction (B,)
+        top1_preds = topk_preds[:, 0]
+        top1_correct = torch.sum(top1_preds == self.args.label).item()
+        print(top1_correct)
+        top1_incorr = num_inputs - top1_correct
+        sdf
+
+        # Top-k prediction (k, B)
+        topk_preds = topk_preds.t()
+        topk_correct = 0
+        for k in range(self.args.topk):
+            num_correct = torch.sum(topk_preds[k] == self.args.label).item()
+            topk_correct += num_correct
+        topk_incorr = num_inputs - topk_correct
+
+        return top1_correct, top1_incorr, topk_correct, topk_incorr
+
+
+    def eval_evol_with_baseline_one_epoch(self, f_maps, layer_info):
+        to_model_children = list(self.to_model.model.children())
+        num_layers = len(to_model_children)
+        
+        for method_type in ['important', 'least-important', 'random']:
+            num_layer_skip = 0
+            # Ignore the last linear layer
+            for layer_idx in range(num_layers -1):
+                # Get ready and sample neurons
+                s_neurons = self.get_ready_eval(
+                    method_type, layer_info, layer_idx - num_layer_skip
+                )
+
+                # Evaluate predictions after prevention
+                option = self.args.eval_important_evo
+                if option == 'perturbation':
+                    vals = self.eval_perturb(
+                        f_maps, layer_idx, s_neurons, num_layer_skip
+                    )
+                elif option == 'freezing':
+                    vals = self.eval_freezing(
+                        f_maps, layer_idx, s_neurons, num_layer_skip
+                    )
+                else:
+                    log = f'Error: unkonwn option {option}'
+                    raise ValueError(log)
+
+                # Record the prediction performance
+                if vals is None:
+                    num_layer_skip += 1
+                else:
+                    layer_name = layer_info[layer_idx - num_layer_skip]['name']
+                    self.record_eval(layer_name, vals, method_type)
+
     
+    def get_ready_eval(self, key, layer_info, layer_idx):
+        layer_name = layer_info[layer_idx]['name']
+        num_neurons = layer_info[layer_idx]['num_neurons']
+        num_sampled_neurons = int(num_neurons * self.args.eval_sample_ratio)
+        if key == 'important':
+            sampled_neurons = self.imp_evo[layer_name][:num_sampled_neurons]
+        elif key == 'least-important':
+            sampled_neurons = self.imp_evo[layer_name][-num_sampled_neurons:]
+        elif key == 'random':
+            rand_idxs = np.random.choice(
+                num_neurons, num_sampled_neurons, replace=False
+            )
+            sampled_neurons = [self.imp_evo[layer_name][r] for r in rand_idxs]
+        if layer_name not in self.pred[key]:
+            self.pred[key][layer_name] = {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            }
+        return sampled_neurons
+
+    
+    def eval_perturb(self, f_maps, layer_idx, sampled_neurons, num_skips=0):
+        # Ignore if 'AuxLogits' layer in InceptionV3 is given 
+        to_model_children = list(self.to_model.model.children())
+        curr_layer_name = type(to_model_children[layer_idx]).__name__
+        if self.args.model_name == 'inception_v3':
+            if 'Aux' in curr_layer_name:
+                return None
+
+        # Apply perturbation on sampled neurons
+        from_f_map = f_maps['from'][layer_idx - num_skips]
+        to_f_map = f_maps['to'][layer_idx - num_skips]
+        delta_f_map = to_f_map - from_f_map
+        eps = torch.tensor(self.args.eps).to(self.device)
+        for neuron_info in sampled_neurons:
+            neuron_id = neuron_info['neuron']
+            neuron_i = int(neuron_id.split('-')[-1])
+            neuron_delta = delta_f_map[:, neuron_i, :, :]
+            norm_delta = torch.norm(neuron_delta)
+            noise = torch.rand(neuron_delta.shape) - 0.5
+            noise = noise.to(self.device)
+            norm_noise = torch.norm(noise)
+            coeff = (norm_delta * eps / norm_noise).to(self.device)
+            noise = coeff * noise
+            to_f_map[:, neuron_i, :, :] = to_f_map[:, neuron_i, :, :] + noise
+
+        # Forward after perturbation
+        if self.args.model_name == 'inception_v3':
+            to_f_map = self.forward_inception_v3_at_layer(layer_idx, to_f_map)
+        elif self.args.model_name == 'vgg16':
+            to_f_map = self.forward_vgg16_at_layer(layer_idx, to_f_map)
+        else:
+            log = f'Error: unkonwn model {self.args.model_name}'
+            raise ValueError(log)
+
+        # Measure accuracy after perturbation
+        pred_vals = self.eval_prediction(to_f_map)
+        
+        return pred_vals
+
+
+    def eval_freezing(self, f_maps, layer_idx, sampled_neurons):
+        # Ignore if 'AuxLogits' layer in InceptionV3 is given 
+        to_model_children = list(self.to_model.model.children())
+        curr_layer_name = type(to_model_children[layer_idx]).__name__
+        if self.args.model_name == 'inception_v3':
+            if 'Aux' in curr_layer_name:
+                return None
+
+        # Freeze sampled neurons
+        from_f_map = f_maps['from'][layer_idx]
+        to_f_map = f_maps['to'][layer_idx]
+        delta_f_map = to_f_map - from_f_map
+        eps = torch.tensor(self.args.eps).to(self.device)
+        for neuron_info in sampled_neurons:
+            neuron_id = neuron_info['neuron']
+            neuron_i = int(neuron_id.split('-')[-1])
+            to_f_map[:, neuron_i, :, :] = from_f_map[:, neuron_i, :, :]
+
+        # Forward after freezing
+        if self.args.model_name == 'inception_v3':
+            to_f_map = self.forward_inception_v3_at_layer(layer_idx, to_f_map)
+        elif self.args.model_name == 'vgg16':
+            to_f_map = self.forward_vgg16_at_layer(layer_idx, to_f_map)
+        else:
+            log = f'Error: unkonwn model {self.args.model_name}'
+            raise ValueError(log)
+
+        # Measure accuracy after freezing
+        pred_vals = self.eval_prediction(to_f_map)
+        
+        return pred_vals
+
+
+    def forward_inception_v3_at_layer(self, layer_idx, to_f_map):
+        to_model_children = list(self.to_model.model.children())
+        num_layers = len(to_model_children)
+        for next_layer_idx in range(layer_idx + 1, num_layers):
+            next_layer = to_model_children[next_layer_idx]
+            next_layer_name = type(next_layer).__name__
+            if 'Aux' in next_layer_name:
+                continue
+            if next_layer_idx == num_layers - 1:
+                to_f_map = torch.flatten(to_f_map, 1)
+            to_f_map = next_layer(to_f_map)
+        return to_f_map
+
+
+    def forward_vgg16_at_layer(self, layer_idx, to_f_map):
+        to_model_children = list(self.to_model.model.children())
+        num_layers = len(to_model_children)
+        layer_i = 0
+        for child in to_model_children:
+            if type(child) == nn.Sequential:
+                for to_f_map in child.children():
+                    if layer_i > layer_idx:
+                        to_f_map = to_f_map(to_f_map)
+                    layer_i += 1
+            else:
+                if layer_i > layer_idx:
+                    to_f_map = to_f_map(to_f_map)
+                layer_i += 1
+        return to_f_map
+
+
+    def record_eval(self, layer_name, vals, key):
+        if layer_name not in self.pred[key]:
+            self.pred[key][layer_name] = {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            }
+        top1_correct, top1_incorr, topk_correct, topk_incorr = vals
+        self.pred[key][layer_name]['top1']['correct'] += top1_correct
+        self.pred[key][layer_name]['top1']['incorrect'] += top1_incorr
+        self.pred[key][layer_name]['topk']['correct'] += topk_correct
+        self.pred[key][layer_name]['topk']['incorrect'] += topk_incorr
+
+
+    def save_results(self):
+        path = self.data_path.get_path('eval_important_evo')
+        self.save_json(self.pred, path)
+    
+
     """
     Handle external files (e.g., output, log, ...)
     """
@@ -319,7 +493,7 @@ class EvalImportantEvo:
 
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
 
     
     def write_first_log(self):

@@ -40,6 +40,14 @@ def main():
     # Load model
     model = load_model(args, data_path)
 
+    # Train model
+    if args.train:
+        train_model(model)
+
+    # Test model
+    if args.test:
+        test_model(model)
+
     # Find stimulus
     if args.stimulus:
         compute_stimulus(args, data_path, model)
@@ -78,7 +86,8 @@ def load_model(args, data_path):
     when_to_skip_loading_model = [
         args.dim_reduction != 'None',
         args.find_important_evo,
-        args.save_important_evo
+        args.save_important_evo,
+        args.eval_important_evo != 'None'
     ]
 
     if True in when_to_skip_loading_model:
@@ -99,10 +108,38 @@ def load_model(args, data_path):
     model.init_model()
     model.init_training_setting()
     return model
+
+
+def load_models(args, data_path):
+    if args.eval_important_evo == 'None':
+        return
+
+    if args.model_name == 'vgg16':
+        from_model = Vgg16(args, data_path, from_to='from')
+        to_model = Vgg16(args, data_path, from_to='to')
+    elif args.model_name == 'inception_v3':
+        from_model = InceptionV3(args, data_path, from_to='from')
+        to_model = InceptionV3(args, data_path, from_to='to')
+    else:
+        raise ValueError(f'Error: unkonwn model {args.model_name}')
     
+    from_model.init_basic_setting()
+    from_model.init_model()
+    from_model.init_training_setting()
+
+    to_model.init_basic_setting()
+    to_model.init_model()
+    to_model.init_training_setting()
+
+    return from_model, to_model
+
 
 def train_model(model):
     model.train_model()
+
+
+def test_model(model):
+    model.test_model()
 
 
 def compute_stimulus(args, data_path, model):
@@ -146,7 +183,9 @@ def find_important_evolution(args, data_path):
 
 
 def eval_important_evolution(args, data_path):
-    eval_evo = EvalImportantEvo(args, data_path)
+    from_model, to_model = load_models(args, data_path)
+    eval_evo = EvalImportantEvo(args, data_path, from_model, to_model)
+    # eval_evo = EvalImportantEvo(args, data_path)
     eval_evo.eval_important_evolution()
 
 

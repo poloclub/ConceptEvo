@@ -29,8 +29,8 @@ class ImportantEvo:
 
         self.input_size = -1        
         self.num_classes = 1000
-
         self.label_to_synset = {}
+        
         self.sensitivity = {}
         self.importance_score = {}
 
@@ -83,6 +83,8 @@ class ImportantEvo:
             self.input_size = 299
         elif self.args.model_name == 'vgg16':
             self.input_size = 224
+        else:
+            raise ValueError(f'Error: unkonwn model {self.args.model_name}')
 
 
     def init_device(self):
@@ -103,18 +105,20 @@ class ImportantEvo:
             self.to_model = InceptionV3(self.args, self.data_path)
         else:
             raise ValueError(f'Error: unkonwn model {self.args.model_name}')
-        
+
         # Set both models need checkpoints
         self.from_model.need_loading_a_saved_model = True
         self.to_model.need_loading_a_saved_model = True
+
+        # Initialize device of self.from_model and self.to_model
+        self.from_model.init_device()
+        self.to_model.init_device()
 
         # Load checkpoints
         self.from_model.ckpt = torch.load(self.args.from_model_path)
         self.to_model.ckpt = torch.load(self.args.to_model_path)
 
         # Initialize the models
-        self.from_model.device = self.device
-        self.to_model.device = self.device
         self.from_model.init_model()
         self.to_model.init_model()
 

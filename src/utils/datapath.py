@@ -132,6 +132,7 @@ class DataPath:
         self.path_key_to_actions['find_important_evo'] = [
             self.args.find_important_evo,
             self.args.save_important_evo,
+            self.args.eval_important_evo
         ]
 
         self.path_key_to_actions['eval_important_evo'] = [
@@ -215,10 +216,10 @@ class DataPath:
         ]
 
         self.action_to_args['eval_important_evo'] = [
+            ['option', self.args.eval_important_evo],
             ['label', self.args.label],
             ['eps', self.args.eps],
             ['eval_sample_ratio', self.args.eval_sample_ratio],
-            ['option', self.args.eval_important_evo],
             ['from', self.args.from_model_nickname.replace('-', '_')],
             ['to', self.args.to_model_nickname.replace('-', '_')]
         ]
@@ -417,15 +418,17 @@ class DataPath:
         """Set paths for models."""
 
         if not self.check_if_arg_given(self.args.model_path):
-            if self.args.train:
+            when_to_skip = [
+                self.args.train,
+                self.check_if_arg_given(self.args.dim_reduction),
+                self.check_if_arg_given(self.args.find_important_evo),
+                self.check_if_arg_given(self.args.save_important_evo),
+                self.check_if_arg_given(self.args.eval_important_evo)
+            ]
+            if True in when_to_skip:
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
-            elif self.check_if_arg_given(self.args.dim_reduction):
-                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
+            if self.check_if_arg_given(self.args.dim_reduction):
                 self.args.model_nickname = 'DO_NOT_NEED_CURRENTLY'
-            elif self.check_if_arg_given(self.args.find_important_evo):
-                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
-            elif self.check_if_arg_given(self.args.save_important_evo):
-                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
 
         self.check_model_nickname_and_path()
 
@@ -434,6 +437,10 @@ class DataPath:
             train_log_path = os.path.join(log_dir_path, 'training-log.txt')
             self.path['model-dir'] = data_dir_path
             self.path['train-log'] = train_log_path
+        if self.args.test:
+            data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
+            test_log_path = os.path.join(log_dir_path, 'test-log.txt')
+            self.path['test-log'] = test_log_path
         
         self.path['model-file'] = self.args.model_path
     

@@ -15,7 +15,7 @@ from torchvision import datasets, transforms
 class Vgg16:
     """Defines Vgg16 model"""
 
-    def __init__(self, args, data_path, pretrained=False):
+    def __init__(self, args, data_path, pretrained=False, from_to=None):
         self.args = args
         self.data_path = data_path 
 
@@ -55,11 +55,12 @@ class Vgg16:
             self.model.load_state_dict(self.ckpt['model_state_dict'])
 
         # Reset the final layer
-        num_feautres = self.model.classifier[6].in_features
-        self.model.classifier[6] = nn.Linear(
-            num_feautres, 
-            self.num_classes
-        )
+        if not self.need_loading_a_saved_model:
+            num_feautres = self.model.classifier[6].in_features
+            self.model.classifier[6] = nn.Linear(
+                num_feautres, 
+                self.num_classes
+            )
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
@@ -202,6 +203,7 @@ class Vgg16:
                     [running_loss, top1_train_corrects, topk_train_corrects,]
                 )
 
+
     def train_one_epoch(self, pbar):
         # Set model to training mode
         self.model.train()
@@ -257,35 +259,69 @@ class Vgg16:
         return running_loss, top1_train_corrects, topk_train_corrects
 
     
-    def measure_test_accuracy(self):
+    def test_model(self):
+        # Make the first log
+        self.write_test_first_log()
+
+        # Get ready to train the model
+        tic = time()
+        total = len(self.test_data_loader.dataset)
+
         # Variables to evaluate the training performance
         top1_test_corrects, topk_test_corrects = 0, 0
 
         # Measure test set accuracy
-        for test_imgs, test_labels in self.test_data_loader:
+        with tqdm(total=total) as pbar:
+            for test_imgs, test_labels in self.test_data_loader:
 
-            # Get test images and labels
-            test_imgs = test_imgs.to(self.device)
-            test_labels = test_labels.to(self.device)
+                top1_corrects, topk_corrects = \
+                    self.test_one_batch(test_imgs, test_labels)
 
-            # Prediction
-            outputs = self.model(test_imgs)
-            _, topk_test_preds = outputs.topk(
-                k=self.args.topk, dim=1
+                top1_test_corrects += top1_corrects
+                topk_test_corrects += topk_corrects
+
+                pbar.update(self.args.batch_size)
+
+        toc = time()
+
+        # Save log
+        log = 'total = {}\n'.format(total)
+        log += 'top1 test accuracy = {} / {} = {}\n'.format(
+            top1_test_corrects, total, top1_test_corrects / total
+        )
+        log += 'topk test accuracy = {} / {} = {}\n'.format(
+            topk_test_corrects, total, topk_test_corrects / total
+        )
+        log += 'time: {} sec\n'.format(toc - tic)
+        self.write_log(log, append=True, test=True)
+        print(self.args.model_nickname)
+        print(log)
+
+    
+    def test_one_batch(self, test_imgs, test_labels):
+        # Get test images and labels
+        test_imgs = test_imgs.to(self.device)
+        test_labels = test_labels.to(self.device)
+
+        # Prediction
+        outputs = self.model(test_imgs)
+        _, topk_test_preds = outputs.topk(
+            k=self.args.topk, dim=1
+        )
+        top1_test_preds = topk_test_preds[:, 0]
+        topk_test_preds = topk_test_preds.t()
+
+        # Number of correct top-k prediction in test set
+        topk_test_corrects = 0
+        for k in range(self.args.topk):
+            topk_test_corrects += torch.sum(
+                topk_test_preds[k] == test_labels.data
             )
-            top1_test_preds = topk_test_preds[:, 0]
-            topk_test_preds = topk_test_preds.t()
 
-            # Number of correct top-k prediction in test set
-            for k in range(self.args.topk):
-                topk_test_corrects += torch.sum(
-                    topk_test_preds[k] == test_labels.data
-                )
-
-            # Number of correct top-1 prediction in training set
-            top1_test_corrects += torch.sum(
-                top1_test_preds == test_labels.data
-            )
+        # Number of correct top-1 prediction in training set
+        top1_test_corrects = torch.sum(
+            top1_test_preds == test_labels.data
+        )
 
         return top1_test_corrects, topk_test_corrects
 
@@ -315,9 +351,11 @@ class Vgg16:
         self.set_all_parameter_requires_grad()
 
 
-    def write_log(self, log, append=True):
+    def write_log(self, log, append=True, test=False):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('train-log'), log_opt) as f:
+        key = 'test-log' if test else 'train-log'
+        path = self.data_path.get_path(key)
+        with open(path, log_opt) as f:
             f.write(log + '\n')
 
     
@@ -358,3 +396,14 @@ class Vgg16:
             'top1_train_acc': '{:.4f}'.format(epoch_top1_train_acc),
             'topk_train_acc': '{:.4f}'.format(epoch_topk_train_acc)
         })
+
+    def write_test_first_log(self):
+        log_param_sets = {
+            'model_nickname': self.args.model_nickname,
+            'model_path': self.args.model_path,
+            'k': self.args.topk
+        }
+        first_log = '\n'.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        self.write_log(first_log, append=True, test=True)

@@ -26,3 +26,6 @@ data/embedding/
 src/utils/analyze-data.ipynb
 data/neuron_feature-old/
 data/embedding-old/
+
+data/human-experiment.zip
+data/human-experiment/

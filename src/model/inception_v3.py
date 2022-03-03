@@ -1,10 +1,8 @@
 import os
-import copy
 import numpy as np
 import pandas as pd
 from time import time
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -42,9 +40,6 @@ class InceptionV3:
         self.optimizer = None
         self.criterion = None
 
-        self.start_idx = -1
-        self.end_idx = -1
-
     
     def init_basic_setting(self):
         self.init_device()
@@ -57,10 +52,12 @@ class InceptionV3:
         self.model = models.inception_v3(pretrained=self.pretrained)
 
         # Load a saved model
-        if self.need_loading_a_saved_model:
-            print('load model_state_dict')
-            self.model.load_state_dict(self.ckpt['model_state_dict'])
-        
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if 'model_state_dict' in self.ckpt:
+                self.model.load_state_dict(self.ckpt['model_state_dict'])
+            else:
+                self.model.load_state_dict(self.ckpt)
+
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
 
@@ -77,7 +74,7 @@ class InceptionV3:
 
     
     def load_checkpoint(self):
-        if self.need_loading_a_saved_model:
+        if not self.pretrained and self.need_loading_a_saved_model:
             if self.from_to == 'from':
                 self.ckpt = torch.load(self.args.from_model_path)
             elif self.from_to == 'to':
@@ -134,31 +131,6 @@ class InceptionV3:
             num_workers=4
         )
 
-        if self.from_to != None:
-            self.find_idx_training_dataset_for_class()
-
-    
-    def find_idx_training_dataset_for_class(self):
-        total = len(self.training_dataset)
-        unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label - 1))
-        end = min(total, unit * (self.args.label + 2))
-
-        start_idx, end_idx = -1, -1
-        with tqdm(total=(end - start)) as pbar:
-            for i in range(start, end):
-                img, label = self.training_dataset[i]
-                if (self.args.label == label) and (start_idx == -1):
-                    start_idx = i
-                elif (self.args.label == label) and (end_idx == -1):
-                    end_idx = -2
-                if (self.args.label < label) and (end_idx == -2):
-                    end_idx = i
-                    break
-                pbar.update(1)
-        self.start_idx = start_idx
-        self.end_idx = end_idx
-
 
     def init_optimizer(self):
         self.optimizer = optim.SGD(
@@ -166,18 +138,19 @@ class InceptionV3:
             lr=self.args.lr, 
             momentum=self.args.momentum
         )
-        if self.need_loading_a_saved_model:
-            self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
-            for param_group in self.optimizer.state_dict()['param_groups']:
-                param_group['lr'] = self.args.lr
-                param_group['momentum'] = self.args.momentum
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if 'optimizer_state_dict' in self.ckpt:
+                self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
+                for param_group in self.optimizer.state_dict()['param_groups']:
+                    param_group['lr'] = self.args.lr
+                    param_group['momentum'] = self.args.momentum
 
 
     def init_criterion(self):
-        if self.need_loading_a_saved_model:
-            self.criterion = self.ckpt['loss']
-        else:
-            self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss()
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if 'loss' in self.ckpt:
+                self.criterion = self.ckpt['loss']
 
 
     def get_layer_info(self):
@@ -382,6 +355,7 @@ class InceptionV3:
             topk_test_corrects, total, topk_test_corrects / total
         )
         log += 'time: {} sec\n'.format(toc - tic)
+        print(log)
         self.write_log(log, append=True, test=True)
 
     
@@ -467,20 +441,10 @@ class InceptionV3:
         top1_corrects, topk_corrects = 0, 0
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.training_data_loader):
-                img_start_idx = batch_idx * self.args.batch_size
-                img_end_idx = (batch_idx + 1) * self.args.batch_size
-                if img_end_idx < self.start_idx:
-                    pbar.update(self.args.batch_size)
-                    continue
-                if self.end_idx < img_start_idx:
-                    break
-
                 top1, topk = self.test_one_batch(imgs, labels)
                 top1_corrects += top1
                 topk_corrects += topk
                 pbar.update(self.args.batch_size)
-                print(top1, topk)
-                sdf
         
         # Save log
         log = 'total = {}\n'.format(total)
@@ -492,6 +456,39 @@ class InceptionV3:
         )
         print(log)
         return top1_corrects, topk_corrects, total
+
+    
+    def forward(self, imgs):
+        # Initialize feature maps
+        imgs = imgs.to(self.device)
+        f_map, f_maps = imgs, []
+
+        # Layer information
+        layers = list(self.model.children())
+        num_layers, layer_info = len(layers), []
+
+        # Forward and save feature map for each layer
+        for i in range(num_layers):
+            layer = layers[i]
+
+            # Ignore AuxLogits layer
+            layer_name = '{}_{}'.format(type(layer).__name__, i)
+            if 'Aux' in layer_name:
+                continue
+
+            # Flatten before fully connected layer
+            if i == num_layers - 1:
+                f_map = torch.flatten(f_map, 1)
+            
+            # Compute and save current layer's f_map and layer info
+            f_map = layer(f_map)
+            f_maps.append(f_map)
+            layer_info.append({
+                'name': layer_name,
+                'num_neurons': f_map.shape[1],
+            })
+
+        return f_maps, layer_info
 
 
     def save_model(self, epoch):

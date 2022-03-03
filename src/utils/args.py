@@ -140,6 +140,8 @@ class ArgParser:
                 'vgg16', 
                 'inception_v3', 
                 'vgg16_pretrained', 
+                'vgg19_pretrained',
+                'inception_v1_pretrained',
                 'inception_v3_pretrained'
             ],
             type=str,                
@@ -227,13 +229,6 @@ class ArgParser:
 
         self.parser.add_argument(
             '--find_important_evo', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to find concept evolution for a class prediction'
-        )
-
-        self.parser.add_argument(
-            '--save_important_evo', 
             default=False, 
             type=self.parse_bool_arg,
             help='Whether to find concept evolution for a class prediction'
@@ -541,3 +536,11 @@ class ArgParser:
             type=float,
             help='Ratio of neurons to be evaluated for given layer'
         )
+
+        self.parser.add_argument(
+            '--find_num_sample_imgs', 
+            default=100, 
+            type=int,
+            help='Number of sampled images to find important evolution'
+        )
+        

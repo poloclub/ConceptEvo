@@ -27,3 +27,7 @@ src/utils/analyze-data.ipynb
 data/neuron_feature-old/
 data/embedding-old/
 data/find_important_evo/
+data/model/
+data/co_act/
+data/eval_important_evo/
+data/stimulus/

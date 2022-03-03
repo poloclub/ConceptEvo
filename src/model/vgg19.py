@@ -1,25 +1,22 @@
 import os
-import copy
 import numpy as np
 import pandas as pd
 from time import time
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
+import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
-class Vgg16:
-    """Defines Vgg16 model"""
-
+class Vgg19:
     def __init__(self, args, data_path, pretrained=False, from_to=None):
         self.args = args
-        self.data_path = data_path 
+        self.data_path = data_path
 
-        self.input_size = 224
+        self.input_size = 256
         self.num_classes = 1000
         self.num_training_imgs = -1
 
@@ -37,7 +34,6 @@ class Vgg16:
         self.training_dataset = None
         self.test_dataset = None
         self.training_data_loader = None
-        self.class_dataset = None
         self.test_data_loader = None
         self.optimizer = None
         self.criterion = None
@@ -51,19 +47,11 @@ class Vgg16:
 
     def init_model(self):
         # Initialize an empty model
-        self.model = models.vgg16(pretrained=False)
+        self.model = models.vgg19(pretrained=self.pretrained)
 
         # Load a saved model
         if self.need_loading_a_saved_model:
             self.model.load_state_dict(self.ckpt['model_state_dict'])
-
-        # Reset the final layer
-        # if not self.need_loading_a_saved_model:
-        #     num_feautres = self.model.classifier[6].in_features
-        #     self.model.classifier[6] = nn.Linear(
-        #         num_feautres, 
-        #         self.num_classes
-        #     )
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
@@ -74,7 +62,7 @@ class Vgg16:
         # Update layer info
         self.get_layer_info()
 
-    
+
     def init_training_setting(self):
         self.init_optimizer()
         self.init_criterion()
@@ -138,17 +126,7 @@ class Vgg16:
             num_workers=4
         )
 
-        self.class_dataset = torch.utils.data.Subset(
-            self.training_dataset, range(1300, 2600)
-        )
-        self.class_loader = torch.utils.data.DataLoader(
-            self.class_dataset, 
-            batch_size=self.args.batch_size,
-            shuffle=True,
-            num_workers=4
-        )
-
-
+    
     def init_optimizer(self):
         self.optimizer = optim.SGD(
             self.model.parameters(), 
@@ -195,104 +173,20 @@ class Vgg16:
             self.num_neurons[layer_name] = layer.out_channels
 
 
-    def train_model(self):
-
-        # Make the first log
-        self.write_training_first_log()
-    
-        # Get ready to train the model
-        tic = time()
-        total = self.args.num_epochs * len(self.training_data_loader.dataset)
-
-        # Train the model
-        with tqdm(total=total) as pbar:
-            for epoch in range(self.args.num_epochs):
-                
-                # Update parameters with one epoch's data
-                running_loss, top1_train_corrects, topk_train_corrects = \
-                    self.train_one_epoch(pbar)
-
-                # Save the model
-                self.save_model(epoch)
-
-                # Save log
-                self.write_training_epoch_log(
-                    tic, epoch,
-                    [running_loss, top1_train_corrects, topk_train_corrects,]
-                )
-
-
-    def train_one_epoch(self, pbar):
-        # Set model to training mode
-        self.model.train()
-
-        # Variables to evaluate the training performance
-        running_loss = 0.0
-        top1_train_corrects, topk_train_corrects = 0, 0
-
-        # Update parameters with one epoch's data
-        for imgs, labels in self.training_data_loader:
-
-            # Get input image and its label
-            imgs = imgs.to(self.device)
-            labels = labels.to(self.device)
-
-            # Forward and backward
-            self.optimizer.zero_grad()
-            with torch.set_grad_enabled(True):
-
-                # Forward
-                outputs = self.model(imgs)
-                loss = self.criterion(outputs, labels)
-
-                # Prediction
-                _, topk_train_preds = outputs.topk(
-                    k=self.args.topk, 
-                    dim=1
-                )
-                top1_train_preds = topk_train_preds[:, 0]
-                topk_train_preds = topk_train_preds.t()
-
-                # Backward
-                loss.backward()
-                self.optimizer.step()
-
-            # Number of correct top-k prediction in training set
-            for k in range(self.args.topk):
-                topk_train_corrects += torch.sum(
-                    topk_train_preds[k] == labels.data
-                )
-            
-            # Number of correct top-1 prediction in training set
-            top1_train_corrects += torch.sum(
-                top1_train_preds == labels.data
-            )
-
-            # Loss
-            running_loss += loss.item() * imgs.size(0)
-            
-            # Update pbar
-            pbar.update(self.args.batch_size)
-
-        return running_loss, top1_train_corrects, topk_train_corrects
-
-    
     def test_model(self):
         # Make the first log
         self.write_test_first_log()
 
         # Get ready to train the model
         tic = time()
-        # total = len(self.test_data_loader.dataset)
-        total = len(self.class_loader.dataset)
+        total = len(self.test_data_loader.dataset)
 
         # Variables to evaluate the training performance
         top1_test_corrects, topk_test_corrects = 0, 0
 
         # Measure test set accuracy
         with tqdm(total=total) as pbar:
-            # for test_imgs, test_labels in self.test_data_loader:
-            for test_imgs, test_labels in self.class_loader:
+            for test_imgs, test_labels in self.test_data_loader:
 
                 top1_corrects, topk_corrects = \
                     self.test_one_batch(test_imgs, test_labels)
@@ -313,11 +207,10 @@ class Vgg16:
             topk_test_corrects, total, topk_test_corrects / total
         )
         log += 'time: {} sec\n'.format(toc - tic)
-        self.write_log(log, append=True, test=True)
-        print(self.args.model_nickname)
         print(log)
+        self.write_log(log, append=True, test=True)
 
-    
+
     def test_one_batch(self, test_imgs, test_labels):
         # Get test images and labels
         test_imgs = test_imgs.to(self.device)
@@ -393,31 +286,6 @@ class Vgg16:
                 })
 
         return f_maps, layer_info
-
-
-    def save_model(self, epoch):
-        path = self.data_path.get_model_path_during_training(epoch)
-        torch.save(
-            {
-                'model_state_dict': self.model.state_dict(),
-                'optimizer_state_dict': self.optimizer.state_dict(),
-                'loss': self.criterion,
-                'epoch': epoch
-            }, 
-            path
-        )
-        
-        
-    def load_model(self, epoch):
-        path = self.data_path.get_model_path_during_training(epoch)
-        self.load_model_from_path(path)
-
-
-    def load_model_from_path(self, path):
-        self.init_model()
-        self.model.load_state_dict(torch.load(path))
-        self.model.to(self.device)
-        self.set_all_parameter_requires_grad()
 
 
     def write_log(self, log, append=True, test=False):

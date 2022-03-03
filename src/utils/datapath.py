@@ -131,7 +131,6 @@ class DataPath:
 
         self.path_key_to_actions['find_important_evo'] = [
             self.args.find_important_evo,
-            self.args.save_important_evo,
             self.args.eval_important_evo
         ]
 
@@ -422,7 +421,6 @@ class DataPath:
                 self.args.train,
                 self.check_if_arg_given(self.args.dim_reduction),
                 self.check_if_arg_given(self.args.find_important_evo),
-                self.check_if_arg_given(self.args.save_important_evo),
                 self.check_if_arg_given(self.args.eval_important_evo)
             ]
             if True in when_to_skip:
@@ -636,7 +634,7 @@ class DataPath:
     Setting paths for generating neurons' feature
     """
     def set_neuron_feature_path(self):
-        if not self.check_need_to_gen_path('find_important_evo'):
+        if not self.check_need_to_gen_path('neuron_feature'):
             return
 
         self.auto_fill_model_nickname_and_model_path()

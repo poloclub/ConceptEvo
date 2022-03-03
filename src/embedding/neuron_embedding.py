@@ -91,6 +91,7 @@ class Emb:
         ]
 
         # Learn neuron embedding
+        print(self.args.num_emb_epochs)
         tic, total = time(), self.args.num_emb_epochs * len(self.co_act_neurons)
         with tqdm(total=total) as pbar:
             for emb_epoch in range(self.args.num_emb_epochs):

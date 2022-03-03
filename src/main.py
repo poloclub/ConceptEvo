@@ -7,6 +7,8 @@ argumensts. An instruction for setting arguments can be found in
 
 # CNN Models
 from model.vgg16 import *
+from model.vgg19 import *
+from model.inception_v1 import *
 from model.inception_v3 import *
 
 # Utils
@@ -73,7 +75,7 @@ def main():
         compute_neuron_feature(args, data_path, model)
 
     # Find concept evolution for class predictions
-    if args.find_important_evo or args.save_important_evo:
+    if args.find_important_evo:
         find_important_evolution(args, data_path)
 
     # Evaluate important concept evolution for class predictions
@@ -86,7 +88,6 @@ def load_model(args, data_path):
     when_to_skip_loading_model = [
         args.dim_reduction != 'None',
         args.find_important_evo,
-        args.save_important_evo,
         args.eval_important_evo != 'None'
     ]
 
@@ -99,8 +100,12 @@ def load_model(args, data_path):
         model = InceptionV3(args, data_path)
     elif args.model_name == 'vgg16_pretrained':
         model = Vgg16(args, data_path, pretrained=True)
+    elif args.model_name == 'vgg19_pretrained':
+        model = Vgg19(args, data_path, pretrained=True)
     elif args.model_name == 'inception_v3_pretrained':
         model = InceptionV3(args, data_path, pretrained=True)
+    elif args.model_name == 'inception_v1_pretrained':
+        model = InceptionV1(args, data_path, pretrained=True)
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 
@@ -111,7 +116,11 @@ def load_model(args, data_path):
 
 
 def load_models(args, data_path):
-    if args.eval_important_evo == 'None':
+    when_to_load_model = [
+        args.find_important_evo,
+        args.eval_important_evo != 'None'
+    ]
+    if True not in when_to_load_model:
         return
 
     if args.model_name == 'vgg16':
@@ -174,18 +183,14 @@ def compute_neuron_feature(args, data_path, model):
 
 
 def find_important_evolution(args, data_path):
-    if 'inception_v3' in args.model_name:
-        imp_evo = ImportantEvo(args, data_path)
-        imp_evo.find_important_evolution()
-    else:
-        imp_evo = ImportantEvoVgg16(args, data_path)
-        imp_evo.find_important_evolution()
-
+    from_model, to_model = load_models(args, data_path)
+    imp_evo = ImportantEvo(args, data_path, from_model, to_model)
+    imp_evo.find_important_evolution()
+    
 
 def eval_important_evolution(args, data_path):
     from_model, to_model = load_models(args, data_path)
     eval_evo = EvalImportantEvo(args, data_path, from_model, to_model)
-    # eval_evo = EvalImportantEvo(args, data_path)
     eval_evo.eval_important_evolution()
 
 

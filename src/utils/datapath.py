@@ -20,7 +20,7 @@ class DataPath:
             'train-data', 'test-data', 'label-data',
             'stimulus', 'co_act', 'neuron_emb', 'img_emb',
             'proj_neuron_emb', 'dim_reduction', 'neuron_feature', 
-            'find_important_evo'
+            'find_important_evo', 'eval_important_evo'
         ]
 
         self.path_key_to_actions = {}
@@ -44,6 +44,8 @@ class DataPath:
         self.set_proj_emb_path()
         self.set_emb2d_path()
         self.set_neuron_feature_path()
+        self.set_important_evolution_path()
+        self.set_eval_important_evolution_path()
 
     
     """
@@ -128,7 +130,12 @@ class DataPath:
         ]
 
         self.path_key_to_actions['find_important_evo'] = [
-            self.args.find_important_evo
+            self.args.find_important_evo,
+            self.args.eval_important_evo
+        ]
+
+        self.path_key_to_actions['eval_important_evo'] = [
+            self.args.eval_important_evo != 'None'
         ]
 
 
@@ -202,6 +209,18 @@ class DataPath:
         ]
 
         self.action_to_args['find_important_evo'] = [
+            ['label', self.args.label],
+            ['from', self.args.from_model_nickname.replace('-', '_')],
+            ['to', self.args.to_model_nickname.replace('-', '_')]
+        ]
+
+        self.action_to_args['eval_important_evo'] = [
+            ['option', self.args.eval_important_evo],
+            ['label', self.args.label],
+            ['eps', self.args.eps],
+            ['eval_sample_ratio', self.args.eval_sample_ratio],
+            ['from', self.args.from_model_nickname.replace('-', '_')],
+            ['to', self.args.to_model_nickname.replace('-', '_')]
         ]
 
 
@@ -398,10 +417,15 @@ class DataPath:
         """Set paths for models."""
 
         if not self.check_if_arg_given(self.args.model_path):
-            if self.args.train:
+            when_to_skip = [
+                self.args.train,
+                self.check_if_arg_given(self.args.dim_reduction),
+                self.check_if_arg_given(self.args.find_important_evo),
+                self.check_if_arg_given(self.args.eval_important_evo)
+            ]
+            if True in when_to_skip:
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
-            elif self.check_if_arg_given(self.args.dim_reduction):
-                self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
+            if self.check_if_arg_given(self.args.dim_reduction):
                 self.args.model_nickname = 'DO_NOT_NEED_CURRENTLY'
 
         self.check_model_nickname_and_path()
@@ -411,6 +435,10 @@ class DataPath:
             train_log_path = os.path.join(log_dir_path, 'training-log.txt')
             self.path['model-dir'] = data_dir_path
             self.path['train-log'] = train_log_path
+        if self.args.test:
+            data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
+            test_log_path = os.path.join(log_dir_path, 'test-log.txt')
+            self.path['test-log'] = test_log_path
         
         self.path['model-file'] = self.args.model_path
     
@@ -623,3 +651,89 @@ class DataPath:
 
         self.path['neuron_feature'] = d_dir_path
         self.path['neuron_feature-log'] = log_path
+
+
+    """
+    Setting paths for finding important evolution
+    """
+    def set_important_evolution_path(self):
+        if not self.check_need_to_gen_path('find_important_evo'):
+            return
+
+        self.auto_fill_model_nickname_and_model_path()
+        self.raise_err_for_ungiven_arg(
+            self.args.model_name, 'model_name'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.from_model_nickname, 'from_model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.from_model_path, 'from_model_path'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.to_model_nickname, 'to_model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.to_model_path, 'to_model_path'
+        )
+
+        d_dir_path, l_dir_path = self.gen_data_log_sub_dir('find_important_evo')
+        apdx = self.gen_act_setting_str('find_important_evo')
+        log_path = os.path.join(
+            l_dir_path, 
+            'find_important_evo-log-{}.txt'.format(apdx)
+        )
+        self.make_dir(d_dir_path)
+
+        self.path['find_important_evo-sensitivity'] = os.path.join(
+            d_dir_path, 'sensitivity-{}.json'.format(apdx)
+        )
+        self.path['find_important_evo-score'] = os.path.join(
+            d_dir_path, 'score-{}.json'.format(apdx)
+        )
+        self.path['find_important_evo-log'] = log_path
+
+
+    """
+    Setting paths for evaluating important evolution
+    """
+    def set_eval_important_evolution_path(self):
+        if not self.check_need_to_gen_path('eval_important_evo'):
+            return
+
+        self.auto_fill_model_nickname_and_model_path()
+        self.raise_err_for_ungiven_arg(
+            self.args.model_name, 'model_name'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.from_model_nickname, 'from_model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.from_model_path, 'from_model_path'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.to_model_nickname, 'to_model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(
+            self.args.to_model_path, 'to_model_path'
+        )
+
+        d_dir_path, l_dir_path = self.gen_data_log_sub_dir('eval_important_evo')
+        apdx = self.gen_act_setting_str('eval_important_evo')
+        log_path = os.path.join(
+            l_dir_path, 
+            'eval_important_evo-log-{}.txt'.format(apdx)
+        )
+        self.make_dir(d_dir_path)
+
+        self.path['eval_important_evo'] = os.path.join(
+            d_dir_path, 'eval_important_evo-{}.json'.format(apdx)
+        )
+        self.path['eval_important_evo-log'] = log_path
+       

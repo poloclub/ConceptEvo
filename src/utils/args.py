@@ -112,7 +112,7 @@ class ArgParser:
 
         self.parser.add_argument(
             '--gpu', 
-            default='7', 
+            default='0', 
             type=str,
             help='GPU number'
         )
@@ -140,6 +140,8 @@ class ArgParser:
                 'vgg16', 
                 'inception_v3', 
                 'vgg16_pretrained', 
+                'vgg19_pretrained',
+                'inception_v1_pretrained',
                 'inception_v3_pretrained'
             ],
             type=str,                
@@ -172,6 +174,13 @@ class ArgParser:
             default=False, 
             type=self.parse_bool_arg,
             help='Whether to train a model'
+        )
+
+        self.parser.add_argument(
+            '--test', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to test a model'
         )
 
         self.parser.add_argument(
@@ -224,6 +233,14 @@ class ArgParser:
             type=self.parse_bool_arg,
             help='Whether to find concept evolution for a class prediction'
         )
+
+        self.parser.add_argument(
+            '--eval_important_evo', 
+            default='None', 
+            choices=['None', 'perturbation', 'freezing'],
+            type=str,
+            help='Option to evaluate important evolution'
+        )
     
 
     """
@@ -249,7 +266,7 @@ class ArgParser:
         self.parser.add_argument(
             '--test_data', 
             default='../../ILSVRC2012/val-by-class', 
-            type=str,                
+            type=str,
             help='Test data path'
         )
 
@@ -477,3 +494,53 @@ class ArgParser:
             type=int,
             help='Class label'
         )
+
+        self.parser.add_argument(
+            '--from_model_nickname', 
+            default='', 
+            type=str,
+            help='Nickname of model before evolution'
+        )
+
+        self.parser.add_argument(
+            '--from_model_path', 
+            default='', 
+            type=str,
+            help='Path of model before evolution'
+        )
+
+        self.parser.add_argument(
+            '--to_model_nickname', 
+            default='', 
+            type=str,
+            help='Nickname of model after evolution'
+        )
+
+        self.parser.add_argument(
+            '--to_model_path', 
+            default='', 
+            type=str,
+            help='Path of model after evolution'
+        )
+
+        self.parser.add_argument(
+            '--eps', 
+            default=0.3, 
+            type=float,
+            help='Perturbation strength'
+        )
+
+        self.parser.add_argument(
+            '--eval_sample_ratio', 
+            default=0.3, 
+            type=float,
+            help='Ratio of neurons to be evaluated for given layer'
+        )
+
+        self.parser.add_argument(
+            '--find_num_sample_imgs', 
+            default=100, 
+            type=int,
+            help='Number of sampled images to find important evolution'
+        )
+        

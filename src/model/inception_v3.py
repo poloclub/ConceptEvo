@@ -1,21 +1,20 @@
 import os
-import copy
 import numpy as np
 import pandas as pd
 from time import time
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
+import torch.utils.data as data_utils
 from torchvision import datasets, transforms
 
 class InceptionV3:
     """Defines InceptionV3 model"""
 
-    def __init__(self, args, data_path, pretrained=False):
+    def __init__(self, args, data_path, pretrained=False, from_to=None):
         self.args = args
         self.data_path = data_path
 
@@ -25,6 +24,7 @@ class InceptionV3:
 
         self.model = None
         self.pretrained = pretrained
+        self.from_to = from_to
         self.layers = []
         self.conv_layers = []
         self.num_neurons = {}
@@ -52,9 +52,12 @@ class InceptionV3:
         self.model = models.inception_v3(pretrained=self.pretrained)
 
         # Load a saved model
-        if self.need_loading_a_saved_model:
-            self.model.load_state_dict(self.ckpt['model_state_dict'])
-        
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if 'model_state_dict' in self.ckpt:
+                self.model.load_state_dict(self.ckpt['model_state_dict'])
+            else:
+                self.model.load_state_dict(self.ckpt)
+
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
 
@@ -71,8 +74,13 @@ class InceptionV3:
 
     
     def load_checkpoint(self):
-        if self.need_loading_a_saved_model:
-            self.ckpt = torch.load(self.args.model_path)
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if self.from_to == 'from':
+                self.ckpt = torch.load(self.args.from_model_path)
+            elif self.from_to == 'to':
+                self.ckpt = torch.load(self.args.to_model_path)
+            else:
+                self.ckpt = torch.load(self.args.model_path)
 
 
     def set_all_parameter_requires_grad(self):
@@ -130,36 +138,29 @@ class InceptionV3:
             lr=self.args.lr, 
             momentum=self.args.momentum
         )
-        if self.need_loading_a_saved_model:
-            self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
-            for param_group in self.optimizer.state_dict()['param_groups']:
-                param_group['lr'] = self.args.lr
-                param_group['momentum'] = self.args.momentum
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if 'optimizer_state_dict' in self.ckpt:
+                self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
+                for param_group in self.optimizer.state_dict()['param_groups']:
+                    param_group['lr'] = self.args.lr
+                    param_group['momentum'] = self.args.momentum
 
 
     def init_criterion(self):
-        if self.need_loading_a_saved_model:
-            self.criterion = self.ckpt['loss']
-        else:
-            self.criterion = nn.CrossEntropyLoss()
+        self.criterion = nn.CrossEntropyLoss()
+        if not self.pretrained and self.need_loading_a_saved_model:
+            if 'loss' in self.ckpt:
+                self.criterion = self.ckpt['loss']
 
 
     def get_layer_info(self):
         model_children = list(self.model.children())
         for i, child in enumerate(model_children):
-            if type(child) == nn.Sequential:
-                for j, layer in enumerate(child.children()):
-                    layer_name = '{}_{}_{}_{}'.format(
-                        type(child).__name__, i,
-                        type(layer).__name__, j
-                    )
-                    self.update_layer_info(layer_name, layer)
-            else:
-                child_name = type(child).__name__
-                if self.is_inceptionV3_aux(child_name):
-                    continue
-                layer_name = '{}_{}'.format(child_name, i)
-                self.update_layer_info(layer_name, child)
+            child_name = type(child).__name__
+            if self.is_inceptionV3_aux(child_name):
+                continue
+            layer_name = '{}_{}'.format(child_name, i)
+            self.update_layer_info(layer_name, child)
 
     
     def is_inceptionV3_aux(self, blk_name):
@@ -319,38 +320,175 @@ class InceptionV3:
 
         return running_loss, top1_train_corrects, topk_train_corrects
 
-    
-    def measure_test_accuracy(self):
+
+    def test_model(self):
+        # Make the first log
+        self.write_test_first_log()
+
+        # Get ready to train the model
+        tic = time()
+        total = len(self.test_data_loader.dataset)
+
         # Variables to evaluate the training performance
         top1_test_corrects, topk_test_corrects = 0, 0
 
         # Measure test set accuracy
-        for test_imgs, test_labels in self.test_data_loader:
+        with tqdm(total=total) as pbar:
+            for test_imgs, test_labels in self.test_data_loader:
 
-            # Get test images and labels
-            test_imgs = test_imgs.to(self.device)
-            test_labels = test_labels.to(self.device)
+                top1_corrects, topk_corrects = \
+                    self.test_one_batch(test_imgs, test_labels)
+
+                top1_test_corrects += top1_corrects
+                topk_test_corrects += topk_corrects
+
+                pbar.update(self.args.batch_size)
+
+        toc = time()
+
+        # Save log
+        log = 'total = {}\n'.format(total)
+        log += 'top1 test accuracy = {} / {} = {}\n'.format(
+            top1_test_corrects, total, top1_test_corrects / total
+        )
+        log += 'topk test accuracy = {} / {} = {}\n'.format(
+            topk_test_corrects, total, topk_test_corrects / total
+        )
+        log += 'time: {} sec\n'.format(toc - tic)
+        print(log)
+        self.write_log(log, append=True, test=True)
+
+    
+    def test_one_epoch(self, pbar):
+        # Variables to evaluate the training performance
+        running_loss = 0.0
+        top1_train_corrects, topk_train_corrects = 0, 0
+
+        # Update parameters with one epoch's data
+        for imgs, labels in self.test_data_loader:
+
+            # Send input images and their labels to GPU
+            imgs = imgs.to(self.device)
+            labels = labels.to(self.device)
+
+            # Forward
+            outputs = self.model(imgs).logits
+            loss = self.criterion(outputs, labels)
 
             # Prediction
-            outputs = self.model(test_imgs).logits
-            _, topk_test_preds = outputs.topk(
-                k=self.args.topk, dim=1
+            _, topk_train_preds = outputs.topk(
+                k=self.args.topk, 
+                dim=1
             )
-            top1_test_preds = topk_test_preds[:, 0]
-            topk_test_preds = topk_test_preds.t()
+            top1_train_preds = topk_train_preds[:, 0]
+            topk_train_preds = topk_train_preds.t()
 
-            # Number of correct top-k prediction in test set
+            # Backward
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+        
+            # Number of correct top-k prediction in training set
             for k in range(self.args.topk):
-                topk_test_corrects += torch.sum(
-                    topk_test_preds[k] == test_labels.data
+                topk_train_corrects += torch.sum(
+                    topk_train_preds[k] == labels.data
                 )
-
+            
             # Number of correct top-1 prediction in training set
-            top1_test_corrects += torch.sum(
-                top1_test_preds == test_labels.data
+            top1_train_corrects += torch.sum(
+                top1_train_preds == labels.data
             )
+
+            # Loss
+            running_loss += loss.item() * imgs.size(0)
+            
+            # Update pbar
+            pbar.update(self.args.batch_size)
+
+        return running_loss, top1_train_corrects, topk_train_corrects
+
+
+    def test_one_batch(self, test_imgs, test_labels):
+        # Get test images and labels
+        test_imgs = test_imgs.to(self.device)
+        test_labels = test_labels.to(self.device)
+
+        # Prediction
+        outputs = self.model(test_imgs).logits
+        _, topk_test_preds = outputs.topk(
+            k=self.args.topk, dim=1
+        )
+        top1_test_preds = topk_test_preds[:, 0]
+        topk_test_preds = topk_test_preds.t()
+
+        # Number of correct top-k prediction in test set
+        topk_test_corrects = 0
+        for k in range(self.args.topk):
+            topk_test_corrects += torch.sum(
+                topk_test_preds[k] == test_labels.data
+            )
+
+        # Number of correct top-1 prediction in training set
+        top1_test_corrects = torch.sum(
+            top1_test_preds == test_labels.data
+        )
 
         return top1_test_corrects, topk_test_corrects
+
+
+    def eval_for_label(self):
+        total = len(self.training_data_loader.dataset)
+        top1_corrects, topk_corrects = 0, 0
+        with tqdm(total=total) as pbar:
+            for batch_idx, (imgs, labels) in enumerate(self.training_data_loader):
+                top1, topk = self.test_one_batch(imgs, labels)
+                top1_corrects += top1
+                topk_corrects += topk
+                pbar.update(self.args.batch_size)
+        
+        # Save log
+        log = 'total = {}\n'.format(total)
+        log += 'top1 test accuracy = {} / {} = {}\n'.format(
+            top1_corrects, total, top1_corrects / total
+        )
+        log += 'topk test accuracy = {} / {} = {}\n'.format(
+            topk_corrects, total, topk_corrects / total
+        )
+        print(log)
+        return top1_corrects, topk_corrects, total
+
+    
+    def forward(self, imgs):
+        # Initialize feature maps
+        imgs = imgs.to(self.device)
+        f_map, f_maps = imgs, []
+
+        # Layer information
+        layers = list(self.model.children())
+        num_layers, layer_info = len(layers), []
+
+        # Forward and save feature map for each layer
+        for i in range(num_layers):
+            layer = layers[i]
+
+            # Ignore AuxLogits layer
+            layer_name = '{}_{}'.format(type(layer).__name__, i)
+            if 'Aux' in layer_name:
+                continue
+
+            # Flatten before fully connected layer
+            if i == num_layers - 1:
+                f_map = torch.flatten(f_map, 1)
+            
+            # Compute and save current layer's f_map and layer info
+            f_map = layer(f_map)
+            f_maps.append(f_map)
+            layer_info.append({
+                'name': layer_name,
+                'num_neurons': f_map.shape[1],
+            })
+
+        return f_maps, layer_info
 
 
     def save_model(self, epoch):
@@ -378,9 +516,11 @@ class InceptionV3:
         self.set_all_parameter_requires_grad()
         
 
-    def write_log(self, log, append=True):
+    def write_log(self, log, append=True, test=False):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('train-log'), log_opt) as f:
+        key = 'test-log' if test else 'train-log'
+        path = self.data_path.get_path(key)
+        with open(path, log_opt) as f:
             f.write(log + '\n')
 
 
@@ -401,6 +541,18 @@ class InceptionV3:
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]
         )
         self.write_log(first_log, append=True)
+
+    
+    def write_test_first_log(self):
+        log_param_sets = {
+            'model_nickname': self.args.model_nickname,
+            'model_path': self.args.model_path,
+            'k': self.args.topk
+        }
+        first_log = '\n'.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        self.write_log(first_log, append=True, test=True)
 
     
     def write_training_epoch_log(self, tic, epoch, stats):

@@ -63,7 +63,7 @@ class ExamplePatch:
         self.data_loader = torch.utils.data.DataLoader(
             training_dataset,
             batch_size=self.args.batch_size,
-            shuffle=False,
+            shuffle=True,
             num_workers=4
         )
 
@@ -91,7 +91,7 @@ class ExamplePatch:
         self.write_first_log()
         self.init_example_patches()
 
-        tic, total = time(), len(self.data_loader)
+        tic, total, total_num_so_far = time(), len(self.data_loader), 0
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
 

@@ -1,0 +1,6 @@
+eval inceptionV3 label 1 11->121
+Run on cuda:1
+load model_state_dict
+Run on cuda:1
+load model_state_dict
+Run on cuda:1

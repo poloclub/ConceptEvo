@@ -1,0 +1,628 @@
+{
+    "from": {
+        "top1": {
+            "correct": 500,
+            "incorrect": 800
+        },
+        "topk": {
+            "correct": 769,
+            "incorrect": 531
+        }
+    },
+    "to": {
+        "top1": {
+            "correct": 848,
+            "incorrect": 452
+        },
+        "topk": {
+            "correct": 1124,
+            "incorrect": 176
+        }
+    },
+    "important": {
+        "BasicConv2d_0": {
+            "top1": {
+                "correct": 813,
+                "incorrect": 487
+            },
+            "topk": {
+                "correct": 1100,
+                "incorrect": 200
+            }
+        },
+        "BasicConv2d_1": {
+            "top1": {
+                "correct": 374,
+                "incorrect": 926
+            },
+            "topk": {
+                "correct": 691,
+                "incorrect": 609
+            }
+        },
+        "BasicConv2d_2": {
+            "top1": {
+                "correct": 37,
+                "incorrect": 1263
+            },
+            "topk": {
+                "correct": 113,
+                "incorrect": 1187
+            }
+        },
+        "MaxPool2d_3": {
+            "top1": {
+                "correct": 21,
+                "incorrect": 1279
+            },
+            "topk": {
+                "correct": 93,
+                "incorrect": 1207
+            }
+        },
+        "BasicConv2d_4": {
+            "top1": {
+                "correct": 587,
+                "incorrect": 713
+            },
+            "topk": {
+                "correct": 926,
+                "incorrect": 374
+            }
+        },
+        "BasicConv2d_5": {
+            "top1": {
+                "correct": 207,
+                "incorrect": 1093
+            },
+            "topk": {
+                "correct": 435,
+                "incorrect": 865
+            }
+        },
+        "MaxPool2d_6": {
+            "top1": {
+                "correct": 195,
+                "incorrect": 1105
+            },
+            "topk": {
+                "correct": 412,
+                "incorrect": 888
+            }
+        },
+        "InceptionA_7": {
+            "top1": {
+                "correct": 131,
+                "incorrect": 1169
+            },
+            "topk": {
+                "correct": 331,
+                "incorrect": 969
+            }
+        },
+        "InceptionA_8": {
+            "top1": {
+                "correct": 353,
+                "incorrect": 947
+            },
+            "topk": {
+                "correct": 684,
+                "incorrect": 616
+            }
+        },
+        "InceptionA_9": {
+            "top1": {
+                "correct": 643,
+                "incorrect": 657
+            },
+            "topk": {
+                "correct": 944,
+                "incorrect": 356
+            }
+        },
+        "InceptionB_10": {
+            "top1": {
+                "correct": 575,
+                "incorrect": 725
+            },
+            "topk": {
+                "correct": 845,
+                "incorrect": 455
+            }
+        },
+        "InceptionC_11": {
+            "top1": {
+                "correct": 675,
+                "incorrect": 625
+            },
+            "topk": {
+                "correct": 950,
+                "incorrect": 350
+            }
+        },
+        "InceptionC_12": {
+            "top1": {
+                "correct": 690,
+                "incorrect": 610
+            },
+            "topk": {
+                "correct": 991,
+                "incorrect": 309
+            }
+        },
+        "InceptionC_13": {
+            "top1": {
+                "correct": 690,
+                "incorrect": 610
+            },
+            "topk": {
+                "correct": 993,
+                "incorrect": 307
+            }
+        },
+        "InceptionC_14": {
+            "top1": {
+                "correct": 813,
+                "incorrect": 487
+            },
+            "topk": {
+                "correct": 1070,
+                "incorrect": 230
+            }
+        },
+        "InceptionD_16": {
+            "top1": {
+                "correct": 573,
+                "incorrect": 727
+            },
+            "topk": {
+                "correct": 850,
+                "incorrect": 450
+            }
+        },
+        "InceptionE_17": {
+            "top1": {
+                "correct": 361,
+                "incorrect": 939
+            },
+            "topk": {
+                "correct": 598,
+                "incorrect": 702
+            }
+        },
+        "InceptionE_18": {
+            "top1": {
+                "correct": 424,
+                "incorrect": 876
+            },
+            "topk": {
+                "correct": 706,
+                "incorrect": 594
+            }
+        },
+        "AdaptiveAvgPool2d_19": {
+            "top1": {
+                "correct": 424,
+                "incorrect": 876
+            },
+            "topk": {
+                "correct": 706,
+                "incorrect": 594
+            }
+        },
+        "Dropout_20": {
+            "top1": {
+                "correct": 424,
+                "incorrect": 876
+            },
+            "topk": {
+                "correct": 706,
+                "incorrect": 594
+            }
+        }
+    },
+    "least-important": {
+        "BasicConv2d_0": {
+            "top1": {
+                "correct": 825,
+                "incorrect": 475
+            },
+            "topk": {
+                "correct": 1106,
+                "incorrect": 194
+            }
+        },
+        "BasicConv2d_1": {
+            "top1": {
+                "correct": 374,
+                "incorrect": 926
+            },
+            "topk": {
+                "correct": 691,
+                "incorrect": 609
+            }
+        },
+        "BasicConv2d_2": {
+            "top1": {
+                "correct": 44,
+                "incorrect": 1256
+            },
+            "topk": {
+                "correct": 117,
+                "incorrect": 1183
+            }
+        },
+        "MaxPool2d_3": {
+            "top1": {
+                "correct": 34,
+                "incorrect": 1266
+            },
+            "topk": {
+                "correct": 111,
+                "incorrect": 1189
+            }
+        },
+        "BasicConv2d_4": {
+            "top1": {
+                "correct": 634,
+                "incorrect": 666
+            },
+            "topk": {
+                "correct": 949,
+                "incorrect": 351
+            }
+        },
+        "BasicConv2d_5": {
+            "top1": {
+                "correct": 159,
+                "incorrect": 1141
+            },
+            "topk": {
+                "correct": 394,
+                "incorrect": 906
+            }
+        },
+        "MaxPool2d_6": {
+            "top1": {
+                "correct": 175,
+                "incorrect": 1125
+            },
+            "topk": {
+                "correct": 404,
+                "incorrect": 896
+            }
+        },
+        "InceptionA_7": {
+            "top1": {
+                "correct": 169,
+                "incorrect": 1131
+            },
+            "topk": {
+                "correct": 429,
+                "incorrect": 871
+            }
+        },
+        "InceptionA_8": {
+            "top1": {
+                "correct": 225,
+                "incorrect": 1075
+            },
+            "topk": {
+                "correct": 491,
+                "incorrect": 809
+            }
+        },
+        "InceptionA_9": {
+            "top1": {
+                "correct": 574,
+                "incorrect": 726
+            },
+            "topk": {
+                "correct": 882,
+                "incorrect": 418
+            }
+        },
+        "InceptionB_10": {
+            "top1": {
+                "correct": 293,
+                "incorrect": 1007
+            },
+            "topk": {
+                "correct": 587,
+                "incorrect": 713
+            }
+        },
+        "InceptionC_11": {
+            "top1": {
+                "correct": 806,
+                "incorrect": 494
+            },
+            "topk": {
+                "correct": 1080,
+                "incorrect": 220
+            }
+        },
+        "InceptionC_12": {
+            "top1": {
+                "correct": 796,
+                "incorrect": 504
+            },
+            "topk": {
+                "correct": 1081,
+                "incorrect": 219
+            }
+        },
+        "InceptionC_13": {
+            "top1": {
+                "correct": 814,
+                "incorrect": 486
+            },
+            "topk": {
+                "correct": 1081,
+                "incorrect": 219
+            }
+        },
+        "InceptionC_14": {
+            "top1": {
+                "correct": 868,
+                "incorrect": 432
+            },
+            "topk": {
+                "correct": 1129,
+                "incorrect": 171
+            }
+        },
+        "InceptionD_16": {
+            "top1": {
+                "correct": 826,
+                "incorrect": 474
+            },
+            "topk": {
+                "correct": 1084,
+                "incorrect": 216
+            }
+        },
+        "InceptionE_17": {
+            "top1": {
+                "correct": 747,
+                "incorrect": 553
+            },
+            "topk": {
+                "correct": 1013,
+                "incorrect": 287
+            }
+        },
+        "InceptionE_18": {
+            "top1": {
+                "correct": 556,
+                "incorrect": 744
+            },
+            "topk": {
+                "correct": 863,
+                "incorrect": 437
+            }
+        },
+        "AdaptiveAvgPool2d_19": {
+            "top1": {
+                "correct": 556,
+                "incorrect": 744
+            },
+            "topk": {
+                "correct": 863,
+                "incorrect": 437
+            }
+        },
+        "Dropout_20": {
+            "top1": {
+                "correct": 556,
+                "incorrect": 744
+            },
+            "topk": {
+                "correct": 863,
+                "incorrect": 437
+            }
+        }
+    },
+    "random": {
+        "BasicConv2d_0": {
+            "top1": {
+                "correct": 792,
+                "incorrect": 508
+            },
+            "topk": {
+                "correct": 1074,
+                "incorrect": 226
+            }
+        },
+        "BasicConv2d_1": {
+            "top1": {
+                "correct": 383,
+                "incorrect": 917
+            },
+            "topk": {
+                "correct": 738,
+                "incorrect": 562
+            }
+        },
+        "BasicConv2d_2": {
+            "top1": {
+                "correct": 43,
+                "incorrect": 1257
+            },
+            "topk": {
+                "correct": 124,
+                "incorrect": 1176
+            }
+        },
+        "MaxPool2d_3": {
+            "top1": {
+                "correct": 52,
+                "incorrect": 1248
+            },
+            "topk": {
+                "correct": 127,
+                "incorrect": 1173
+            }
+        },
+        "BasicConv2d_4": {
+            "top1": {
+                "correct": 647,
+                "incorrect": 653
+            },
+            "topk": {
+                "correct": 962,
+                "incorrect": 338
+            }
+        },
+        "BasicConv2d_5": {
+            "top1": {
+                "correct": 90,
+                "incorrect": 1210
+            },
+            "topk": {
+                "correct": 277,
+                "incorrect": 1023
+            }
+        },
+        "MaxPool2d_6": {
+            "top1": {
+                "correct": 99,
+                "incorrect": 1201
+            },
+            "topk": {
+                "correct": 282,
+                "incorrect": 1018
+            }
+        },
+        "InceptionA_7": {
+            "top1": {
+                "correct": 156,
+                "incorrect": 1144
+            },
+            "topk": {
+                "correct": 317,
+                "incorrect": 983
+            }
+        },
+        "InceptionA_8": {
+            "top1": {
+                "correct": 164,
+                "incorrect": 1136
+            },
+            "topk": {
+                "correct": 384,
+                "incorrect": 916
+            }
+        },
+        "InceptionA_9": {
+            "top1": {
+                "correct": 432,
+                "incorrect": 868
+            },
+            "topk": {
+                "correct": 723,
+                "incorrect": 577
+            }
+        },
+        "InceptionB_10": {
+            "top1": {
+                "correct": 139,
+                "incorrect": 1161
+            },
+            "topk": {
+                "correct": 355,
+                "incorrect": 945
+            }
+        },
+        "InceptionC_11": {
+            "top1": {
+                "correct": 791,
+                "incorrect": 509
+            },
+            "topk": {
+                "correct": 1067,
+                "incorrect": 233
+            }
+        },
+        "InceptionC_12": {
+            "top1": {
+                "correct": 783,
+                "incorrect": 517
+            },
+            "topk": {
+                "correct": 1074,
+                "incorrect": 226
+            }
+        },
+        "InceptionC_13": {
+            "top1": {
+                "correct": 803,
+                "incorrect": 497
+            },
+            "topk": {
+                "correct": 1070,
+                "incorrect": 230
+            }
+        },
+        "InceptionC_14": {
+            "top1": {
+                "correct": 864,
+                "incorrect": 436
+            },
+            "topk": {
+                "correct": 1117,
+                "incorrect": 183
+            }
+        },
+        "InceptionD_16": {
+            "top1": {
+                "correct": 808,
+                "incorrect": 492
+            },
+            "topk": {
+                "correct": 1082,
+                "incorrect": 218
+            }
+        },
+        "InceptionE_17": {
+            "top1": {
+                "correct": 702,
+                "incorrect": 598
+            },
+            "topk": {
+                "correct": 982,
+                "incorrect": 318
+            }
+        },
+        "InceptionE_18": {
+            "top1": {
+                "correct": 550,
+                "incorrect": 750
+            },
+            "topk": {
+                "correct": 856,
+                "incorrect": 444
+            }
+        },
+        "AdaptiveAvgPool2d_19": {
+            "top1": {
+                "correct": 550,
+                "incorrect": 750
+            },
+            "topk": {
+                "correct": 863,
+                "incorrect": 437
+            }
+        },
+        "Dropout_20": {
+            "top1": {
+                "correct": 547,
+                "incorrect": 753
+            },
+            "topk": {
+                "correct": 851,
+                "incorrect": 449
+            }
+        }
+    }
+}

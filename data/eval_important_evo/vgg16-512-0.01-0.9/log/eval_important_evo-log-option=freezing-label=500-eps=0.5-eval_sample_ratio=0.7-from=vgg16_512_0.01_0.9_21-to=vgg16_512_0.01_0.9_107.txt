@@ -1,0 +1,15 @@
+Evaluate important evolution
+
+from_model_nickname: vgg16-512-0.01-0.9-21
+from_model_path: ../data/model/vgg16-512-0.01-0.9/data/model-21.pth
+to_model_nickname: vgg16-512-0.01-0.9-107
+to_model_path: ../data/model/vgg16-512-0.01-0.9/data/model-107.pth
+label: 500
+option=freezing
+label=500
+eps=0.5
+eval_sample_ratio=0.7
+from=vgg16_512_0.01_0.9_21
+to=vgg16_512_0.01_0.9_107
+
+

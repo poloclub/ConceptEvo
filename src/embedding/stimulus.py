@@ -1,4 +1,6 @@
+import cv2
 import json
+import numpy as np
 from tqdm import tqdm
 from time import time
 
@@ -35,6 +37,7 @@ class Stimulus:
     """
     def compute_stimulus(self):
         self.init_setting()
+        # self.test_whether_shuffle()
         self.get_layer_info()
         self.find_stimulus()
         self.save_stimulus()
@@ -70,6 +73,21 @@ class Stimulus:
         self.layers = self.model.layers[:]
         self.conv_layers = self.model.conv_layers[:]
         self.num_neurons = self.model.num_neurons
+
+
+    def test_whether_shuffle(self):
+        for imgs, labels in self.data_loader:
+            for idx in range(5):
+                img = imgs[idx]
+                img = img * 255
+                img = img.cpu().data.numpy()
+                img = np.einsum('kij->ijk', img)
+                file_path = f'c-{idx}.jpg'
+                cv2.imwrite(
+                    file_path, 
+                    cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            )
+            break
         
     
     """

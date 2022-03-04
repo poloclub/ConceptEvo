@@ -117,7 +117,6 @@ class EvalImportantEvo:
                 img, label = self.training_dataset[i]
                 if (self.args.label == label) and (start_idx == -1):
                     start_idx = i
-                elif (self.args.label == label) and (end_idx == -1):
                     end_idx = -2
                 if (self.args.label < label) and (end_idx == -2):
                     end_idx = i
@@ -136,16 +135,6 @@ class EvalImportantEvo:
         self.load_imp_evo()
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                
-                # Evaluate important evolution for given label
-                # if self.args.label not in labels:
-                    # continue
-                # nec_idxs = labels == self.args.label
-                # nec_labels = labels[nec_idxs]
-                # nec_imgs = imgs[nec_idxs]
-
-                # Evaluate important evolution for one batch
-                # self.eval_imp_evo_one_batch(nec_imgs, nec_labels)
                 self.eval_imp_evo_one_batch(imgs, labels)
                 pbar.update(self.args.batch_size)
 
@@ -166,23 +155,23 @@ class EvalImportantEvo:
         f_maps = {'from': from_f_maps, 'to': to_f_maps}
 
         # Measure prediction accuracy before prevention
-        self.eval_prediction_before_prevention_one_batch(f_maps)
+        self.eval_prediction_before_prevention_one_batch(f_maps, labels)
         
         # Evaluate evolutions
-        self.eval_evol_with_baseline_one_epoch(f_maps, layer_info)
+        self.eval_evol_with_baseline_one_epoch(f_maps, layer_info, labels)
 
     
-    def eval_prediction_before_prevention_one_batch(self, f_maps):
+    def eval_prediction_before_prevention_one_batch(self, f_maps, labels):
         for key in ['from', 'to']:
             top1_correct, top1_incorr, topk_correct, topk_incorr = \
-                self.eval_prediction(f_maps[key][-1])
+                self.eval_prediction(f_maps[key][-1], labels)
             self.pred[key]['top1']['correct'] += top1_correct
             self.pred[key]['top1']['incorrect'] += top1_incorr
             self.pred[key]['topk']['correct'] += topk_correct
             self.pred[key]['topk']['incorrect'] += topk_incorr
 
 
-    def eval_prediction(self, outputs):
+    def eval_prediction(self, outputs, labels):
 
         num_inputs = outputs.shape[0]
         _, topk_preds = outputs.topk(
@@ -191,23 +180,25 @@ class EvalImportantEvo:
 
         # Top-1 prediction (B,)
         top1_preds = topk_preds[:, 0]
-        top1_correct = torch.sum(top1_preds == self.args.label).item()
+        # top1_correct = torch.sum(top1_preds == self.args.label).item()
+        top1_correct = torch.sum(top1_preds == labels).item()
         top1_incorr = num_inputs - top1_correct
 
         # Top-k prediction (k, B)
         topk_preds = topk_preds.t()
         topk_correct = 0
         for k in range(self.args.topk):
-            num_correct = torch.sum(topk_preds[k] == self.args.label).item()
+            # num_correct = torch.sum(topk_preds[k] == self.args.label).item()
+            num_correct = torch.sum(topk_preds[k] == labels).item()
             topk_correct += num_correct
         topk_incorr = num_inputs - topk_correct
 
         return top1_correct, top1_incorr, topk_correct, topk_incorr
 
 
-    def eval_evol_with_baseline_one_epoch(self, f_maps, layer_info):
+    def eval_evol_with_baseline_one_epoch(self, f_maps, layer_info, labels):
         to_model_children = list(self.to_model.model.children())
-        num_layers = len(to_model_children)
+        num_layers = len(layer_info)
         
         for method_type in ['important', 'least-important', 'random']:
             num_layer_skip = 0
@@ -222,11 +213,13 @@ class EvalImportantEvo:
                 option = self.args.eval_important_evo
                 if option == 'perturbation':
                     vals = self.eval_perturb(
-                        f_maps, layer_idx, s_neurons, num_layer_skip
+                        f_maps, layer_idx, s_neurons, labels,
+                        num_layer_skip, layer_info[layer_idx]['name']
                     )
                 elif option == 'freezing':
                     vals = self.eval_freezing(
-                        f_maps, layer_idx, s_neurons, num_layer_skip
+                        f_maps, layer_idx, s_neurons, labels,
+                        num_layer_skip, layer_info[layer_idx]['name']
                     )
                 else:
                     log = f'Error: unkonwn option {option}'
@@ -261,18 +254,24 @@ class EvalImportantEvo:
         return sampled_neurons
 
     
-    def eval_perturb(self, f_maps, layer_idx, sampled_neurons, num_skips=0):
+    def eval_perturb(self, f_maps, layer_idx, sampled_neurons, labels, num_skips=0, layer_name=None):
         # Ignore if 'AuxLogits' layer in InceptionV3 is given 
-        to_model_children = list(self.to_model.model.children())
-        curr_layer_name = type(to_model_children[layer_idx]).__name__
         if self.args.model_name == 'inception_v3':
-            if 'Aux' in curr_layer_name:
+            if 'Aux' in layer_name:
                 return None
+
+        # Ignore if 'AdaptiveAvgPool2d' and 'Linear' layer in Vgg16 is given
+        if self.args.model_name == 'vgg16':
+            tensor_shape = f_maps['from'][layer_idx - num_skips].shape
+            if len(tensor_shape) < 4:
+                return None
+
 
         # Apply perturbation on sampled neurons
         from_f_map = f_maps['from'][layer_idx - num_skips]
         to_f_map = f_maps['to'][layer_idx - num_skips]
         
+        # Method 1: give perturbation according to delta map's norm
         # delta_f_map = to_f_map - from_f_map
         # eps = torch.tensor(self.args.eps).to(self.device)
 
@@ -282,6 +281,7 @@ class EvalImportantEvo:
             neuron_id = neuron_info['neuron']
             neuron_i = int(neuron_id.split('-')[-1])
 
+            # Method 1: give perturbation according to delta map's norm
             # neuron_delta = delta_f_map[:, neuron_i, :, :]
             # norm_delta = torch.norm(neuron_delta)
             # noise = torch.rand(neuron_delta.shape) - 0.5
@@ -290,6 +290,7 @@ class EvalImportantEvo:
             # coeff = (norm_delta * eps / norm_noise).to(self.device)
             # noise = coeff * noise
 
+            # Method 2: give perturbation of fixed size
             noise = self.args.eps * 2 * (torch.rand(noise_shape) - 0.5) 
             noise = noise.to(self.device)
 
@@ -306,24 +307,26 @@ class EvalImportantEvo:
             raise ValueError(log)
 
         # Measure accuracy after perturbation
-        pred_vals = self.eval_prediction(to_f_map)
+        pred_vals = self.eval_prediction(to_f_map, labels)
         
         return pred_vals
 
 
-    def eval_freezing(self, f_maps, layer_idx, sampled_neurons, num_skips=0):
+    def eval_freezing(self, f_maps, layer_idx, sampled_neurons, labels, num_skips=0, layer_name=None):
         # Ignore if 'AuxLogits' layer in InceptionV3 is given 
-        to_model_children = list(self.to_model.model.children())
-        curr_layer_name = type(to_model_children[layer_idx]).__name__
         if self.args.model_name == 'inception_v3':
-            if 'Aux' in curr_layer_name:
+            if 'Aux' in layer_name:
+                return None
+
+        # Ignore if 'AdaptiveAvgPool2d' and 'Linear' layer in Vgg16 is given
+        if self.args.model_name == 'vgg16':
+            tensor_shape = f_maps['from'][layer_idx - num_skips].shape
+            if len(tensor_shape) < 4:
                 return None
 
         # Freeze sampled neurons
         from_f_map = f_maps['from'][layer_idx - num_skips]
         to_f_map = f_maps['to'][layer_idx - num_skips]
-        delta_f_map = to_f_map - from_f_map
-        eps = torch.tensor(self.args.eps).to(self.device)
         for neuron_info in sampled_neurons:
             neuron_id = neuron_info['neuron']
             neuron_i = int(neuron_id.split('-')[-1])
@@ -339,7 +342,7 @@ class EvalImportantEvo:
             raise ValueError(log)
 
         # Measure accuracy after freezing
-        pred_vals = self.eval_prediction(to_f_map)
+        pred_vals = self.eval_prediction(to_f_map, labels)
         
         return pred_vals
 

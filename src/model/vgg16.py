@@ -55,7 +55,10 @@ class Vgg16:
 
         # Load a saved model
         if self.need_loading_a_saved_model:
-            self.model.load_state_dict(self.ckpt['model_state_dict'])
+            if 'model_state_dict' in self.ckpt:
+                self.model.load_state_dict(self.ckpt['model_state_dict'])
+            else:
+                self.model.load_state_dict(self.ckpt)
 
         # Reset the final layer
         # if not self.need_loading_a_saved_model:
@@ -81,13 +84,22 @@ class Vgg16:
 
     
     def load_checkpoint(self):
-        if self.need_loading_a_saved_model:
+        if not self.pretrained and self.need_loading_a_saved_model:
             if self.from_to == 'from':
-                self.ckpt = torch.load(self.args.from_model_path)
+                self.ckpt = torch.load(
+                    self.args.from_model_path,
+                    map_location=self.device
+                )
             elif self.from_to == 'to':
-                self.ckpt = torch.load(self.args.to_model_path)
+                self.ckpt = torch.load(
+                    self.args.to_model_path,
+                    map_location=self.device
+                )
             else:
-                self.ckpt = torch.load(self.args.model_path)
+                self.ckpt = torch.load(
+                    self.args.model_path,
+                    map_location=self.device
+                )
 
 
     def set_all_parameter_requires_grad(self):
@@ -138,16 +150,6 @@ class Vgg16:
             num_workers=4
         )
 
-        self.class_dataset = torch.utils.data.Subset(
-            self.training_dataset, range(1300, 2600)
-        )
-        self.class_loader = torch.utils.data.DataLoader(
-            self.class_dataset, 
-            batch_size=self.args.batch_size,
-            shuffle=True,
-            num_workers=4
-        )
-
 
     def init_optimizer(self):
         self.optimizer = optim.SGD(
@@ -156,14 +158,15 @@ class Vgg16:
             momentum=self.args.momentum
         )
         if self.need_loading_a_saved_model:
-            self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
-            for param_group in self.optimizer.state_dict()['param_groups']:
-                param_group['lr'] = self.args.lr
-                param_group['momentum'] = self.args.momentum
+            if 'optimizer_state_dict' in self.ckpt:
+                self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
+                for param_group in self.optimizer.state_dict()['param_groups']:
+                    param_group['lr'] = self.args.lr
+                    param_group['momentum'] = self.args.momentum
 
 
     def init_criterion(self):
-        if self.need_loading_a_saved_model:
+        if self.need_loading_a_saved_model and ('loss' in self.ckpt):
             self.criterion = self.ckpt['loss']
         else:
             self.criterion = nn.CrossEntropyLoss()
@@ -283,16 +286,14 @@ class Vgg16:
 
         # Get ready to train the model
         tic = time()
-        # total = len(self.test_data_loader.dataset)
-        total = len(self.class_loader.dataset)
+        total = len(self.test_data_loader.dataset)
 
         # Variables to evaluate the training performance
         top1_test_corrects, topk_test_corrects = 0, 0
 
         # Measure test set accuracy
         with tqdm(total=total) as pbar:
-            # for test_imgs, test_labels in self.test_data_loader:
-            for test_imgs, test_labels in self.class_loader:
+            for test_imgs, test_labels in self.test_data_loader:
 
                 top1_corrects, topk_corrects = \
                     self.test_one_batch(test_imgs, test_labels)

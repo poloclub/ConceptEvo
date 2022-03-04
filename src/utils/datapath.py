@@ -210,6 +210,7 @@ class DataPath:
 
         self.action_to_args['find_important_evo'] = [
             ['label', self.args.label],
+            ['find_num_sample_imgs', self.args.find_num_sample_imgs],
             ['from', self.args.from_model_nickname.replace('-', '_')],
             ['to', self.args.to_model_nickname.replace('-', '_')]
         ]
@@ -217,7 +218,8 @@ class DataPath:
         self.action_to_args['eval_important_evo'] = [
             ['option', self.args.eval_important_evo],
             ['label', self.args.label],
-            ['eps', self.args.eps],
+            ['find_num_sample_imgs', self.args.find_num_sample_imgs],
+            # ['eps', self.args.eps],
             ['eval_sample_ratio', self.args.eval_sample_ratio],
             ['from', self.args.from_model_nickname.replace('-', '_')],
             ['to', self.args.to_model_nickname.replace('-', '_')]

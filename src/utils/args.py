@@ -237,7 +237,7 @@ class ArgParser:
         self.parser.add_argument(
             '--eval_important_evo', 
             default='None', 
-            choices=['None', 'perturbation', 'freezing'],
+            choices=['None', 'perturbation', 'freezing', 'damage'],
             type=str,
             help='Option to evaluate important evolution'
         )
@@ -458,6 +458,13 @@ class ArgParser:
             default='', 
             type=str,
             help='Name of directory for a set of embeddings of multiple models'
+        )
+
+        self.parser.add_argument(
+            '--reducer_path', 
+            default='', 
+            type=str,
+            help='Path of reducer'
         )
 
 

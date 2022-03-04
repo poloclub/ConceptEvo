@@ -25,6 +25,7 @@ class Reducer:
         self.num_instances = 0
         self.base_model_nickname = ''
     
+        self.is_reducer_given = len(self.args.reducer_path) > 0
         self.reducer = None
         self.emb = {}
         self.emb2d = {}
@@ -44,13 +45,16 @@ class Reducer:
     Initial setting
     """
     def init_reducer(self):
-        if self.args.dim_reduction == 'UMAP':
+        if self.is_reducer_given:
+            self.load_reducer()
+        elif self.args.dim_reduction == 'UMAP':
             self.reducer = umap.UMAP(n_components=2)
 
     
     def load_embedding(self):
         # Assign model code and load embedding
         for dirpath, dnames, fnames in os.walk(self.args.emb_set_dir):
+            
             for f in fnames:
                 if '-log-' in f:
                     continue
@@ -70,8 +74,9 @@ class Reducer:
                     # Other models
                     model_nickname = f.split('-')[1]
                     self.model_code_to_file_path[model_nickname] = file_path
-                    self.emb[model_nickname] = self.load_json(file_path)
-                    self.num_instances += len(self.emb[model_nickname])
+                    if model_nickname not in self.emb:
+                        self.emb[model_nickname] = self.load_json(file_path)
+                        self.num_instances += len(self.emb[model_nickname])
 
                 elif f.startswith('img_emb'):
                     # Image embedding
@@ -116,23 +121,25 @@ class Reducer:
     def run_dim_reduction(self):
         self.write_first_log()
 
-        # Fit reducer and get all 2d embeddings
-        tic = time()
-        if self.args.model_for_emb_space == 'base':
-            fitted_emb2d = self.reducer.fit_transform(self.X)
-            emb2d = self.reducer.transform(self.X_all)
-        elif self.args.model_for_emb_space == 'all':
-            emb2d = self.reducer.fit_transform(self.X_all)
-        toc = time()
-        log = 'Fit and transform: {:.2f} sec'.format(toc - tic)
-        self.write_log(log)
+        # Fit reducer if it is not given
+        if not self.is_reducer_given:
+            # Fit reducer and get all 2d embeddings
+            tic = time()
+            if self.args.model_for_emb_space == 'base':
+                fitted_emb2d = self.reducer.fit_transform(self.X)
+                emb2d = self.reducer.transform(self.X_all)
+            elif self.args.model_for_emb_space == 'all':
+                emb2d = self.reducer.fit_transform(self.X_all)
+            toc = time()
+            log = 'Fit and transform: {:.2f} sec'.format(toc - tic)
+            self.write_log(log)
 
-        # Save the reducer
-        tic = time()
-        self.save_reducer()
-        toc = time()
-        log = 'Save reducer: {:.2f} sec'.format(toc - tic)
-        self.write_log(log)
+            # Save the reducer
+            tic = time()
+            self.save_reducer()
+            toc = time()
+            log = 'Save reducer: {:.2f} sec'.format(toc - tic)
+            self.write_log(log)
 
         # Parse embeddings into self.emb2d
         tic = time()

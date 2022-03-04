@@ -63,7 +63,7 @@ class ExamplePatch:
         self.data_loader = torch.utils.data.DataLoader(
             training_dataset,
             batch_size=self.args.batch_size,
-            shuffle=True,
+            shuffle=False,
             num_workers=4
         )
 

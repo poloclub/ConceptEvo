@@ -76,11 +76,20 @@ class InceptionV3:
     def load_checkpoint(self):
         if not self.pretrained and self.need_loading_a_saved_model:
             if self.from_to == 'from':
-                self.ckpt = torch.load(self.args.from_model_path)
+                self.ckpt = torch.load(
+                    self.args.from_model_path,
+                    map_location=self.device
+                )
             elif self.from_to == 'to':
-                self.ckpt = torch.load(self.args.to_model_path)
+                self.ckpt = torch.load(
+                    self.args.to_model_path,
+                    map_location=self.device
+                )
             else:
-                self.ckpt = torch.load(self.args.model_path)
+                self.ckpt = torch.load(
+                    self.args.model_path,
+                    map_location=self.device
+                )
 
 
     def set_all_parameter_requires_grad(self):
@@ -357,55 +366,6 @@ class InceptionV3:
         log += 'time: {} sec\n'.format(toc - tic)
         print(log)
         self.write_log(log, append=True, test=True)
-
-    
-    def test_one_epoch(self, pbar):
-        # Variables to evaluate the training performance
-        running_loss = 0.0
-        top1_train_corrects, topk_train_corrects = 0, 0
-
-        # Update parameters with one epoch's data
-        for imgs, labels in self.test_data_loader:
-
-            # Send input images and their labels to GPU
-            imgs = imgs.to(self.device)
-            labels = labels.to(self.device)
-
-            # Forward
-            outputs = self.model(imgs).logits
-            loss = self.criterion(outputs, labels)
-
-            # Prediction
-            _, topk_train_preds = outputs.topk(
-                k=self.args.topk, 
-                dim=1
-            )
-            top1_train_preds = topk_train_preds[:, 0]
-            topk_train_preds = topk_train_preds.t()
-
-            # Backward
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-        
-            # Number of correct top-k prediction in training set
-            for k in range(self.args.topk):
-                topk_train_corrects += torch.sum(
-                    topk_train_preds[k] == labels.data
-                )
-            
-            # Number of correct top-1 prediction in training set
-            top1_train_corrects += torch.sum(
-                top1_train_preds == labels.data
-            )
-
-            # Loss
-            running_loss += loss.item() * imgs.size(0)
-            
-            # Update pbar
-            pbar.update(self.args.batch_size)
-
-        return running_loss, top1_train_corrects, topk_train_corrects
 
 
     def test_one_batch(self, test_imgs, test_labels):

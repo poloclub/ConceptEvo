@@ -27,7 +27,6 @@ from feature.example_patch import *
 
 # Find and evaluate concept evolution for class predictions
 from importantevo.important_evo import *
-from importantevo.important_evo_vgg16 import *
 from importantevo.eval_important_evo import *
 
 

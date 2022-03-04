@@ -132,6 +132,9 @@ class Emb:
 
                     pbar.update(1)
 
+                if emb_epoch % 10 == 0:
+                    self.save_embedding(emb_epoch)
+
         err = self.compute_err()
 
         # Save neuron embedding
@@ -185,10 +188,15 @@ class Emb:
         return neuron
 
 
-    def save_embedding(self):
+    def save_embedding(self, epoch=None):
+        path = self.data_path.get_path('neuron_emb')
+        if epoch != None:
+            path = path.replace('.json', '-epoch={}.json'.format(epoch))
+
+        emb_to_save = {}
         for neuron in self.emb:
-            self.emb[neuron] = self.emb[neuron].tolist()
-        self.save_json(self.emb, self.data_path.get_path('neuron_emb'))
+            emb_to_save[neuron] = self.emb[neuron].tolist()
+        self.save_json(emb_to_save, path)
 
 
     """

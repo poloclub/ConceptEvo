@@ -1,0 +1,14 @@
+Run on cuda:7
+vgg16-512-0.05-0.9
+total = 50000
+top1 test accuracy = 4833 / 50000 = 0.09665999561548233
+topk test accuracy = 12241 / 50000 = 0.2448199987411499
+time: 102.02049732208252 sec
+
+Run on cuda:7
+vgg16-512-0.01-0.9
+total = 50000
+top1 test accuracy = 17540 / 50000 = 0.3507999777793884
+topk test accuracy = 31007 / 50000 = 0.6201399564743042
+time: 107.28230810165405 sec
+

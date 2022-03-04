@@ -1,0 +1,4 @@
+Find Vgg16 5->21 label=856 gpu=0 N=260
+Run on cuda:0
+Run on cuda:0
+Run on cuda:0

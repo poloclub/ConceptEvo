@@ -93,8 +93,8 @@ class ImportantEvo:
     def find_idx_training_dataset_for_class(self):
         total = len(self.training_dataset)
         unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label - 2))
-        end = min(total, unit * (self.args.label + 4))
+        start = max(0, unit * (self.args.label - 4))
+        end = min(total, unit * (self.args.label + 5))
 
         start_idx, end_idx = -1, -1
         with tqdm(total=(end - start)) as pbar:
@@ -102,15 +102,14 @@ class ImportantEvo:
                 img, label = self.training_dataset[i]
                 if (self.args.label == label) and (start_idx == -1):
                     start_idx = i
-                elif (self.args.label == label) and (end_idx == -1):
                     end_idx = -2
                 if (self.args.label < label) and (end_idx == -2):
                     end_idx = i
                     break
                 pbar.update(1)
+
         self.start_idx = start_idx
         self.end_idx = end_idx
-        print(self.start_idx, self.end_idx)
 
 
     """
@@ -121,18 +120,12 @@ class ImportantEvo:
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
                 
-                # Evaluate important evolution for given label
-                # if self.args.label not in labels:
-                #     continue
-                # nec_idxs = labels == self.args.label
-                # nec_labels = labels[nec_idxs]
-                # nec_imgs = imgs[nec_idxs]
-
                 # Find important evolution for one batch
-                # self.find_imp_evo_one_batch(nec_imgs, nec_labels)
                 self.find_imp_evo_one_batch(imgs, labels)
                 pbar.update(self.args.batch_size)
 
+                # Find evolutions for only a few batches
+                # Basically sampling the first few shuffled batches
                 total_num_so_far = (batch_idx + 1) * self.args.batch_size
                 if total_num_so_far >= self.args.find_num_sample_imgs:
                     break

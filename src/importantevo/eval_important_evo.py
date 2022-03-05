@@ -122,6 +122,10 @@ class EvalImportantEvo:
                     end_idx = i
                     break
                 pbar.update(1)
+
+        if (start_idx != -1) and (end_idx < 0):
+            end_idx = end
+
         self.start_idx = start_idx
         self.end_idx = end_idx
         print(self.start_idx, self.end_idx)
@@ -172,7 +176,7 @@ class EvalImportantEvo:
 
 
     def eval_prediction(self, outputs, labels):
-
+        labels = labels.to(self.device)
         num_inputs = outputs.shape[0]
         _, topk_preds = outputs.topk(
             k=self.args.topk, dim=1
@@ -181,7 +185,7 @@ class EvalImportantEvo:
         # Top-1 prediction (B,)
         top1_preds = topk_preds[:, 0]
         # top1_correct = torch.sum(top1_preds == self.args.label).item()
-        top1_correct = torch.sum(top1_preds == labels).item()
+        top1_correct = torch.sum(top1_preds == labels.data).item()
         top1_incorr = num_inputs - top1_correct
 
         # Top-k prediction (k, B)
@@ -189,7 +193,7 @@ class EvalImportantEvo:
         topk_correct = 0
         for k in range(self.args.topk):
             # num_correct = torch.sum(topk_preds[k] == self.args.label).item()
-            num_correct = torch.sum(topk_preds[k] == labels).item()
+            num_correct = torch.sum(topk_preds[k] == labels.data).item()
             topk_correct += num_correct
         topk_incorr = num_inputs - topk_correct
 

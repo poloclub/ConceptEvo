@@ -93,7 +93,7 @@ class ImportantEvo:
     def find_idx_training_dataset_for_class(self):
         total = len(self.training_dataset)
         unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label - 4))
+        start = max(0, unit * (self.args.label - 6))
         end = min(total, unit * (self.args.label + 5))
 
         start_idx, end_idx = -1, -1
@@ -108,8 +108,12 @@ class ImportantEvo:
                     break
                 pbar.update(1)
 
+        if (start_idx != -1) and (end_idx < 0):
+            end_idx = end
+
         self.start_idx = start_idx
         self.end_idx = end_idx
+        print('find important evo', self.start_idx, self.end_idx)
 
 
     """

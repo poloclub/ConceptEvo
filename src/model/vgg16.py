@@ -30,7 +30,8 @@ class Vgg16:
         self.conv_layers = []
         self.num_neurons = {}
 
-        self.need_loading_a_saved_model = len(self.args.model_path) > 0
+        self.need_loading_a_saved_model = None
+        self.check_if_need_load_model()
         self.ckpt = None
 
         self.device = None
@@ -41,6 +42,12 @@ class Vgg16:
         self.test_data_loader = None
         self.optimizer = None
         self.criterion = None
+
+    
+    def check_if_need_load_model(self):
+        check1 = len(self.args.model_path) > 0
+        check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
+        self.need_loading_a_saved_model = check1 and check2
 
 
     def init_basic_setting(self):
@@ -61,7 +68,7 @@ class Vgg16:
                 self.model.load_state_dict(self.ckpt)
 
         # Reset the final layer
-        # if not self.need_loading_a_saved_model:
+        # if self.args.train:
         #     num_feautres = self.model.classifier[6].in_features
         #     self.model.classifier[6] = nn.Linear(
         #         num_feautres, 

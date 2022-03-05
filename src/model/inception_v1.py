@@ -27,7 +27,8 @@ class InceptionV1:
         self.conv_layers = []
         self.num_neurons = {}
 
-        self.need_loading_a_saved_model = len(self.args.model_path) > 0
+        self.need_loading_a_saved_model = None
+        self.check_if_need_load_model()
         self.ckpt = None
 
         self.device = None
@@ -37,6 +38,12 @@ class InceptionV1:
         self.test_data_loader = None
         self.optimizer = None
         self.criterion = None
+
+
+    def check_if_need_load_model(self):
+        check1 = len(self.args.model_path) > 0
+        check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
+        self.need_loading_a_saved_model = check1 and check2
 
 
     def init_basic_setting(self):

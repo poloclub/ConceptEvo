@@ -138,7 +138,9 @@ class ArgParser:
             default='vgg16', 
             choices=[
                 'vgg16', 
+                'vgg19',
                 'inception_v3', 
+                'vgg16_no_dropout',
                 'vgg16_pretrained', 
                 'vgg19_pretrained',
                 'inception_v1_pretrained',

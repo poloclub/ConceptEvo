@@ -411,6 +411,31 @@ class Vgg19:
         return f_maps, layer_info
 
 
+    def save_model(self, epoch):
+        path = self.data_path.get_model_path_during_training(epoch)
+        torch.save(
+            {
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+                'loss': self.criterion,
+                'epoch': epoch
+            }, 
+            path
+        )
+        
+        
+    def load_model(self, epoch):
+        path = self.data_path.get_model_path_during_training(epoch)
+        self.load_model_from_path(path)
+
+
+    def load_model_from_path(self, path):
+        self.init_model()
+        self.model.load_state_dict(torch.load(path))
+        self.model.to(self.device)
+        self.set_all_parameter_requires_grad()
+
+
     def write_log(self, log, append=True, test=False):
         log_opt = 'a' if append else 'w'
         key = 'test-log' if test else 'train-log'

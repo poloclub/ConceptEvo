@@ -1,2 +1,0 @@
-InceptionV3-1.5-70 stimulus
-Run on cuda:6

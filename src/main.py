@@ -10,6 +10,7 @@ from model.vgg16 import *
 from model.vgg19 import *
 from model.inception_v1 import *
 from model.inception_v3 import *
+from model.vgg16_no_dropout import *
 
 # Utils
 from utils.args import *
@@ -95,12 +96,16 @@ def load_model(args, data_path):
 
     if args.model_name == 'vgg16':
         model = Vgg16(args, data_path)
+    elif args.model_name == 'vgg19':
+        model = Vgg19(args, data_path)
     elif args.model_name == 'inception_v3':
         model = InceptionV3(args, data_path)
     elif args.model_name == 'vgg16_pretrained':
         model = Vgg16(args, data_path, pretrained=True)
     elif args.model_name == 'vgg19_pretrained':
         model = Vgg19(args, data_path, pretrained=True)
+    elif args.model_name == 'vgg16_no_dropout':
+        model = Vgg16NoDropout(args, data_path)
     elif args.model_name == 'inception_v3_pretrained':
         model = InceptionV3(args, data_path, pretrained=True)
     elif args.model_name == 'inception_v1_pretrained':

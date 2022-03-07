@@ -12,7 +12,7 @@ import torch.optim as optim
 import torchvision.models as models
 from torchvision import datasets, transforms
 
-class Vgg16:
+class Vgg16NoDropout:
     """Defines Vgg16 model"""
 
     def __init__(self, args, data_path, pretrained=False, from_to=None):
@@ -47,8 +47,7 @@ class Vgg16:
     def check_if_need_load_model(self):
         check1 = len(self.args.model_path) > 0
         check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-        check3 = self.from_to != None
-        self.need_loading_a_saved_model = (check1 and check2) or check3
+        self.need_loading_a_saved_model = check1 and check2
 
 
     def init_basic_setting(self):
@@ -70,10 +69,15 @@ class Vgg16:
 
         # Reset the final layer
         if self.args.train:
-            num_feautres = self.model.classifier[6].in_features
-            self.model.classifier[6] = nn.Linear(
-                num_feautres, 
-                self.num_classes
+            print('Remove dropout layers')
+            self.model.classifier = nn.Sequential(
+                nn.Linear(512 * 7 * 7, 4096),
+                nn.ReLU(True),
+                # nn.Dropout(p=dropout),
+                nn.Linear(4096, 4096),
+                nn.ReLU(True),
+                # nn.Dropout(p=dropout),
+                nn.Linear(4096, self.num_classes),
             )
         
         # Set all parameters learnable
@@ -223,13 +227,20 @@ class Vgg16:
                 running_loss, top1_train_corrects, topk_train_corrects = \
                     self.train_one_epoch(pbar)
 
+                # Measure test accuracy
+                test_total, top1_test_corrects, topk_test_corrects = \
+                    self.test_model(write_log=False)
+
                 # Save the model
                 self.save_model(epoch)
 
                 # Save log
                 self.write_training_epoch_log(
                     tic, epoch,
-                    [running_loss, top1_train_corrects, topk_train_corrects,]
+                    [
+                        running_loss, top1_train_corrects, topk_train_corrects,
+                        test_total, top1_test_corrects, topk_test_corrects
+                    ]
                 )
 
 
@@ -288,9 +299,10 @@ class Vgg16:
         return running_loss, top1_train_corrects, topk_train_corrects
 
     
-    def test_model(self):
+    def test_model(self, write_log=True):
         # Make the first log
-        self.write_test_first_log()
+        if write_log:
+            self.write_test_first_log()
 
         # Get ready to train the model
         tic = time()
@@ -300,16 +312,16 @@ class Vgg16:
         top1_test_corrects, topk_test_corrects = 0, 0
 
         # Measure test set accuracy
-        with tqdm(total=total) as pbar:
-            for test_imgs, test_labels in self.test_data_loader:
+        # with tqdm(total=total) as pbar:
+        for test_imgs, test_labels in self.test_data_loader:
 
-                top1_corrects, topk_corrects = \
-                    self.test_one_batch(test_imgs, test_labels)
+            top1_corrects, topk_corrects = \
+                self.test_one_batch(test_imgs, test_labels)
 
-                top1_test_corrects += top1_corrects
-                topk_test_corrects += topk_corrects
+            top1_test_corrects += top1_corrects
+            topk_test_corrects += topk_corrects
 
-                pbar.update(self.args.batch_size)
+                # pbar.update(self.args.batch_size)
 
         toc = time()
 
@@ -322,9 +334,11 @@ class Vgg16:
             topk_test_corrects, total, topk_test_corrects / total
         )
         log += 'time: {} sec\n'.format(toc - tic)
-        self.write_log(log, append=True, test=True)
-        print(self.args.model_nickname)
-        print(log)
+        if write_log:
+            self.write_log(log, append=True, test=True)
+            print(self.args.model_nickname)
+            print(log)
+        return total, top1_test_corrects, topk_test_corrects
 
     
     def test_one_batch(self, test_imgs, test_labels):
@@ -448,7 +462,7 @@ class Vgg16:
             'lr': self.args.lr,
             'momentum': self.args.momentum,
             'k': self.args.topk,
-            'start_model_path': self.args.model_path
+            'model_path': self.args.model_path
         }
         first_log = ', '.join(
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]
@@ -459,20 +473,25 @@ class Vgg16:
     def write_training_epoch_log(self, tic, epoch, stats):
         num_training_data = len(self.training_data_loader.dataset)
 
-        running_loss, top1_train_corrects, topk_train_corrects = stats
+        running_loss, top1_train_corrects, topk_train_corrects, \
+            test_total, top1_test_corrects, topk_test_corrects = stats
 
         epoch_loss = running_loss / num_training_data
         epoch_top1_train_acc = \
             top1_train_corrects.double() / num_training_data
         epoch_topk_train_acc = \
             topk_train_corrects.double() / num_training_data
+        epoch_top1_test_acc = top1_test_corrects / test_total
+        epoch_topk_test_acc = topk_test_corrects / test_total
 
         self.write_log_with_log_info({
             'epoch': epoch,
             'cumulative_time_sec': '{:.2f}'.format(time() - tic),
             'loss': '{:.4f}'.format(epoch_loss),
             'top1_train_acc': '{:.4f}'.format(epoch_top1_train_acc),
-            'topk_train_acc': '{:.4f}'.format(epoch_topk_train_acc)
+            'topk_train_acc': '{:.4f}'.format(epoch_topk_train_acc),
+            'top1_test_acc': '{:.4f}'.format(epoch_top1_test_acc),
+            'topk_test_acc': '{:.4f}'.format(epoch_topk_test_acc),
         })
 
     def write_test_first_log(self):

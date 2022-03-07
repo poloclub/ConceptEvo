@@ -140,6 +140,9 @@ class Reducer:
             toc = time()
             log = 'Save reducer: {:.2f} sec'.format(toc - tic)
             self.write_log(log)
+        else:
+            # Get embedding
+            emb2d = self.reducer.transform(self.X_all)
 
         # Parse embeddings into self.emb2d
         tic = time()
@@ -219,8 +222,9 @@ class Reducer:
 
     
     def load_reducer(self):
-        file_path = self.data_path.get_path('dim_reduction-reducer')
-        self.reducer = joblib.load(filename)
+        # file_path = self.data_path.get_path('dim_reduction-reducer')
+        file_path = self.args.reducer_path
+        self.reducer = joblib.load(file_path)
 
 
     def write_first_log(self):

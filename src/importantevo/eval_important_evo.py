@@ -30,7 +30,8 @@ class EvalImportantEvo:
         self.data_loader = None
 
         self.imp_evo = {}
-        self.pred = {}
+        self.pred_train = {}
+        self.pred_test = {}
 
         self.start_idx = -1
         self.end_idx = -1
@@ -64,7 +65,21 @@ class EvalImportantEvo:
 
     
     def init_global_vars(self):
-        self.pred = {
+        self.pred_train = {
+            'from': {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            },
+            'to': {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            },
+            'important': {},
+            'least-important': {},
+            'random': {}
+        }
+
+        self.pred_test = {
             'from': {
                 'top1': {'correct': 0, 'incorrect': 0},
                 'topk': {'correct': 0, 'incorrect': 0}
@@ -92,6 +107,18 @@ class EvalImportantEvo:
             self.data_path.get_path('train_data'),
             data_transform
         )
+        self.test_dataset = datasets.ImageFolder(
+            self.data_path.get_path('test_data'),
+            data_transform
+        )
+
+        self.test_loader = torch.utils.data.DataLoader(
+            self.test_dataset, 
+            batch_size=self.args.batch_size,
+            shuffle=True,
+            num_workers=4
+        )
+
         self.find_idx_training_dataset_for_class()
         self.class_dataset = torch.utils.data.Subset(
             self.training_dataset, 
@@ -122,6 +149,10 @@ class EvalImportantEvo:
                     end_idx = i
                     break
                 pbar.update(1)
+
+        if (start_idx != -1) and (end_idx < 0):
+            end_idx = end
+
         self.start_idx = start_idx
         self.end_idx = end_idx
         print(self.start_idx, self.end_idx)
@@ -131,11 +162,27 @@ class EvalImportantEvo:
     Evaluate important evolution
     """
     def eval_imp_evo(self):
+        
         tic, total = time(), len(self.data_loader.dataset)
         self.load_imp_evo()
+
+        print('test on training data')
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                self.eval_imp_evo_one_batch(imgs, labels)
+                self.eval_imp_evo_one_batch(imgs, labels, testdata=False)
+                pbar.update(self.args.batch_size)
+
+        print('test on test data')
+        total = len(self.test_loader.dataset)
+        with tqdm(total=total) as pbar:
+            for batch_idx, (imgs, labels) in enumerate(self.test_loader):
+                nec_idxs = labels == self.args.label
+                if True in nec_idxs:
+                    nec_imgs = imgs[nec_idxs]
+                    nec_labels = labels[nec_idxs]
+                    self.eval_imp_evo_one_batch(
+                        nec_imgs, nec_labels, testdata=True
+                    )
                 pbar.update(self.args.batch_size)
 
         toc = time()
@@ -148,31 +195,41 @@ class EvalImportantEvo:
         self.imp_evo = self.load_json(path)
 
 
-    def eval_imp_evo_one_batch(self, imgs, labels):
+    def eval_imp_evo_one_batch(self, imgs, labels, testdata=False):
         # Forward
         from_f_maps, layer_info = self.from_model.forward(imgs)
         to_f_maps, layer_info = self.to_model.forward(imgs)
         f_maps = {'from': from_f_maps, 'to': to_f_maps}
 
         # Measure prediction accuracy before prevention
-        self.eval_prediction_before_prevention_one_batch(f_maps, labels)
+        self.eval_prediction_before_prevention_one_batch(
+            f_maps, labels, testdata=testdata
+        )
         
         # Evaluate evolutions
-        self.eval_evol_with_baseline_one_epoch(f_maps, layer_info, labels)
+        self.eval_evo_with_baseline_one_epoch(
+            f_maps, layer_info, labels, testdata=testdata
+        )
 
     
-    def eval_prediction_before_prevention_one_batch(self, f_maps, labels):
+    def eval_prediction_before_prevention_one_batch(self, f_maps, labels, testdata=False):
         for key in ['from', 'to']:
             top1_correct, top1_incorr, topk_correct, topk_incorr = \
                 self.eval_prediction(f_maps[key][-1], labels)
-            self.pred[key]['top1']['correct'] += top1_correct
-            self.pred[key]['top1']['incorrect'] += top1_incorr
-            self.pred[key]['topk']['correct'] += topk_correct
-            self.pred[key]['topk']['incorrect'] += topk_incorr
+            if testdata:
+                self.pred_test[key]['top1']['correct'] += top1_correct
+                self.pred_test[key]['top1']['incorrect'] += top1_incorr
+                self.pred_test[key]['topk']['correct'] += topk_correct
+                self.pred_test[key]['topk']['incorrect'] += topk_incorr
+            else:
+                self.pred_train[key]['top1']['correct'] += top1_correct
+                self.pred_train[key]['top1']['incorrect'] += top1_incorr
+                self.pred_train[key]['topk']['correct'] += topk_correct
+                self.pred_train[key]['topk']['incorrect'] += topk_incorr
 
 
     def eval_prediction(self, outputs, labels):
-
+        labels = labels.to(self.device)
         num_inputs = outputs.shape[0]
         _, topk_preds = outputs.topk(
             k=self.args.topk, dim=1
@@ -181,7 +238,7 @@ class EvalImportantEvo:
         # Top-1 prediction (B,)
         top1_preds = topk_preds[:, 0]
         # top1_correct = torch.sum(top1_preds == self.args.label).item()
-        top1_correct = torch.sum(top1_preds == labels).item()
+        top1_correct = torch.sum(top1_preds == labels.data).item()
         top1_incorr = num_inputs - top1_correct
 
         # Top-k prediction (k, B)
@@ -189,14 +246,14 @@ class EvalImportantEvo:
         topk_correct = 0
         for k in range(self.args.topk):
             # num_correct = torch.sum(topk_preds[k] == self.args.label).item()
-            num_correct = torch.sum(topk_preds[k] == labels).item()
+            num_correct = torch.sum(topk_preds[k] == labels.data).item()
             topk_correct += num_correct
         topk_incorr = num_inputs - topk_correct
 
         return top1_correct, top1_incorr, topk_correct, topk_incorr
 
 
-    def eval_evol_with_baseline_one_epoch(self, f_maps, layer_info, labels):
+    def eval_evo_with_baseline_one_epoch(self, f_maps, layer_info, labels, testdata=False):
         to_model_children = list(self.to_model.model.children())
         num_layers = len(layer_info)
         
@@ -206,7 +263,10 @@ class EvalImportantEvo:
             for layer_idx in range(num_layers -1):
                 # Get ready and sample neurons
                 s_neurons = self.get_ready_eval(
-                    method_type, layer_info, layer_idx - num_layer_skip
+                    method_type, 
+                    layer_info, 
+                    layer_idx - num_layer_skip, 
+                    testdata=testdata
                 )
 
                 # Evaluate predictions after prevention
@@ -230,10 +290,12 @@ class EvalImportantEvo:
                     num_layer_skip += 1
                 else:
                     layer_name = layer_info[layer_idx - num_layer_skip]['name']
-                    self.record_eval(layer_name, vals, method_type)
+                    self.record_eval(
+                        layer_name, vals, method_type, testdata=testdata
+                    )
 
     
-    def get_ready_eval(self, key, layer_info, layer_idx):
+    def get_ready_eval(self, key, layer_info, layer_idx, testdata=False):
         layer_name = layer_info[layer_idx]['name']
         num_neurons = layer_info[layer_idx]['num_neurons']
         num_sampled_neurons = int(num_neurons * self.args.eval_sample_ratio)
@@ -246,11 +308,18 @@ class EvalImportantEvo:
                 num_neurons, num_sampled_neurons, replace=False
             )
             sampled_neurons = [self.imp_evo[layer_name][r] for r in rand_idxs]
-        if layer_name not in self.pred[key]:
-            self.pred[key][layer_name] = {
-                'top1': {'correct': 0, 'incorrect': 0},
-                'topk': {'correct': 0, 'incorrect': 0}
-            }
+        if testdata:
+            if layer_name not in self.pred_test[key]:
+                self.pred_test[key][layer_name] = {
+                    'top1': {'correct': 0, 'incorrect': 0},
+                    'topk': {'correct': 0, 'incorrect': 0}
+                }
+        else:
+            if layer_name not in self.pred_train[key]:
+                self.pred_train[key][layer_name] = {
+                    'top1': {'correct': 0, 'incorrect': 0},
+                    'topk': {'correct': 0, 'incorrect': 0}
+                }
         return sampled_neurons
 
     
@@ -380,23 +449,39 @@ class EvalImportantEvo:
         return to_f_map
 
 
-    def record_eval(self, layer_name, vals, key):
-        if layer_name not in self.pred[key]:
-            self.pred[key][layer_name] = {
-                'top1': {'correct': 0, 'incorrect': 0},
-                'topk': {'correct': 0, 'incorrect': 0}
-            }
-        top1_correct, top1_incorr, topk_correct, topk_incorr = vals
-        self.pred[key][layer_name]['top1']['correct'] += top1_correct
-        self.pred[key][layer_name]['top1']['incorrect'] += top1_incorr
-        self.pred[key][layer_name]['topk']['correct'] += topk_correct
-        self.pred[key][layer_name]['topk']['incorrect'] += topk_incorr
+    def record_eval(self, layer_name, vals, key, testdata):
+        if testdata:
+            if layer_name not in self.pred_test[key]:
+                self.pred_test[key][layer_name] = {
+                    'top1': {'correct': 0, 'incorrect': 0},
+                    'topk': {'correct': 0, 'incorrect': 0}
+                }
+            top1_correct, top1_incorr, topk_correct, topk_incorr = vals
+            self.pred_test[key][layer_name]['top1']['correct'] += top1_correct
+            self.pred_test[key][layer_name]['top1']['incorrect'] += top1_incorr
+            self.pred_test[key][layer_name]['topk']['correct'] += topk_correct
+            self.pred_test[key][layer_name]['topk']['incorrect'] += topk_incorr
+        else:
+            if layer_name not in self.pred_train[key]:
+                self.pred_train[key][layer_name] = {
+                    'top1': {'correct': 0, 'incorrect': 0},
+                    'topk': {'correct': 0, 'incorrect': 0}
+                }
+            top1_correct, top1_incorr, topk_correct, topk_incorr = vals
+            self.pred_train[key][layer_name]['top1']['correct'] += top1_correct
+            self.pred_train[key][layer_name]['top1']['incorrect'] += top1_incorr
+            self.pred_train[key][layer_name]['topk']['correct'] += topk_correct
+            self.pred_train[key][layer_name]['topk']['incorrect'] += topk_incorr
 
 
     def save_results(self):
         path = self.data_path.get_path('eval_important_evo')
-        self.save_json(self.pred, path)
-    
+        path.replace('eval_important_evo-', 'eval_important_evo-test-')
+        self.save_json(self.pred_test, path)
+
+        path = self.data_path.get_path('eval_important_evo')
+        path.replace('eval_important_evo-', 'eval_important_evo-train-')
+        self.save_json(self.pred_train, path)
 
     """
     Handle external files (e.g., output, log, ...)

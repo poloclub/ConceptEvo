@@ -68,7 +68,8 @@ class Vgg16NoDropout:
                 self.model.load_state_dict(self.ckpt)
 
         # Reset the final layer
-        if not self.args.train:
+        if self.args.train:
+            print('Remove dropout layers')
             self.model.classifier = nn.Sequential(
                 nn.Linear(512 * 7 * 7, 4096),
                 nn.ReLU(True),
@@ -76,7 +77,7 @@ class Vgg16NoDropout:
                 nn.Linear(4096, 4096),
                 nn.ReLU(True),
                 # nn.Dropout(p=dropout),
-                nn.Linear(4096, num_classes),
+                nn.Linear(4096, self.num_classes),
             )
         
         # Set all parameters learnable
@@ -311,16 +312,16 @@ class Vgg16NoDropout:
         top1_test_corrects, topk_test_corrects = 0, 0
 
         # Measure test set accuracy
-        with tqdm(total=total) as pbar:
-            for test_imgs, test_labels in self.test_data_loader:
+        # with tqdm(total=total) as pbar:
+        for test_imgs, test_labels in self.test_data_loader:
 
-                top1_corrects, topk_corrects = \
-                    self.test_one_batch(test_imgs, test_labels)
+            top1_corrects, topk_corrects = \
+                self.test_one_batch(test_imgs, test_labels)
 
-                top1_test_corrects += top1_corrects
-                topk_test_corrects += topk_corrects
+            top1_test_corrects += top1_corrects
+            topk_test_corrects += topk_corrects
 
-                pbar.update(self.args.batch_size)
+                # pbar.update(self.args.batch_size)
 
         toc = time()
 

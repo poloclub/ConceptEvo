@@ -460,7 +460,10 @@ class DataPath:
         )
         if os.path.exists(model_path):
             time_stamp = self.get_time_stamp()
-            model_path = 'model-{}-{}.pth'.format(time_stamp, epoch)
+            model_path = os.path.join(
+                self.path['model-dir'],
+                'model-{}-{}.pth'.format(time_stamp, epoch)
+            )
 
         return model_path
 

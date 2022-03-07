@@ -47,7 +47,8 @@ class Vgg16:
     def check_if_need_load_model(self):
         check1 = len(self.args.model_path) > 0
         check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-        self.need_loading_a_saved_model = check1 and check2
+        check3 = self.from_to != None
+        self.need_loading_a_saved_model = (check1 and check2) or check3
 
 
     def init_basic_setting(self):
@@ -68,12 +69,12 @@ class Vgg16:
                 self.model.load_state_dict(self.ckpt)
 
         # Reset the final layer
-        # if self.args.train:
-        #     num_feautres = self.model.classifier[6].in_features
-        #     self.model.classifier[6] = nn.Linear(
-        #         num_feautres, 
-        #         self.num_classes
-        #     )
+        if self.args.train:
+            num_feautres = self.model.classifier[6].in_features
+            self.model.classifier[6] = nn.Linear(
+                num_feautres, 
+                self.num_classes
+            )
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()

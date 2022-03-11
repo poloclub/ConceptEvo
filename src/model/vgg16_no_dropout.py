@@ -59,6 +59,15 @@ class Vgg16NoDropout:
     def init_model(self):
         # Initialize an empty model
         self.model = models.vgg16(pretrained=False)
+        self.model.classifier = nn.Sequential(
+            nn.Linear(512 * 7 * 7, 4096),
+            nn.ReLU(True),
+            # nn.Dropout(p=dropout),
+            nn.Linear(4096, 4096),
+            nn.ReLU(True),
+            # nn.Dropout(p=dropout),
+            nn.Linear(4096, self.num_classes),
+        )
 
         # Load a saved model
         if self.need_loading_a_saved_model:
@@ -66,19 +75,6 @@ class Vgg16NoDropout:
                 self.model.load_state_dict(self.ckpt['model_state_dict'])
             else:
                 self.model.load_state_dict(self.ckpt)
-
-        # Reset the final layer
-        if self.args.train:
-            print('Remove dropout layers')
-            self.model.classifier = nn.Sequential(
-                nn.Linear(512 * 7 * 7, 4096),
-                nn.ReLU(True),
-                # nn.Dropout(p=dropout),
-                nn.Linear(4096, 4096),
-                nn.ReLU(True),
-                # nn.Dropout(p=dropout),
-                nn.Linear(4096, self.num_classes),
-            )
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()

@@ -476,11 +476,13 @@ class EvalImportantEvo:
 
     def save_results(self):
         path = self.data_path.get_path('eval_important_evo')
-        path.replace('eval_important_evo-', 'eval_important_evo-test-')
+        path = path.replace('eval_important_evo-', 'eval_important_evo-test-')
+        # path = path.replace('eval_important_evo-', 'eval_important_evo-test-')
         self.save_json(self.pred_test, path)
 
         path = self.data_path.get_path('eval_important_evo')
-        path.replace('eval_important_evo-', 'eval_important_evo-train-')
+        path = path.replace('eval_important_evo-', 'eval_important_evo-train-')
+        # path.replace('eval_important_evo-', 'eval_important_evo-train-')
         self.save_json(self.pred_train, path)
 
     """

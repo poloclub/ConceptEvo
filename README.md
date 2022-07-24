@@ -1,5 +1,5 @@
-# NeuEvo
-NeuEvo is an library for interpreting model development and concept evolution of 
+# ConceptEvo
+ConceptEvo is an library for interpreting model development and concept evolution of 
 deep neural networks during training process.
 
 ## Installation

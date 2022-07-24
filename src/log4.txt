@@ -1,0 +1,5 @@
+=======================================================================
+find important evo Vgg16 label=514 epoch=5->21 find_num_sample_imgs=384
+Run on cuda:4
+Run on cuda:4
+Run on cuda:4

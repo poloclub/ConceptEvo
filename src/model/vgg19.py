@@ -222,7 +222,7 @@ class Vgg19:
 
                 # Measure test accuracy
                 test_total, top1_test_corrects, topk_test_corrects = \
-                    self.test_model(write_log=False)
+                    self.test_model(write_log=False, test_on='test')
 
                 # Save the model
                 self.save_model(epoch)
@@ -292,46 +292,62 @@ class Vgg19:
         return running_loss, top1_train_corrects, topk_train_corrects
 
 
-    def test_model(self, write_log=True):
-        # Make the first log
-        if write_log:
-            self.write_test_first_log()
-
-        # Get ready to train the model
+    def measure_acc(self, data_loader):
+        # Get ready to test the model on dataset
         tic = time()
-        total = len(self.test_data_loader.dataset)
+        total = len(data_loader.dataset)
 
-        # Variables to evaluate the training performance
-        top1_test_corrects, topk_test_corrects = 0, 0
-
-        # Measure test set accuracy
+        # Measure accuracy
+        final_top1_corrects, final_topk_corrects = 0, 0
         with tqdm(total=total) as pbar:
-            for test_imgs, test_labels in self.test_data_loader:
+            for imgs, labels in data_loader:
 
-                top1_corrects, topk_corrects = \
-                    self.test_one_batch(test_imgs, test_labels)
+                top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
 
-                top1_test_corrects += top1_corrects
-                topk_test_corrects += topk_corrects
+                final_top1_corrects += top1_corrects
+                final_topk_corrects += topk_corrects
 
                 pbar.update(self.args.batch_size)
 
         toc = time()
 
-        # Save log
+        # Generate log
         log = 'total = {}\n'.format(total)
-        log += 'top1 test accuracy = {} / {} = {}\n'.format(
-            top1_test_corrects, total, top1_test_corrects / total
+        log += 'top1 accuracy = {} / {} = {}\n'.format(
+            final_top1_corrects, total, final_top1_corrects / total
         )
-        log += 'topk test accuracy = {} / {} = {}\n'.format(
-            topk_test_corrects, total, topk_test_corrects / total
+        log += 'topk accuracy = {} / {} = {}\n'.format(
+            final_topk_corrects, total, final_topk_corrects / total
         )
         log += 'time: {} sec\n'.format(toc - tic)
+        
+        return total, log, final_top1_corrects, final_topk_corrects
+
+
+    def test_model(self, write_log=True, test_on='test'):
+        # Make the first log
         if write_log:
-            self.write_log(log, append=True, test=True)
+            self.write_test_first_log()
+
+        # Test model on training data
+        if test_on == 'training':
+            total, log, top1_corrects, topk_corrects = \
+                self.measure_acc(self.training_data_loader)
+
+        # Test model on test data
+        if test_on == 'test':
+            total, log, top1_corrects, topk_corrects = \
+                self.measure_acc(self.test_data_loader)
+
+        # Save log
+        log = ('-' * 10) + test_on + '\n' + log + ('-' * 10) + '\n'
+        
+        if write_log:
+            if_test = test_on == 'test'
+            self.write_log(log, append=True, test=if_test)
             print(self.args.model_nickname)
             print(log)
-        return total, top1_test_corrects, topk_test_corrects
+        return total, top1_corrects, topk_corrects
 
 
     def test_one_batch(self, test_imgs, test_labels):

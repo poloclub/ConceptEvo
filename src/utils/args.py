@@ -548,7 +548,7 @@ class ArgParser:
 
         self.parser.add_argument(
             '--find_num_sample_imgs', 
-            default=100, 
+            default=50, 
             type=int,
             help='Number of sampled images to find important evolution'
         )

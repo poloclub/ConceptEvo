@@ -152,7 +152,8 @@ def train_model(model):
 
 
 def test_model(model):
-    model.test_model()
+    model.test_model(write_log=True, test_on='test')
+    model.test_model(write_log=True, test_on='training')
 
 
 def compute_stimulus(args, data_path, model):

@@ -440,7 +440,9 @@ class DataPath:
         if self.args.test:
             data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
             test_log_path = os.path.join(log_dir_path, 'test-log.txt')
+            train_log_path = os.path.join(log_dir_path, 'training-test-log.txt')
             self.path['test-log'] = test_log_path
+            self.path['train-log'] = train_log_path
         
         self.path['model-file'] = self.args.model_path
     

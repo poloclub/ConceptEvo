@@ -308,6 +308,9 @@ class EvalImportantEvo:
                 num_neurons, num_sampled_neurons, replace=False
             )
             sampled_neurons = [self.imp_evo[layer_name][r] for r in rand_idxs]
+        else:
+            print(f"A wrong key ({key}) is given.")
+
         if testdata:
             if layer_name not in self.pred_test[key]:
                 self.pred_test[key][layer_name] = {
@@ -394,8 +397,8 @@ class EvalImportantEvo:
                 return None
 
         # Freeze sampled neurons
-        from_f_map = f_maps['from'][layer_idx - num_skips]
-        to_f_map = f_maps['to'][layer_idx - num_skips]
+        from_f_map = f_maps['from'][layer_idx - num_skips].clone().detach()
+        to_f_map = f_maps['to'][layer_idx - num_skips].clone().detach()
         for neuron_info in sampled_neurons:
             neuron_id = neuron_info['neuron']
             neuron_i = int(neuron_id.split('-')[-1])
@@ -477,12 +480,12 @@ class EvalImportantEvo:
     def save_results(self):
         path = self.data_path.get_path('eval_important_evo')
         path = path.replace('eval_important_evo-', 'eval_important_evo-test-')
-        # path = path.replace('eval_important_evo-', 'eval_important_evo-test-')
+        print(path)
         self.save_json(self.pred_test, path)
 
         path = self.data_path.get_path('eval_important_evo')
         path = path.replace('eval_important_evo-', 'eval_important_evo-train-')
-        # path.replace('eval_important_evo-', 'eval_important_evo-train-')
+        print(path)
         self.save_json(self.pred_train, path)
 
     """

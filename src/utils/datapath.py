@@ -212,7 +212,8 @@ class DataPath:
             ['label', self.args.label],
             ['find_num_sample_imgs', self.args.find_num_sample_imgs],
             ['from', self.args.from_model_nickname.replace('-', '_')],
-            ['to', self.args.to_model_nickname.replace('-', '_')]
+            ['to', self.args.to_model_nickname.replace('-', '_')],
+            ['idx', self.args.idx]
         ]
 
         self.action_to_args['eval_important_evo'] = [
@@ -222,7 +223,8 @@ class DataPath:
             # ['eps', self.args.eps],
             ['eval_sample_ratio', self.args.eval_sample_ratio],
             ['from', self.args.from_model_nickname.replace('-', '_')],
-            ['to', self.args.to_model_nickname.replace('-', '_')]
+            ['to', self.args.to_model_nickname.replace('-', '_')],
+            ['idx', self.args.idx]
         ]
 
 

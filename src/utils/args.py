@@ -239,7 +239,13 @@ class ArgParser:
         self.parser.add_argument(
             '--eval_important_evo', 
             default='None', 
-            choices=['None', 'perturbation', 'freezing', 'damage'],
+            choices=[
+                'None', 
+                'perturbation', 
+                'reverting',
+                'reverting_by_layer', 
+                'reverting_by_layer_by_bin'
+            ],
             type=str,
             help='Option to evaluate important evolution'
         )
@@ -548,8 +554,15 @@ class ArgParser:
 
         self.parser.add_argument(
             '--find_num_sample_imgs', 
-            default=50, 
+            default=250, 
             type=int,
             help='Number of sampled images to find important evolution'
+        )
+
+        self.parser.add_argument(
+            '--idx', 
+            default=0, 
+            type=int,
+            help='Index of run'
         )
         

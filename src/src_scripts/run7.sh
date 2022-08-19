@@ -1,18 +1,101 @@
 gpu=7
+batch_size=56
+find_num_sample_imgs=128
 
-batch_size=512
-model_name=vgg16_no_dropout
-model_nickname=vgg16_no_dropout-256-0.01-0.9
-
-for epoch in 0 1 2 3 5 30
+# for label in 910 913 943 944 957 963 964 972 975 979 993 994
+for label in 897
 do
-    echo "VGG16-no-dropout-$epoch stimulus"
-    python main.py \
-        --gpu $gpu \
-        --stimulus T \
-        --model_name $model_name \
-        --model_nickname $model_nickname-$epoch \
-        --model_path ../data/model/$model_nickname/data/model-$epoch.pth \
-        --batch_size $batch_size \
-        --topk_s 10 
+    echo "======================================================================="
+    from_epoch=5
+    to_epoch=21
+
+    for idx in 0 1 2 3 4
+    do
+        # msg="find important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, find_num_sample_imgs=$find_num_sample_imgs"
+        # echo $msg
+        # python main.py \
+        #     --gpu $gpu \
+        #     --find_important_evo T \
+        #     --batch_size $batch_size \
+        #     --label $label \
+        #     --find_num_sample_imgs $find_num_sample_imgs \
+        #     --idx $idx \
+        #     --model_name vgg16 \
+        #     --model_nickname vgg16-512-0.01-0.9 \
+        #     --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+        #     --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+        #     --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+        #     --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth
+
+        msg="eval important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, find_num_sample_imgs=$find_num_sample_imgs, reverting_by_layer_by_bin" 
+        echo $msg
+        # for ratio in 0.1 0.3 0.5 0.7 0.9
+        for ratio in 0.25
+        do
+            echo "-------------------------------------------------------------------"
+            echo "[start] (ratio=$ratio) $msg"
+            python main.py \
+                --gpu $gpu \
+                --eval_important_evo reverting_by_layer_by_bin \
+                --batch_size $batch_size \
+                --label $label \
+                --find_num_sample_imgs $find_num_sample_imgs \
+                --idx $idx \
+                --eval_sample_ratio $ratio \
+                --model_name vgg16 \
+                --model_nickname vgg16-512-0.01-0.9 \
+                --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+                --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+                --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+                --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth 
+            echo "[end] (ratio=$ratio) $msg"
+        done
+    done
+    echo "======================================================================="
+
+    from_epoch=21
+    to_epoch=207
+    for idx in 0 1 2 3 4
+    do
+        # msg="find important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, idx=$idx"
+        # echo $msg
+        # python main.py \
+        #     --gpu $gpu \
+        #     --find_important_evo T \
+        #     --batch_size $batch_size \
+        #     --label $label \
+        #     --find_num_sample_imgs $find_num_sample_imgs \
+        #     --idx $idx \
+        #     --model_name vgg16 \
+        #     --model_nickname vgg16-512-0.01-0.9 \
+        #     --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+        #     --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+        #     --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+        #     --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth 
+
+        msg="eval important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, idx=$idx, reverting_by_layer_by_bin" 
+        echo $msg
+        # for ratio in 0.1 0.3 0.5 0.7 0.9
+        for ratio in 0.25
+        do
+            echo "-------------------------------------------------------------------"
+            echo "[start] (ratio=$ratio) $msg"
+            python main.py \
+                --gpu $gpu \
+                --eval_important_evo reverting_by_layer_by_bin \
+                --batch_size $batch_size \
+                --label $label \
+                --find_num_sample_imgs $find_num_sample_imgs \
+                --idx $idx \
+                --eval_sample_ratio $ratio \
+                --model_name vgg16 \
+                --model_nickname vgg16-512-0.01-0.9 \
+                --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+                --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+                --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+                --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth 
+            echo "[end] (ratio=$ratio) $msg"
+        done
+    done
+
 done

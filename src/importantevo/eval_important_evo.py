@@ -30,8 +30,8 @@ class EvalImportantEvo:
         self.data_loader = None
 
         self.imp_evo = {}
-        self.pred_train = {}
-        self.pred_test = {}
+        self.pred = {}
+        self.num_bins = -1
 
         self.start_idx = -1
         self.end_idx = -1
@@ -65,33 +65,21 @@ class EvalImportantEvo:
 
     
     def init_global_vars(self):
-        self.pred_train = {
-            'from': {
-                'top1': {'correct': 0, 'incorrect': 0},
-                'topk': {'correct': 0, 'incorrect': 0}
-            },
-            'to': {
-                'top1': {'correct': 0, 'incorrect': 0},
-                'topk': {'correct': 0, 'incorrect': 0}
-            },
-            'important': {},
-            'least-important': {},
-            'random': {}
-        }
-
-        self.pred_test = {
-            'from': {
-                'top1': {'correct': 0, 'incorrect': 0},
-                'topk': {'correct': 0, 'incorrect': 0}
-            },
-            'to': {
-                'top1': {'correct': 0, 'incorrect': 0},
-                'topk': {'correct': 0, 'incorrect': 0}
-            },
-            'important': {},
-            'least-important': {},
-            'random': {}
-        }
+        self.num_bins = int(1 / self.args.eval_sample_ratio)
+        for train_test in ['train', 'test']:
+            self.pred[train_test] = {
+                'from': {
+                    'top1': {'correct': 0, 'incorrect': 0},
+                    'topk': {'correct': 0, 'incorrect': 0}
+                },
+                'to': {
+                    'top1': {'correct': 0, 'incorrect': 0},
+                    'topk': {'correct': 0, 'incorrect': 0}
+                },
+                'important': {},
+                'least-important': {},
+                'random': {}
+            }
 
 
     def init_data_loader(self):
@@ -216,17 +204,12 @@ class EvalImportantEvo:
         for key in ['from', 'to']:
             top1_correct, top1_incorr, topk_correct, topk_incorr = \
                 self.eval_prediction(f_maps[key][-1], labels)
-            if testdata:
-                self.pred_test[key]['top1']['correct'] += top1_correct
-                self.pred_test[key]['top1']['incorrect'] += top1_incorr
-                self.pred_test[key]['topk']['correct'] += topk_correct
-                self.pred_test[key]['topk']['incorrect'] += topk_incorr
-            else:
-                self.pred_train[key]['top1']['correct'] += top1_correct
-                self.pred_train[key]['top1']['incorrect'] += top1_incorr
-                self.pred_train[key]['topk']['correct'] += topk_correct
-                self.pred_train[key]['topk']['incorrect'] += topk_incorr
-
+            train_test = 'test' if testdata else 'train'
+            self.pred[train_test][key]['top1']['correct'] += top1_correct
+            self.pred[train_test][key]['top1']['incorrect'] += top1_incorr
+            self.pred[train_test][key]['topk']['correct'] += topk_correct
+            self.pred[train_test][key]['topk']['incorrect'] += topk_incorr
+            
 
     def eval_prediction(self, outputs, labels):
         labels = labels.to(self.device)
@@ -254,11 +237,33 @@ class EvalImportantEvo:
 
 
     def eval_evo_with_baseline_one_epoch(self, f_maps, layer_info, labels, testdata=False):
-        to_model_children = list(self.to_model.model.children())
-        num_layers = len(layer_info)
+        option = self.args.eval_important_evo
+        if option == 'perturbation':
+            self.eval_evo_with_baseline_one_epoch_perturbation(
+                f_maps, layer_info, labels, testdata=testdata
+            )
+        elif option == 'reverting_by_layer':
+            self.eval_evo_with_baseline_one_epoch_reverting_by_layer(
+                f_maps, layer_info, labels, testdata=testdata
+            )
+        elif option == 'reverting_by_layer_by_bin':
+            self.eval_evo_with_baseline_one_epoch_reverting_by_layer_by_bin(
+                f_maps, layer_info, labels, testdata=testdata
+            )
+        elif option == 'reverting':
+            self.eval_evo_with_baseline_one_epoch_reverting(
+                f_maps, layer_info, labels, testdata=testdata
+            )
+        else:
+            log = f'Error: unkonwn option {option}'
+            raise ValueError(log)
         
+
+    def eval_evo_with_baseline_one_epoch_perturbation(self, f_maps, layer_info, labels, testdata=False):
+        num_layers = len(layer_info)
         for method_type in ['important', 'least-important', 'random']:
             num_layer_skip = 0
+
             # Ignore the last linear layer
             for layer_idx in range(num_layers -1):
                 # Get ready and sample neurons
@@ -270,21 +275,42 @@ class EvalImportantEvo:
                 )
 
                 # Evaluate predictions after prevention
-                option = self.args.eval_important_evo
-                if option == 'perturbation':
-                    vals = self.eval_perturb(
-                        f_maps, layer_idx, s_neurons, labels,
-                        num_layer_skip, layer_info[layer_idx]['name']
-                    )
-                elif option == 'freezing':
-                    vals = self.eval_freezing(
-                        f_maps, layer_idx, s_neurons, labels,
-                        num_layer_skip, layer_info[layer_idx]['name']
-                    )
+                vals = self.eval_perturb(
+                    f_maps, layer_idx, s_neurons, labels,
+                    num_layer_skip, layer_info[layer_idx]['name']
+                )
+                
+                # Record the prediction performance
+                if vals is None:
+                    num_layer_skip += 1
                 else:
-                    log = f'Error: unkonwn option {option}'
-                    raise ValueError(log)
+                    layer_name = layer_info[layer_idx - num_layer_skip]['name']
+                    self.record_eval(
+                        layer_name, vals, method_type, testdata=testdata
+                    )
 
+
+    def eval_evo_with_baseline_one_epoch_reverting_by_layer(self, f_maps, layer_info, labels, testdata=False):
+        num_layers = len(layer_info)
+        for method_type in ['important', 'least-important', 'random']:
+            num_layer_skip = 0
+
+            # Ignore the last linear layer
+            for layer_idx in range(num_layers -1):
+                # Get ready and sample neurons
+                s_neurons = self.get_ready_eval(
+                    method_type, 
+                    layer_info, 
+                    layer_idx - num_layer_skip, 
+                    testdata=testdata
+                )
+
+                # Evaluate predictions after prevention
+                vals = self.eval_reverting_by_layer(
+                    f_maps, layer_idx, s_neurons, labels,
+                    num_layer_skip, layer_info[layer_idx]['name']
+                )
+                
                 # Record the prediction performance
                 if vals is None:
                     num_layer_skip += 1
@@ -295,6 +321,113 @@ class EvalImportantEvo:
                     )
 
     
+    def eval_evo_with_baseline_one_epoch_reverting_by_layer_by_bin(self, f_maps, layer_info, labels, testdata=False):
+        num_layers = len(layer_info)
+        
+        # Reverting most important evolutions
+        for bin_idx in range(self.num_bins):
+            num_layer_skip = 0
+
+            # Ignore the last linear layer
+            for layer_idx in range(num_layers -1):
+                # Get ready and sample neurons
+                s_neurons = self.get_ready_eval_by_bin( 
+                    layer_info, 
+                    layer_idx - num_layer_skip, 
+                    bin_idx,
+                    testdata=testdata
+                )
+
+                # Evaluate predictions after prevention
+                vals = self.eval_reverting_by_layer(
+                    f_maps, layer_idx, s_neurons, labels,
+                    num_layer_skip, layer_info[layer_idx]['name']
+                )
+            
+                # Record the prediction performance
+                if vals is None:
+                    num_layer_skip += 1
+                else:
+                    layer_name = layer_info[layer_idx - num_layer_skip]['name']
+                    self.record_eval_by_bin(
+                        layer_name, vals, bin_idx, testdata=testdata
+                    )
+
+        # Reverting randomly selected evolutions
+        num_layer_skip = 0
+        for layer_idx in range(num_layers -1):
+            # Get ready and sample neurons
+            s_neurons = self.get_ready_eval( 
+                'random',
+                layer_info, 
+                layer_idx - num_layer_skip, 
+                testdata=testdata
+            )
+
+            # Evaluate predictions after prevention
+            vals = self.eval_reverting_by_layer(
+                f_maps, layer_idx, s_neurons, labels,
+                num_layer_skip, layer_info[layer_idx]['name']
+            )
+        
+            # Record the prediction performance
+            if vals is None:
+                num_layer_skip += 1
+            else:
+                layer_name = layer_info[layer_idx - num_layer_skip]['name']
+                self.record_eval_by_bin_random(
+                    layer_name, vals, testdata=testdata
+                )
+
+
+
+    def eval_evo_with_baseline_one_epoch_reverting(self, f_maps, layer_info, labels, testdata=False):
+        num_layers = len(layer_info)
+        for method_type in ['important', 'least-important', 'random']:
+            num_layer_skip = 0
+
+            # Ignore the last linear layer
+            for layer_start_idx in range(num_layers -1):
+
+                # Deep copy f_maps
+                f_maps_cp = {
+                    'from': [e.clone().detach() for e in f_maps['from']],
+                    'to': [e.clone().detach() for e in f_maps['to']]
+                }
+
+                num_layer_curr_skip = 0
+                for layer_curr_idx in range(layer_start_idx, num_layers -1):
+                    # Get ready and sample neurons
+                    s_neurons = self.get_ready_eval(
+                        method_type,
+                        layer_info, 
+                        layer_curr_idx - num_layer_skip - num_layer_curr_skip, 
+                        testdata=testdata
+                    )
+
+                    # Forward one layer
+                    f_maps_cp, valid = self.forward_reverting(
+                        f_maps_cp, layer_curr_idx, s_neurons, labels,
+                        num_layer_skip + num_layer_curr_skip, 
+                        layer_info[layer_curr_idx]['name']
+                    )
+
+                    if not valid:
+                        num_layer_curr_skip += 1
+                        if layer_curr_idx == layer_start_idx:
+                            num_layer_skip += 1
+
+                # Record the prediction performance
+                last_idx = num_layers - 1 - num_layer_skip - num_layer_curr_skip
+                start_layer_name = layer_info[layer_start_idx]['name']
+                to_f_map = f_maps_cp['to'][last_idx]
+                to_f_map = self.forward_vgg16_at_layer(last_idx, to_f_map)
+                pred_vals = self.eval_prediction(to_f_map, labels)
+                self.record_eval(
+                    start_layer_name, pred_vals, method_type, testdata=testdata
+                )
+            
+                
     def get_ready_eval(self, key, layer_info, layer_idx, testdata=False):
         layer_name = layer_info[layer_idx]['name']
         num_neurons = layer_info[layer_idx]['num_neurons']
@@ -311,20 +444,38 @@ class EvalImportantEvo:
         else:
             print(f"A wrong key ({key}) is given.")
 
-        if testdata:
-            if layer_name not in self.pred_test[key]:
-                self.pred_test[key][layer_name] = {
-                    'top1': {'correct': 0, 'incorrect': 0},
-                    'topk': {'correct': 0, 'incorrect': 0}
-                }
-        else:
-            if layer_name not in self.pred_train[key]:
-                self.pred_train[key][layer_name] = {
-                    'top1': {'correct': 0, 'incorrect': 0},
-                    'topk': {'correct': 0, 'incorrect': 0}
-                }
+        train_test = 'test' if testdata else 'train'
+        if layer_name not in self.pred[train_test][key]:
+            self.pred[train_test][key][layer_name] = {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            }
         return sampled_neurons
 
+
+    def get_ready_eval_by_bin(self, layer_info, layer_idx, bin_idx, testdata=False):
+        layer_name = layer_info[layer_idx]['name']
+        num_neurons = layer_info[layer_idx]['num_neurons']
+        num_sampled_neurons = int(num_neurons * self.args.eval_sample_ratio)
+        start_idx = max(0, bin_idx * num_sampled_neurons)
+        end_idx = min(num_neurons, (bin_idx + 1) * num_sampled_neurons)
+        sampled_neurons = self.imp_evo[layer_name][start_idx:end_idx]
+
+        train_test = 'test' if testdata else 'train'
+        key = 'important'
+        if layer_name not in self.pred[train_test][key]:
+            self.pred[train_test][key][layer_name] = {
+                'top1': {
+                    'correct': [0] * self.num_bins, 
+                    'incorrect': [0] * self.num_bins
+                },
+                'topk': {
+                    'correct': [0] * self.num_bins,
+                    'incorrect': [0] * self.num_bins
+                }
+            }
+
+        return sampled_neurons
     
     def eval_perturb(self, f_maps, layer_idx, sampled_neurons, labels, num_skips=0, layer_name=None):
         # Ignore if 'AuxLogits' layer in InceptionV3 is given 
@@ -337,7 +488,6 @@ class EvalImportantEvo:
             tensor_shape = f_maps['from'][layer_idx - num_skips].shape
             if len(tensor_shape) < 4:
                 return None
-
 
         # Apply perturbation on sampled neurons
         from_f_map = f_maps['from'][layer_idx - num_skips]
@@ -384,7 +534,7 @@ class EvalImportantEvo:
         return pred_vals
 
 
-    def eval_freezing(self, f_maps, layer_idx, sampled_neurons, labels, num_skips=0, layer_name=None):
+    def eval_reverting_by_layer(self, f_maps, layer_idx, sampled_neurons, labels, num_skips=0, layer_name=None):
         # Ignore if 'AuxLogits' layer in InceptionV3 is given 
         if self.args.model_name == 'inception_v3':
             if 'Aux' in layer_name:
@@ -396,7 +546,7 @@ class EvalImportantEvo:
             if len(tensor_shape) < 4:
                 return None
 
-        # Freeze sampled neurons
+        # Revert sampled neurons' activation map
         from_f_map = f_maps['from'][layer_idx - num_skips].clone().detach()
         to_f_map = f_maps['to'][layer_idx - num_skips].clone().detach()
         for neuron_info in sampled_neurons:
@@ -404,7 +554,7 @@ class EvalImportantEvo:
             neuron_i = int(neuron_id.split('-')[-1])
             to_f_map[:, neuron_i, :, :] = from_f_map[:, neuron_i, :, :]
 
-        # Forward after freezing
+        # Forward after reverting the evolution
         if self.args.model_name == 'inception_v3':
             to_f_map = self.forward_inception_v3_at_layer(layer_idx, to_f_map)
         elif self.args.model_name == 'vgg16':
@@ -413,10 +563,51 @@ class EvalImportantEvo:
             log = f'Error: unkonwn model {self.args.model_name}'
             raise ValueError(log)
 
-        # Measure accuracy after freezing
+        # Measure accuracy after reverting the evolution
         pred_vals = self.eval_prediction(to_f_map, labels)
         
         return pred_vals
+
+
+    def forward_reverting(self, f_maps, layer_idx, sampled_neurons, labels, num_skips=0, layer_name=None):
+        # Ignore if 'AuxLogits' layer in InceptionV3 is given 
+        if self.args.model_name == 'inception_v3':
+            if 'Aux' in layer_name:
+                return f_maps, False
+
+        # Ignore if 'AdaptiveAvgPool2d' and 'Linear' layer in Vgg16 is given
+        if self.args.model_name == 'vgg16':
+            if 'AdaptiveAvgPool2d' in layer_name:
+                return f_maps, False
+            if 'Linear' in layer_name:
+                return f_maps, False
+            if len(f_maps['from']) <= layer_idx - num_skips:
+                return f_maps, False
+            tensor_shape = f_maps['from'][layer_idx - num_skips].shape
+            if len(tensor_shape) < 4:
+                return f_maps, False
+
+        # Revert sampled neurons' activation map
+        from_f_map = f_maps['from'][layer_idx - num_skips]
+        to_f_map = f_maps['to'][layer_idx - num_skips]
+        for neuron_info in sampled_neurons:
+            neuron_id = neuron_info['neuron']
+            neuron_i = int(neuron_id.split('-')[-1])
+            layer = neuron_id.split('-')[0]
+            to_f_map[:, neuron_i, :, :] = from_f_map[:, neuron_i, :, :]
+        f_maps['to'][layer_idx - num_skips] =  to_f_map
+
+        # Forward after reverting_by_layer
+        if self.args.model_name == 'inception_v3':
+            to_f_map = self.forward_inception_v3_at_layer_one_step(layer_idx, to_f_map)
+        elif self.args.model_name == 'vgg16':
+            to_f_map = self.forward_vgg16_at_layer_one_step(layer_idx, to_f_map)
+        else:
+            log = f'Error: unkonwn model {self.args.model_name}'
+            raise ValueError(log)
+        f_maps['to'][layer_idx - num_skips + 1] = to_f_map
+        
+        return f_maps, True
 
 
     def forward_inception_v3_at_layer(self, layer_idx, to_f_map):
@@ -430,6 +621,21 @@ class EvalImportantEvo:
             if next_layer_idx == num_layers - 1:
                 to_f_map = torch.flatten(to_f_map, 1)
             to_f_map = next_layer(to_f_map)
+        return to_f_map
+
+
+    def forward_inception_v3_at_layer_one_step(self, layer_idx, to_f_map):
+        to_model_children = list(self.to_model.model.children())
+        num_layers = len(to_model_children)
+        for next_layer_idx in range(layer_idx + 1, num_layers):
+            next_layer = to_model_children[next_layer_idx]
+            next_layer_name = type(next_layer).__name__
+            if 'Aux' in next_layer_name:
+                continue
+            if next_layer_idx == num_layers - 1:
+                to_f_map = torch.flatten(to_f_map, 1)
+            to_f_map = next_layer(to_f_map)
+            break
         return to_f_map
 
 
@@ -451,42 +657,94 @@ class EvalImportantEvo:
                 layer_i += 1
         return to_f_map
 
+    
+    def forward_vgg16_at_layer_one_step(self, layer_idx, to_f_map):
+        to_model_children = list(self.to_model.model.children())
+        num_layers = len(to_model_children)
+        layer_i = 0
+        one_step_end = False
+
+        for child in to_model_children:
+            if one_step_end:
+                break
+            if type(child) == nn.Sequential:
+                for layer in child.children():
+                    if layer_i > layer_idx:
+                        to_f_map = layer(to_f_map)
+                        one_step_end = True
+                    layer_i += 1
+                    if one_step_end:
+                        break
+                if one_step_end:
+                        break
+            else: 
+                if layer_i > layer_idx:
+                    to_f_map = child(to_f_map)
+                    one_step_end = True
+                if type(child) == nn.AdaptiveAvgPool2d:
+                    to_f_map = torch.flatten(to_f_map, 1)
+                    one_step_end = True
+                layer_i += 1
+                if one_step_end:
+                    break
+
+        return to_f_map
 
     def record_eval(self, layer_name, vals, key, testdata):
-        if testdata:
-            if layer_name not in self.pred_test[key]:
-                self.pred_test[key][layer_name] = {
-                    'top1': {'correct': 0, 'incorrect': 0},
-                    'topk': {'correct': 0, 'incorrect': 0}
-                }
-            top1_correct, top1_incorr, topk_correct, topk_incorr = vals
-            self.pred_test[key][layer_name]['top1']['correct'] += top1_correct
-            self.pred_test[key][layer_name]['top1']['incorrect'] += top1_incorr
-            self.pred_test[key][layer_name]['topk']['correct'] += topk_correct
-            self.pred_test[key][layer_name]['topk']['incorrect'] += topk_incorr
-        else:
-            if layer_name not in self.pred_train[key]:
-                self.pred_train[key][layer_name] = {
-                    'top1': {'correct': 0, 'incorrect': 0},
-                    'topk': {'correct': 0, 'incorrect': 0}
-                }
-            top1_correct, top1_incorr, topk_correct, topk_incorr = vals
-            self.pred_train[key][layer_name]['top1']['correct'] += top1_correct
-            self.pred_train[key][layer_name]['top1']['incorrect'] += top1_incorr
-            self.pred_train[key][layer_name]['topk']['correct'] += topk_correct
-            self.pred_train[key][layer_name]['topk']['incorrect'] += topk_incorr
+        train_test = 'test' if testdata else 'train'
+        if layer_name not in self.pred[train_test][key]:
+            self.pred[train_test][key][layer_name] = {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            }
 
+        top1_correct, top1_incorr, topk_correct, topk_incorr = vals
+        self.pred[train_test][key][layer_name]['top1']['correct'] += top1_correct
+        self.pred[train_test][key][layer_name]['top1']['incorrect'] += top1_incorr
+        self.pred[train_test][key][layer_name]['topk']['correct'] += topk_correct
+        self.pred[train_test][key][layer_name]['topk']['incorrect'] += topk_incorr
+
+
+    def record_eval_by_bin(self, layer_name, vals, bin_idx, testdata):
+        train_test = 'test' if testdata else 'train'
+        key = 'important'
+        if layer_name not in self.pred[train_test][key]:
+            self.pred[train_test][key][layer_name] = {
+                'top1': {'correct': [], 'incorrect': []},
+                'topk': {'correct': [], 'incorrect': []}
+            }
+
+        top1_correct, top1_incorr, topk_correct, topk_incorr = vals
+        self.pred[train_test][key][layer_name]['top1']['correct'][bin_idx] += top1_correct
+        self.pred[train_test][key][layer_name]['top1']['incorrect'][bin_idx] += top1_incorr
+        self.pred[train_test][key][layer_name]['topk']['correct'][bin_idx] += topk_correct
+        self.pred[train_test][key][layer_name]['topk']['incorrect'][bin_idx] += topk_incorr
+
+
+    def record_eval_by_bin_random(self, layer_name, vals, testdata):
+        train_test = 'test' if testdata else 'train'
+        key = 'random'
+        if layer_name not in self.pred[train_test][key]:
+            self.pred[train_test][key][layer_name] = {
+                'top1': {'correct': 0, 'incorrect': 0},
+                'topk': {'correct': 0, 'incorrect': 0}
+            }
+
+        top1_correct, top1_incorr, topk_correct, topk_incorr = vals
+        self.pred[train_test][key][layer_name]['top1']['correct'] += top1_correct
+        self.pred[train_test][key][layer_name]['top1']['incorrect'] += top1_incorr
+        self.pred[train_test][key][layer_name]['topk']['correct'] += topk_correct
+        self.pred[train_test][key][layer_name]['topk']['incorrect'] += topk_incorr
+    
 
     def save_results(self):
         path = self.data_path.get_path('eval_important_evo')
-        path = path.replace('eval_important_evo-', 'eval_important_evo-test-')
-        print(path)
-        self.save_json(self.pred_test, path)
-
-        path = self.data_path.get_path('eval_important_evo')
-        path = path.replace('eval_important_evo-', 'eval_important_evo-train-')
-        print(path)
-        self.save_json(self.pred_train, path)
+        for train_test in ['train', 'test']:
+            path = path.replace(
+                'eval_important_evo-', 
+                f'eval_important_evo-{train_test}-'
+            )
+            self.save_json(self.pred[train_test], path)
 
     """
     Handle external files (e.g., output, log, ...)

@@ -1,36 +1,36 @@
-gpu=1
+gpu=0
 label=1
-eps=2
-ratio=0.3
+eps=2 # Used only for perturbation
+# ratio=0.3
 batch_size=128
 
-echo "find Vgg16 label $label 5->21"
-python main.py \
-    --gpu $gpu \
-    --find_important_evo T \
-    --batch_size $batch_size \
-    --label $label \
-    --model_name vgg16 \
-    --model_nickname vgg16-512-0.01-0.9 \
-    --from_model_nickname vgg16-512-0.01-0.9-5 \
-    --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-5.pth \
-    --to_model_nickname vgg16-512-0.01-0.9-21 \
-    --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-21.pth 
+# echo "find Vgg16 label $label 5->21"
+# python main.py \
+#     --gpu $gpu \
+#     --find_important_evo T \
+#     --batch_size $batch_size \
+#     --label $label \
+#     --model_name vgg16 \
+#     --model_nickname vgg16-512-0.01-0.9 \
+#     --from_model_nickname vgg16-512-0.01-0.9-5 \
+#     --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-5.pth \
+#     --to_model_nickname vgg16-512-0.01-0.9-21 \
+#     --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-21.pth 
 
-echo "eval Vgg16 label $label 11->121 perturbation"
-python main.py \
-    --gpu $gpu \
-    --eval_important_evo perturbation \
-    --batch_size $batch_size \
-    --label $label \
-    --eps $eps \
-    --eval_sample_ratio $ratio \
-    --model_name vgg16 \
-    --model_nickname vgg16-512-0.01-0.9 \
-    --from_model_nickname vgg16-512-0.01-0.9-5 \
-    --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-5.pth \
-    --to_model_nickname vgg16-512-0.01-0.9-21 \
-    --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-21.pth 
+# echo "eval Vgg16 label $label 11->121 perturbation"
+# python main.py \
+#     --gpu $gpu \
+#     --eval_important_evo perturbation \
+#     --batch_size $batch_size \
+#     --label $label \
+#     --eps $eps \
+#     --eval_sample_ratio $ratio \
+#     --model_name vgg16 \
+#     --model_nickname vgg16-512-0.01-0.9 \
+#     --from_model_nickname vgg16-512-0.01-0.9-5 \
+#     --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-5.pth \
+#     --to_model_nickname vgg16-512-0.01-0.9-21 \
+#     --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-21.pth 
 
 
 echo "eval Vgg16 label $label 11->121 freezing"
@@ -39,7 +39,6 @@ python main.py \
     --eval_important_evo freezing \
     --batch_size $batch_size \
     --label $label \
-    --eps $eps \
     --eval_sample_ratio $ratio \
     --model_name vgg16 \
     --model_nickname vgg16-512-0.01-0.9 \

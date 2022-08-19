@@ -1,86 +1,101 @@
-gpu=7
-model_name=vgg19_pretrained
-img_emb_path='../data/embedding/vgg19_pretrained/data/img_emb-dim=30-lr_img_emb=10.0-thr_img_emb=0.001-max_iter_img_emb=10000-k=10.txt' 
-emb_store_dirname='emb-5-base-vgg19_pretrained-10.0'
+gpu=0
+batch_size=56
+find_num_sample_imgs=128
 
-# Run projection
-for model in 'inception_v3_pretrained' 'vgg16_pretrained'
+
+for label in 1 10 11 20 27 34 42 48 53 59 67 85 97 104 133 156
 do
-    python main.py \
-        --gpu $gpu \
-        --proj_neuron_emb T \
-        --model_name $model \
-        --model_nickname $model \
-        --img_emb_path $img_emb_path \
-        --dim 30 \
-        --k 10 \
-        --emb_store_dirname $emb_store_dirname
+    echo "======================================================================="
+    from_epoch=5
+    to_epoch=21
+
+    for idx in 0 1 2 3 4
+    do
+    #     msg="find important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, find_num_sample_imgs=$find_num_sample_imgs, idx=$idx"
+    #     echo $msg
+    #     python main.py \
+    #         --gpu $gpu \
+    #         --find_important_evo T \
+    #         --batch_size $batch_size \
+    #         --label $label \
+    #         --find_num_sample_imgs $find_num_sample_imgs \
+    #         --idx $idx \
+    #         --model_name vgg16 \
+    #         --model_nickname vgg16-512-0.01-0.9 \
+    #         --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+    #         --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+    #         --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+    #         --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth
+
+        msg="eval important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, find_num_sample_imgs=$find_num_sample_imgs, reverting_by_layer_by_bin" 
+        echo $msg
+        # for ratio in 0.1 0.3 0.5 0.7 0.9
+        for ratio in 0.25
+        do
+            echo "-------------------------------------------------------------------"
+            echo "[start] (ratio=$ratio) $msg"
+            python main.py \
+                --gpu $gpu \
+                --eval_important_evo reverting_by_layer_by_bin \
+                --batch_size $batch_size \
+                --label $label \
+                --find_num_sample_imgs $find_num_sample_imgs \
+                --idx $idx \
+                --eval_sample_ratio $ratio \
+                --model_name vgg16 \
+                --model_nickname vgg16-512-0.01-0.9 \
+                --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+                --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+                --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+                --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth 
+            echo "[end] (ratio=$ratio) $msg"
+        done
+    done
+    echo "======================================================================="
+
+    from_epoch=21
+    to_epoch=207
+    for idx in 0 1 2 3 4
+    do
+        # msg="find important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, idx=$idx"
+        # echo $msg
+        # python main.py \
+        #     --gpu $gpu \
+        #     --find_important_evo T \
+        #     --batch_size $batch_size \
+        #     --label $label \
+        #     --find_num_sample_imgs $find_num_sample_imgs \
+        #     --idx $idx \
+        #     --model_name vgg16 \
+        #     --model_nickname vgg16-512-0.01-0.9 \
+        #     --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+        #     --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+        #     --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+        #     --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth 
+
+        msg="eval important evo, Vgg16, label=$label, epoch=$from_epoch->$to_epoch, idx=$idx, reverting_by_layer_by_bin" 
+        echo $msg
+        # for ratio in 0.1 0.3 0.5 0.7 0.9
+        for ratio in 0.25
+        do
+            echo "-------------------------------------------------------------------"
+            echo "[start] (ratio=$ratio) $msg"
+            python main.py \
+                --gpu $gpu \
+                --eval_important_evo reverting_by_layer_by_bin \
+                --batch_size $batch_size \
+                --label $label \
+                --find_num_sample_imgs $find_num_sample_imgs \
+                --idx $idx \
+                --eval_sample_ratio $ratio \
+                --model_name vgg16 \
+                --model_nickname vgg16-512-0.01-0.9 \
+                --from_model_nickname vgg16-512-0.01-0.9-$from_epoch \
+                --from_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$from_epoch.pth \
+                --to_model_nickname vgg16-512-0.01-0.9-$to_epoch \
+                --to_model_path ../data/model/vgg16-512-0.01-0.9/data/model-$to_epoch.pth 
+            echo "[end] (ratio=$ratio) $msg"
+        done
+    done
+
 done
-
-for epoch in 3 11 121
-do
-    python main.py \
-        --gpu $gpu \
-        --proj_neuron_emb T \
-        --model_name inception_v3 \
-        --model_nickname inception_v3-512-0.5-0.9-$epoch \
-        --model_path ../data/model/inception_v3-512-0.5-0.9/data/model-$epoch.pth \
-        --img_emb_path $img_emb_path \
-        --dim 30 \
-        --k 10 \
-        --emb_store_dirname $emb_store_dirname
-done
-
-for epoch in 4 69 70 71 100 298
-do
-    python main.py \
-        --gpu $gpu \
-        --proj_neuron_emb T \
-        --model_name inception_v3 \
-        --model_nickname inception_v3-512-1.5-0.9-$epoch \
-        --model_path ../data/model/inception_v3-512-1.5-0.9/data/model-$epoch.pth \
-        --img_emb_path $img_emb_path \
-        --dim 30 \
-        --k 10 \
-        --emb_store_dirname $emb_store_dirname
-done
-
-for epoch in 3 11 12 13
-do
-    python main.py \
-        --gpu $gpu \
-        --proj_neuron_emb T \
-        --model_name vgg16 \
-        --model_nickname vgg16-512-0.05-0.9-$epoch \
-        --model_path ../data/model/vgg16-512-0.05-0.9/data/model-$epoch.pth \
-        --img_emb_path $img_emb_path \
-        --dim 30 \
-        --k 10 \
-        --emb_store_dirname $emb_store_dirname
-done
-
-for epoch in 5 7 21 207
-do
-    python main.py \
-        --gpu $gpu \
-        --proj_neuron_emb T \
-        --model_name vgg16 \
-        --model_nickname vgg16-512-0.01-0.9-$epoch \
-        --model_path ../data/model/vgg16-512-0.01-0.9/data/model-$epoch.pth \
-        --img_emb_path $img_emb_path \
-        --dim 30 \
-        --k 10 \
-        --emb_store_dirname $emb_store_dirname
-done 
-
-# Emb 2d
-python main.py \
-    --gpu $gpu \
-    --dim_reduction UMAP \
-    --emb_set_dir ../data/embedding/$emb_store_dirname \
-    --dim 30 \
-    --model_for_emb_space base
-    # --reducer_path ../data/embedding/emb2d/data/emb-5-base-vgg19_pretrained-10.0-0305/reducer-dim=30-model_for_emb_space=base.sav
-    
-    
-

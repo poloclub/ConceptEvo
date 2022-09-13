@@ -54,12 +54,21 @@ class Vgg16Cifar10:
     def init_basic_setting(self):
         self.init_device()
         self.init_training_datasets_and_loader()
-        self.load_checkpoint()
 
 
     def init_model(self):
         # Initialize an empty model
-        self.model = models.vgg16(pretrained=False)
+        self.model = models.vgg16(pretrained=self.pretrained)
+
+        # Reset the final layer
+        num_feautres = self.model.classifier[6].in_features
+        self.model.classifier[6] = nn.Linear(
+            num_feautres, 
+            self.num_classes
+        )
+
+        # Load checkpoint
+        self.load_checkpoint()
 
         # Load a saved model
         if self.need_loading_a_saved_model:
@@ -67,14 +76,6 @@ class Vgg16Cifar10:
                 self.model.load_state_dict(self.ckpt['model_state_dict'])
             else:
                 self.model.load_state_dict(self.ckpt)
-
-        # Reset the final layer
-        if self.args.train:
-            num_feautres = self.model.classifier[6].in_features
-            self.model.classifier[6] = nn.Linear(
-                num_feautres, 
-                self.num_classes
-            )
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
@@ -288,7 +289,7 @@ class Vgg16Cifar10:
         return running_loss, top1_train_corrects, topk_train_corrects
 
     
-    def test_model(self):
+    def test_model(self, write_log=True, test_on='test'):
         # Make the first log
         self.write_test_first_log()
 
@@ -433,6 +434,7 @@ class Vgg16Cifar10:
         log_opt = 'a' if append else 'w'
         key = 'test-log' if test else 'train-log'
         path = self.data_path.get_path(key)
+        print(path)
         with open(path, log_opt) as f:
             f.write(log + '\n')
 

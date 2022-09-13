@@ -112,7 +112,7 @@ def load_model(args, data_path):
     elif args.model_name == 'inception_v1_pretrained':
         model = InceptionV1(args, data_path, pretrained=True)
     elif args.model_name == 'vgg16_cifar10':
-        model = Vgg16Cifar10(args, data_path, pretrained=True)
+        model = Vgg16Cifar10(args, data_path)
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 
@@ -156,7 +156,7 @@ def train_model(model):
 
 def test_model(model):
     model.test_model(write_log=True, test_on='test')
-    model.test_model(write_log=True, test_on='training')
+    # model.test_model(write_log=True, test_on='training')
 
 
 def compute_stimulus(args, data_path, model):

@@ -17,7 +17,8 @@ class DataPath:
         self.path = {}
 
         self.path_keys = [
-            'train-data', 'test-data', 'label-data',
+            'train-data', 'test-data', 
+            # 'label-data',
             'stimulus', 'co_act', 'neuron_emb', 'img_emb',
             'proj_neuron_emb', 'dim_reduction', 'neuron_feature', 
             'find_important_evo', 'eval_important_evo'

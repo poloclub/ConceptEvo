@@ -144,7 +144,8 @@ class ArgParser:
                 'vgg16_pretrained', 
                 'vgg19_pretrained',
                 'inception_v1_pretrained',
-                'inception_v3_pretrained'
+                'inception_v3_pretrained',
+                'vgg16_cifar10' # remove the harcode later
             ],
             type=str,                
             help='CNN model name'
@@ -268,7 +269,7 @@ class ArgParser:
             '--data_label_path', 
             default='../../ILSVRC2012/imagenet-labels.txt', 
             type=str,                
-            help='Training data path'
+            help='Label data path'
         )
 
         self.parser.add_argument(

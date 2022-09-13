@@ -11,6 +11,7 @@ from model.vgg19 import *
 from model.inception_v1 import *
 from model.inception_v3 import *
 from model.vgg16_no_dropout import *
+from model.vgg16_cifar10 import *
 
 # Utils
 from utils.args import *
@@ -110,6 +111,8 @@ def load_model(args, data_path):
         model = InceptionV3(args, data_path, pretrained=True)
     elif args.model_name == 'inception_v1_pretrained':
         model = InceptionV1(args, data_path, pretrained=True)
+    elif args.model_name == 'vgg16_cifar10':
+        model = Vgg16Cifar10(args, data_path, pretrained=True)
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 

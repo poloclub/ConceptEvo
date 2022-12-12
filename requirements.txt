@@ -34,7 +34,7 @@ ipython-genutils @ file:///tmp/build/80754af9/ipython_genutils_1606773439826/wor
 itsdangerous @ file:///tmp/build/80754af9/itsdangerous_1621432558163/work
 jedi @ file:///tmp/build/80754af9/jedi_1611333729159/work
 Jinja2 @ file:///tmp/build/80754af9/jinja2_1635780242639/work
-joblib==1.1.0
+joblib==1.2.0
 json5 @ file:///tmp/build/80754af9/json5_1624432770122/work
 jsonschema @ file:///Users/ktietz/demo/mc3/conda-bld/jsonschema_1630511932244/work
 jupyter-client @ file:///tmp/build/80754af9/jupyter_client_1637148478538/work

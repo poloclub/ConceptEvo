@@ -1,9 +1,8 @@
 # ConceptEvo
-ConceptEvo is an library for interpreting model development and concept evolution of 
-deep neural networks during training process.
+ConceptEvo is a library for interpreting how a deep learning model evolves while it is trained.
 
 ## Installation
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install NeuEvo.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install ConceptEvo.
 Run the following command in your shell.
 ```shell
 pip install -r requirements.txt
@@ -16,10 +15,10 @@ You can run those scripts inside `./src`.
 ## Examples
 
 ## Credits
-NeuEvo was created by ... .
+ConceptEvo was created by ... .
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
 
 ## Contact
-Please open an issue or contact Anonymous author for any questions.
+Please open an issue or contact the authors for any questions.

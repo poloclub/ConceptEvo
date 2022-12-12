@@ -5,31 +5,27 @@ argumensts. An instruction for setting arguments can be found in
 <TODO: Add a link to an instruction for setting args>.
 """
 
-# CNN Models
-from model.vgg16 import *
-from model.vgg19 import *
-from model.inception_v1 import *
-from model.inception_v3 import *
-from model.vgg16_no_dropout import *
-from model.vgg16_cifar10 import *
-
-# Utils
-from utils.args import *
-from utils.datapath import *
-
 # Embedding
-from embedding.stimulus import *
-from embedding.reduce_dim import *
 from embedding.image_embedding import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
-
+from embedding.reduce_dim import *
+from embedding.stimulus import *
 # Concept images of neurons
 from feature.example_patch import *
-
 # Find and evaluate concept evolution for class predictions
-from importantevo.important_evo import *
 from importantevo.eval_important_evo import *
+from importantevo.important_evo import *
+# CNN Models
+from model.inception_v1 import *
+from model.inception_v3 import *
+from model.vgg16 import *
+from model.vgg16_cifar10 import *
+from model.vgg16_no_dropout import *
+from model.vgg19 import *
+# Utils
+from utils.args import *
+from utils.datapath import *
 
 
 def main():

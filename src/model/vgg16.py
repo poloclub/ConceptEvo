@@ -1,16 +1,17 @@
-import os
 import copy
+import os
+from time import time
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from time import time
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
 from torchvision import datasets, transforms
+from tqdm import tqdm
+
 
 class Vgg16:
     """Defines Vgg16 model"""

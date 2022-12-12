@@ -1,7 +1,9 @@
 import json
+from time import time
+
 import numpy as np
 from tqdm import tqdm
-from time import time
+
 
 class ImageEmb:
     """Generate image embeddings."""

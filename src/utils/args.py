@@ -308,6 +308,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--weight_decay',
+            default=0.05, 
+            type=float,
+            help='weight_decay for training (AdamW)'
+        )
+
+        self.parser.add_argument(
             '--num_epochs', 
             default=300, 
             type=int,

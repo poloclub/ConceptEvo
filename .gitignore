@@ -1,5 +1,6 @@
-# Ignore .DS_Store
+# Ignore .DS_Store and .vscode/
 .DS_Store
+.vscode/
 
 # Ignore .ipynb_checkpoint
 .ipynb_checkpoints/

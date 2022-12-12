@@ -1,15 +1,16 @@
 import os
+from time import time
+
 import numpy as np
 import pandas as pd
-from time import time
-from tqdm import tqdm
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision.models as models
 import torch.utils.data as data_utils
+import torchvision.models as models
 from torchvision import datasets, transforms
+from tqdm import tqdm
+
 
 class Vgg19:
     def __init__(self, args, data_path, pretrained=False, from_to=None):

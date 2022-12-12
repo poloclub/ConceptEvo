@@ -1,14 +1,16 @@
-import cv2
 import json
-import numpy as np
-from tqdm import tqdm
 from time import time
 
+import cv2
+import numpy as np
 import torch
 import torch.nn as nn
+from torch.profiler import ProfilerActivity, profile, record_function
 from torchvision import datasets, transforms
+from tqdm import tqdm
 
 from utils.utils import *
+
 
 class Stimulus:
     """Find stimulus for each neuron"""
@@ -98,32 +100,45 @@ class Stimulus:
         self.init_stimulus()
 
         tic, total = time(), len(self.data_loader)
+        num_batches = 0
         with tqdm(total=total) as pbar:
-            for batch_idx, (imgs, labels) in enumerate(self.data_loader):
+            with profile (activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
+                with record_function("find_stimulus"):
+                    for batch_idx, (imgs, labels) in enumerate(self.data_loader):
 
-                # Get input images in a batch and their labels
-                imgs = imgs.to(self.device)
-                labels = labels.to(self.device)
+                        # Get input images in a batch and their labels
+                        imgs = imgs.to(self.device)
+                        labels = labels.to(self.device)
 
-                # Update stimulus for the first layer
-                f_map = self.compute_feature_map(self.layers[0]['layer'], imgs)
-                self.update_stimulus(self.layers[0]['name'], f_map, batch_idx)
+                        # Update stimulus for the first layer
+                        f_map = self.compute_feature_map(self.layers[0]['layer'], imgs)
+                        self.update_stimulus(self.layers[0]['name'], f_map, batch_idx)
 
-                # Update stimulus for remaining layers
-                for i in range(1, len(self.layers) - 1):
-                    try:
-                        f_map = self.layers[i]['layer'](f_map)
-                        self.update_stimulus(
-                            self.layers[i]['name'], f_map, batch_idx
-                        )
-                    except RuntimeError:
-                        log = f'Error in find_stimulus for '
-                        log += self.layers[i]['name']
-                        #  self.write_log(log)
+                        # Update stimulus for remaining layers
+                        for i in range(1, len(self.layers) - 1):
+                            try:
+                                f_map = self.layers[i]['layer'](f_map)
+                                self.update_stimulus(
+                                    self.layers[i]['name'], f_map, batch_idx
+                                )
+                            except RuntimeError:
+                                log = f'Error in find_stimulus for '
+                                log += self.layers[i]['name']
+                                #  self.write_log(log)
 
-                pbar.update(1)
+                        pbar.update(1)
+                        num_batches += 1
+                        if num_batches >= 10:
+                            break
 
-        self.write_log('cumulative_time_sec: {:.2f}'.format(time() - tic))
+        prof_str = prof.key_averages().table(
+            sort_by="cpu_time_total", row_limit=20
+        )
+        print(type(prof_str))
+        prof_str = str(prof_str)
+        log_str = 'cumulative_time_sec: {:.2f}'.format(time() - tic)
+        log_str += '\n' + prof_str + '\n'
+        self.write_log(log_str)
 
 
     def init_stimulus(self):
@@ -159,13 +174,13 @@ class Stimulus:
             act_vals, img_indices = torch.sort(
                 max_act[:, neuron], descending=True
             )
+            act_vals = act_vals.cpu().data.numpy()
+            img_indices = img_indices.cpu().data.numpy()
+
             for k in range(self.args.topk_s):
-                img_idx = batch_idx * self.args.batch_size \
-                    + img_indices[k].cpu().data.numpy()
-                act_val = act_vals[k].cpu().data.numpy()
-                self.stimulus[layer_name][neuron].insert(
-                    act_val, key=img_idx
-                )
+                img_idx = batch_idx * self.args.batch_size + img_indices[k]
+                act_val = act_vals[k]
+                self.stimulus[layer_name][neuron].insert(act_val, key=img_idx)
 
 
     def save_stimulus(self):

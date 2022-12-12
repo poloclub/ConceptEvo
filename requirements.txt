@@ -71,7 +71,7 @@ pandocfilters @ file:///tmp/build/80754af9/pandocfilters_1605120906940/work
 parso @ file:///tmp/build/80754af9/parso_1617223946239/work
 pexpect @ file:///tmp/build/80754af9/pexpect_1605563209008/work
 pickleshare @ file:///tmp/build/80754af9/pickleshare_1606932040724/work
-Pillow==8.4.0
+Pillow==9.3.0
 plotly @ file:///Users/nicolas/opt/miniconda3/envs/env/conda-bld/plotly_1644431521790/work/packages/python/plotly/dist/plotly-5.6.0.tar.gz
 prometheus-client @ file:///tmp/build/80754af9/prometheus_client_1637050397234/work
 prompt-toolkit @ file:///tmp/build/80754af9/prompt-toolkit_1633440160888/work

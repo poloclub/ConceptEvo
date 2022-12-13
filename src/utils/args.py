@@ -310,7 +310,14 @@ class ArgParser:
             '--weight_decay',
             default=0.05, 
             type=float,
-            help='weight_decay for training (AdamW)'
+            help='weight_decay for training (can be used in AdamW, RMSProp)'
+        )
+
+        self.parser.add_argument(
+            '--learning_eps',
+            default=0.05, 
+            type=float,
+            help='eps (can be used in RMSProp)'
         )
 
         self.parser.add_argument(

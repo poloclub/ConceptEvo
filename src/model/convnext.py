@@ -18,12 +18,12 @@ class ConvNeXt:
         self.data_path = data_path
 
         self.input_size = 256
+        self.num_classes = 1000
+        self.num_training_imgs = -1
         self.input_normalization = [
             [0.485, 0.456, 0.406], 
             [0.229, 0.224, 0.225]
         ]
-        self.num_classes = 1000
-        self.num_training_imgs = -1
 
         self.model = None
         self.pretrained = pretrained
@@ -75,11 +75,7 @@ class ConvNeXt:
         self.model = models.convnext_tiny(pretrained=self.pretrained)
 
         # Load a saved model
-        if self.need_loading_a_saved_model:
-            if 'model_state_dict' in self.ckpt:
-                self.model.load_state_dict(self.ckpt['model_state_dict'])
-            else:
-                self.model.load_state_dict(self.ckpt)
+        self.load_saved_model()
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
@@ -115,6 +111,13 @@ class ConvNeXt:
                     self.args.model_path,
                     map_location=self.device
                 )
+
+    def load_saved_model(self):
+        if self.need_loading_a_saved_model:
+            if 'model_state_dict' in self.ckpt:
+                self.model.load_state_dict(self.ckpt['model_state_dict'])
+            else:
+                self.model.load_state_dict(self.ckpt)
 
     def set_all_parameter_requires_grad(self):
         for param in self.model.parameters():
@@ -229,7 +232,6 @@ class ConvNeXt:
         # Train the model
         with tqdm(total=total) as pbar:
             for epoch in range(self.args.num_epochs):
-                
                 # Update parameters with one epoch's data
                 running_loss, top1_train_corrects, topk_train_corrects = \
                     self.train_one_epoch(pbar)
@@ -301,6 +303,9 @@ class ConvNeXt:
             
             # Update pbar
             pbar.update(self.args.batch_size)
+        
+        top1_train_corrects = top1_train_corrects.double()
+        topk_train_corrects = topk_train_corrects.double()
 
         return running_loss, top1_train_corrects, topk_train_corrects
 
@@ -324,12 +329,9 @@ class ConvNeXt:
 
         # Save log
         log = ('-' * 10) + test_on + '\n' + log + ('-' * 10) + '\n'
-        
         if write_log:
             if_test = test_on == 'test'
             self.write_log(log, append=True, test=if_test)
-            print(self.args.model_nickname)
-            print(log)
         return total, top1_corrects, topk_corrects
 
     def measure_acc(self, data_loader):
@@ -338,7 +340,7 @@ class ConvNeXt:
         total = len(data_loader.dataset)
 
         # Measure accuracy
-        final_top1_corrects, final_topk_corrects = 0, 0        
+        final_top1_corrects, final_topk_corrects = 0, 0
         for imgs, labels in data_loader:
             top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
             final_top1_corrects += top1_corrects
@@ -422,10 +424,8 @@ class ConvNeXt:
             test_total, top1_test_corrects, topk_test_corrects = stats
 
         epoch_loss = running_loss / num_training_data
-        epoch_top1_train_acc = \
-            top1_train_corrects.double() / num_training_data
-        epoch_topk_train_acc = \
-            topk_train_corrects.double() / num_training_data
+        epoch_top1_train_acc = top1_train_corrects / num_training_data
+        epoch_topk_train_acc = topk_train_corrects / num_training_data
         epoch_top1_test_acc = top1_test_corrects / test_total
         epoch_topk_test_acc = topk_test_corrects / test_total
 

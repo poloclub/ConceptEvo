@@ -115,7 +115,7 @@ def load_model(args, data_path):
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 
-    if args.model_name != 'convnext':
+    if args.model_name not in ['convnext', 'inception_v3']:
         model.init_basic_setting()
         model.init_model()
         model.init_training_setting()

@@ -135,7 +135,6 @@ class Stimulus:
         log_str += '\n' + prof_str + '\n'
         self.write_log(log_str)
 
-
     def init_stimulus(self):
         for layer_name in self.conv_layers:
             self.stimulus[layer_name] = [

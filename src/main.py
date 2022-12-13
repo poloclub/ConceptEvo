@@ -24,6 +24,7 @@ from model.vgg16 import *
 from model.vgg16_cifar10 import *
 from model.vgg16_no_dropout import *
 from model.vgg19 import *
+from model.resnet18 import *
 # Utils
 from utils.args import *
 from utils.datapath import *
@@ -112,10 +113,12 @@ def load_model(args, data_path):
         model = Vgg16Cifar10(args, data_path)
     elif args.model_name == 'convnext':
         model = ConvNeXt(args, data_path)
+    elif args.model_name == 'resnet18':
+        model = ResNet18(args, data_path)
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 
-    if args.model_name not in ['convnext', 'inception_v3']:
+    if args.model_name not in ['convnext', 'inception_v3', 'resnet18']:
         model.init_basic_setting()
         model.init_model()
         model.init_training_setting()

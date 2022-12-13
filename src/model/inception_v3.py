@@ -388,7 +388,7 @@ class InceptionV3:
     def measure_acc(self, data_loader):
         # Get ready to test the model on dataset
         tic = time()
-        total = len(self.data_loader.dataset)
+        total = len(data_loader.dataset)
 
         # Measure accuracy
         final_top1_corrects, final_topk_corrects = 0, 0

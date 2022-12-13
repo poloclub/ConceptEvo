@@ -25,3 +25,17 @@ python main.py \
     --num_epochs 100 \
     --model_name inception_v3 \
     --model_nickname inception_v3_0.045_0.9_1.0
+
+# ResNet18
+python main.py \
+    --gpu $gpu \
+    --train T \
+    --training_data ../../ILSVRC2012/train \
+    --test_data ../../ILSVRC2012/val-by-class \
+    --batch_size 256 \
+    --lr 0.1 \
+    --weight_decay 0.0001 \
+    --momentum 0.9 \
+    --num_epochs 300 \
+    --model_name resnet18 \
+    --model_nickname resnet18_0.1

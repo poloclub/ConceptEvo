@@ -144,6 +144,7 @@ class ArgParser:
                 'inception_v1_pretrained',
                 'inception_v3_pretrained',
                 'convnext',
+                'resnet18',
                 'vgg16_cifar10' # remove the harcode later
             ],
             type=str,                
@@ -303,14 +304,14 @@ class ArgParser:
             '--momentum',
             default=0.9, 
             type=float,
-            help='Momentum for training (SGD)'
+            help='Momentum for training'
         )
 
         self.parser.add_argument(
             '--weight_decay',
             default=0.05, 
             type=float,
-            help='weight_decay for training (can be used in AdamW, RMSProp)'
+            help='weight_decay for training'
         )
 
         self.parser.add_argument(

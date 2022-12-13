@@ -100,7 +100,6 @@ class Stimulus:
         self.init_stimulus()
 
         tic, total = time(), len(self.data_loader)
-        num_batches = 0
         with tqdm(total=total) as pbar:
             with profile (activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
                 with record_function("find_stimulus"):
@@ -127,14 +126,10 @@ class Stimulus:
                                 #  self.write_log(log)
 
                         pbar.update(1)
-                        num_batches += 1
-                        if num_batches >= 10:
-                            break
 
         prof_str = prof.key_averages().table(
             sort_by="cpu_time_total", row_limit=20
         )
-        print(type(prof_str))
         prof_str = str(prof_str)
         log_str = 'cumulative_time_sec: {:.2f}'.format(time() - tic)
         log_str += '\n' + prof_str + '\n'

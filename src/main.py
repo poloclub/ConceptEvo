@@ -17,6 +17,7 @@ from feature.example_patch import *
 from importantevo.eval_important_evo import *
 from importantevo.important_evo import *
 # CNN Models
+from model.convnext import *
 from model.inception_v1 import *
 from model.inception_v3 import *
 from model.vgg16 import *
@@ -109,12 +110,16 @@ def load_model(args, data_path):
         model = InceptionV1(args, data_path, pretrained=True)
     elif args.model_name == 'vgg16_cifar10':
         model = Vgg16Cifar10(args, data_path)
+    elif args.model_name == 'convnext':
+        model = ConvNeXt(args, data_path)
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 
-    model.init_basic_setting()
-    model.init_model()
-    model.init_training_setting()
+    if args.model_name != 'convnext':
+        model.init_basic_setting()
+        model.init_model()
+        model.init_training_setting()
+
     return model
 
 

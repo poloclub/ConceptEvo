@@ -131,8 +131,6 @@ class ArgParser:
     def parse_model_setting(self):
         """Parse arguments for a model's name to use or its metadata."""
 
-        model_ex_log = '(e.g., a model from which a training continues)'
-
         self.parser.add_argument(
             '--model_name', 
             default='vgg16', 
@@ -145,24 +143,25 @@ class ArgParser:
                 'vgg19_pretrained',
                 'inception_v1_pretrained',
                 'inception_v3_pretrained',
+                'convnext',
                 'vgg16_cifar10' # remove the harcode later
             ],
             type=str,                
-            help='CNN model name'
+            help='Neural network model name'
         )
 
         self.parser.add_argument(
             '--model_path', 
             default='', 
             type=str,                
-            help=f'Path of a model to use {model_ex_log}'
+            help=f'Path of the neural network model'
         )
 
         self.parser.add_argument(
             '--model_nickname', 
             default='', 
             type=str,                
-            help=f'Nickname of a model to use {model_ex_log}'
+            help=f'Nickname of the neural network model'
         )
 
     
@@ -297,7 +296,7 @@ class ArgParser:
             '--lr',
             default=0.01, 
             type=float,
-            help='Learning rate for training (SGD)'
+            help='Learning rate for training'
         )
 
         self.parser.add_argument(

@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data_utils
 import torchvision.models as models
-from torchvision import datasets, transforms
+from torchvision import datasets, transforms, ops
 from tqdm import tqdm
 
 
@@ -28,6 +28,9 @@ class ConvNeXt:
         self.model = None
         self.pretrained = pretrained
         self.from_to = from_to
+        self.layers = []
+        self.conv_layers = []
+        self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
         self.ckpt = None
@@ -112,6 +115,47 @@ class ConvNeXt:
                     self.args.model_path,
                     map_location=self.device
                 )
+
+    def set_all_parameter_requires_grad(self):
+        for param in self.model.parameters():
+            param.requires_grad = True
+
+    def get_layer_info(self):
+        # Get layers by the preorder traversal of the layer tree
+        layer_stack = []
+        layers = []
+        visited = {}
+        num_layers = 0
+        start = True
+        while start or len(layer_stack) > 0:
+            if start:
+                children = list(self.model.children())
+                start = False
+            else:
+                layer = layer_stack.pop()
+                children = list(layer.children())
+
+                if layer not in visited:
+                    visited[layer] = True
+                    if len(children) == 0:
+                        layer_name = '{}_{}'.format(
+                            type(layer).__name__, num_layers
+                        )
+                        num_layers += 1
+                        self.update_layer_info(layer_name, layer)
+            
+            for child in children[::-1]:
+                if child not in visited:
+                    layer_stack.append(child)
+        
+    def update_layer_info(self, layer_name, layer):
+        self.layers.append({
+            'name': layer_name,
+            'layer': layer
+        })
+        if type(layer) == nn.Conv2d:
+            self.conv_layers.append(layer_name)
+            self.num_neurons[layer_name] = layer.out_channels
 
     def init_criterion(self):
         if self.need_loading_a_saved_model and ('loss' in self.ckpt):
@@ -260,6 +304,9 @@ class ConvNeXt:
 
         return running_loss, top1_train_corrects, topk_train_corrects
 
+    """
+    Test model
+    """
     def test_model(self, write_log=True, test_on='test'):
         # Make the first log
         if write_log:
@@ -285,6 +332,72 @@ class ConvNeXt:
             print(log)
         return total, top1_corrects, topk_corrects
 
+    def measure_acc(self, data_loader):
+        # Get ready to test the model on dataset
+        tic = time()
+        total = len(data_loader.dataset)
+
+        # Measure accuracy
+        final_top1_corrects, final_topk_corrects = 0, 0        
+        for imgs, labels in data_loader:
+            top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
+            final_top1_corrects += top1_corrects
+            final_topk_corrects += topk_corrects
+        toc = time()
+
+        # Generate log
+        log = 'total = {}\n'.format(total)
+        log += 'top1 accuracy = {} / {} = {}\n'.format(
+            final_top1_corrects, total, final_top1_corrects / total
+        )
+        log += 'topk accuracy = {} / {} = {}\n'.format(
+            final_topk_corrects, total, final_topk_corrects / total
+        )
+        log += 'time: {} sec\n'.format(toc - tic)
+        
+        return total, log, final_top1_corrects, final_topk_corrects
+
+    def test_one_batch(self, test_imgs, test_labels):
+        # Get test images and labels
+        test_imgs = test_imgs.to(self.device)
+        test_labels = test_labels.to(self.device)
+
+        # Prediction
+        outputs = self.model(test_imgs)
+        _, topk_test_preds = outputs.topk(
+            k=self.args.topk, dim=1
+        )
+        top1_test_preds = topk_test_preds[:, 0]
+        topk_test_preds = topk_test_preds.t()
+
+        # Number of correct top-k prediction in test set
+        topk_test_corrects = 0
+        for k in range(self.args.topk):
+            topk_test_corrects += torch.sum(
+                topk_test_preds[k] == test_labels.data
+            )
+
+        # Number of correct top-1 prediction in training set
+        top1_test_corrects = torch.sum(
+            top1_test_preds == test_labels.data
+        )
+
+        return top1_test_corrects, topk_test_corrects
+
+    """
+    Save model
+    """
+    def save_model(self, epoch):
+        path = self.data_path.get_model_path_during_training(epoch)
+        torch.save(
+            {
+                'model_state_dict': self.model.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+                'loss': self.criterion,
+                'epoch': epoch
+            }, 
+            path
+        )
 
     """
     Log
@@ -325,6 +438,10 @@ class ConvNeXt:
             'top1_test_acc': '{:.4f}'.format(epoch_top1_test_acc),
             'topk_test_acc': '{:.4f}'.format(epoch_topk_test_acc),
         })
+
+    def write_log_with_log_info(self, log_info):
+        log = ', '.join([f'{key}={log_info[key]}' for key in log_info])
+        self.write_log(log)
 
     def write_log(self, log, append=True, test=False):
         log_opt = 'a' if append else 'w'

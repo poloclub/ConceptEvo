@@ -352,7 +352,7 @@ class ArgParser:
         self.parser.add_argument(
             '--profiling_stimulus', 
             default=False, 
-            type=bool,
+            type=self.parse_bool_arg,
             help='Whether to measure the time of each operation in finding stimulus'
         )
 

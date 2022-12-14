@@ -152,28 +152,31 @@ class Stimulus:
         if not profiling:
             with tqdm(total=total) as pbar:
                 for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                    with record_function("find_stimulus"):
-                        # Get input images in a batch and their labels
-                        imgs = imgs.to(self.device)
-                        labels = labels.to(self.device)
+                    # Get input images in a batch and their labels
+                    imgs = imgs.to(self.device)
+                    labels = labels.to(self.device)
 
-                        # Update stimulus for the first layer
-                        f_map = self.compute_feature_map(self.layers[0]['layer'], imgs)
-                        self.update_stimulus(self.layers[0]['name'], f_map, batch_idx)
+                    # Update stimulus for the first layer
+                    f_map = self.compute_feature_map(
+                        self.layers[0]['layer'], imgs
+                    )
+                    self.update_stimulus(
+                        self.layers[0]['name'], f_map, batch_idx
+                    )
 
-                        # Update stimulus for remaining layers
-                        for i in range(1, len(self.layers) - 1):
-                            try:
-                                f_map = self.layers[i]['layer'](f_map)
-                                self.update_stimulus(
-                                    self.layers[i]['name'], f_map, batch_idx
-                                )
-                            except RuntimeError:
-                                log = f'Error in find_stimulus for '
-                                log += self.layers[i]['name']
-                                #  self.write_log(log)
+                    # Update stimulus for remaining layers
+                    for i in range(1, len(self.layers) - 1):
+                        try:
+                            f_map = self.layers[i]['layer'](f_map)
+                            self.update_stimulus(
+                                self.layers[i]['name'], f_map, batch_idx
+                            )
+                        except RuntimeError:
+                            log = f'Error in find_stimulus for '
+                            log += self.layers[i]['name']
+                            #  self.write_log(log)
 
-                        pbar.update(1)
+                    pbar.update(1)
 
             log_str = 'cumulative_time_sec: {:.2f}\n'.format(time() - tic)
 

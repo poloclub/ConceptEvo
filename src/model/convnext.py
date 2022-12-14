@@ -218,6 +218,28 @@ class ConvNeXt:
                 for param_group in self.optimizer.state_dict()['param_groups']:
                     param_group['lr'] = self.args.lr
                     param_group['weight_decay'] = self.args.weight_decay
+    
+    """
+    Residual layers
+    """
+    def layer_is_res_input(self, layer_idx):
+        """Check if a layer's output can be used as
+        a residual input in later layers"""
+        layer_idxs = [
+            1, 9, 17, 25, 27, 35, 43, 51, \
+            53, 61, 69, 77, 85, 93, 101, \
+            109, 117, 125, 127, 135, 143, 151
+        ]
+        return layer_idx in layer_idxs
+
+    def layer_take_res_input(self, layer_idx):
+        """Check if the current layer takes the residual input"""
+        layer_idxs = [
+            9, 17, 25, 35, 43, 51, \
+            61, 69, 77, 85, 93, 101, \
+            109, 117, 125, 135, 143, 151
+        ]
+        return layer_idx in layer_idxs
 
     """
     Train the model

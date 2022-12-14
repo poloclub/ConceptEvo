@@ -22,6 +22,7 @@ class ExamplePatch:
 
         self.model = model
         self.S = model.input_size
+        # self.input_normalization = model.input_normalization
         self.layers = []
         self.conv_layers = []
         self.num_neurons = {}

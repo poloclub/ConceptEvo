@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.profiler import ProfilerActivity, profile, record_function
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
@@ -40,11 +39,9 @@ class Stimulus:
     """
     def compute_stimulus(self):
         self.init_setting()
-        # self.test_whether_shuffle()
         self.get_layer_info()
         self.find_stimulus(profiling=self.args.profiling_stimulus)
         self.save_stimulus()
-
 
     """
     Initial setting
@@ -53,10 +50,7 @@ class Stimulus:
         data_transform = transforms.Compose([
             transforms.Resize((self.model.input_size, self.model.input_size)),
             transforms.ToTensor(),
-            transforms.Normalize(
-                [0.485, 0.456, 0.406], 
-                [0.229, 0.224, 0.225]
-            )
+            transforms.Normalize(*self.model.input_normalization)
         ])
 
         self.training_dataset = datasets.ImageFolder(
@@ -71,115 +65,67 @@ class Stimulus:
             num_workers=4
         )
 
-
     def get_layer_info(self):
         self.layers = self.model.layers[:]
         self.conv_layers = self.model.conv_layers[:]
         self.num_neurons = self.model.num_neurons
 
-
-    def test_whether_shuffle(self):
-        for imgs, labels in self.data_loader:
-            for idx in range(5):
-                img = imgs[idx]
-                img = img * 255
-                img = img.cpu().data.numpy()
-                img = np.einsum('kij->ijk', img)
-                file_path = f'c-{idx}.jpg'
-                cv2.imwrite(
-                    file_path, 
-                    cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            )
-            break
-        
-    
     """
     Find stimulus (i.e., inputs that activate neurons the most) for each neuron
     """
     def find_stimulus(self, profiling=False):
         self.write_first_log()
         self.init_stimulus()
+        f_map_res_input = None
         tic, total = time(), len(self.data_loader)
 
-        if profiling:
-            prof_dict = {}
-            with tqdm(total=total) as pbar:
-                for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                    with profile (
-                        activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
-                        record_shapes=True
-                    ) as prof:
-                        with record_function("find_stimulus"):
-                            # Get input images in a batch and their labels
-                            imgs = imgs.to(self.device)
-                            labels = labels.to(self.device)
+        with tqdm(total=total) as pbar:
+            for batch_idx, (imgs, labels) in enumerate(self.data_loader):
+                # Get input images in a batch and their labels
+                imgs = imgs.to(self.device)
+                labels = labels.to(self.device)
 
-                            # Update stimulus for the first layer
-                            f_map = self.compute_feature_map(
-                                self.layers[0]['layer'], imgs
-                            )
-                            self.update_stimulus(
-                                self.layers[0]['name'], f_map, batch_idx
-                            )
+                # Update stimulus for the first layer
+                f_map = self.compute_feature_map(
+                    self.layers[0]['layer'], imgs, None
+                )
+                self.update_stimulus(
+                    self.layers[0]['name'], f_map, batch_idx
+                )
 
-                            # Update stimulus for remaining layers
-                            for i in range(1, len(self.layers) - 1):
-                                try:
-                                    f_map = self.layers[i]['layer'](f_map)
-                                    self.update_stimulus(
-                                        self.layers[i]['name'], f_map, batch_idx
-                                    )
-                                except RuntimeError:
-                                    log = f'Error in find_stimulus for '
-                                    log += self.layers[i]['name']
-                                    #  self.write_log(log)
+                # Check if the output of the first layer
+                # can be used as a residual input for later layers
+                if self.model.layer_is_res_input(0):
+                    f_map_res_input = f_map.clone()
+                    
+                # Update stimulus for remaining layers
+                for i in range(1, len(self.layers) - 1):
+                    try:
+                        # Residual input
+                        res_input = None
+                        if self.model.layer_take_res_input(i):
+                            res_input = f_map_res_input
 
-                            pbar.update(1)
+                        # Compute feature map of the layer
+                        f_map = self.compute_feature_map(
+                            self.layers[i]['layer'], f_map, res_input
+                        )
+                        self.update_stimulus(
+                            self.layers[i]['name'], f_map, batch_idx
+                        )
 
-                    # Check profiling for one batch
-                    prof_batch = prof.key_averages().table(
-                        sort_by="cpu_time_total", row_limit=20
-                    )
-                    prof_batch_dict = self.prof_to_dict(prof_batch)
+                        # Update residual input
+                        if self.model.layer_is_res_input(i):
+                            f_map_res_input = f_map.clone()
+                        
+                    except RuntimeError:
+                        log = f'Error in find_stimulus for '
+                        log += self.layers[i]['name']
+                        #  self.write_log(log)
 
-                    # Combine prof_batch_dict to prof_dict
-                    prof_dict = self.agg_prof_dict(prof_dict, prof_batch_dict)
+                pbar.update(1)
 
-            log_str = 'cumulative_time_sec: {:.2f}'.format(time() - tic)
-            prof_str = json.dumps(prof_dict, indent=4)
-            log_str += '\n' + prof_str + '\n'
-
-        if not profiling:
-            with tqdm(total=total) as pbar:
-                for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                    # Get input images in a batch and their labels
-                    imgs = imgs.to(self.device)
-                    labels = labels.to(self.device)
-
-                    # Update stimulus for the first layer
-                    f_map = self.compute_feature_map(
-                        self.layers[0]['layer'], imgs
-                    )
-                    self.update_stimulus(
-                        self.layers[0]['name'], f_map, batch_idx
-                    )
-
-                    # Update stimulus for remaining layers
-                    for i in range(1, len(self.layers) - 1):
-                        try:
-                            f_map = self.layers[i]['layer'](f_map)
-                            self.update_stimulus(
-                                self.layers[i]['name'], f_map, batch_idx
-                            )
-                        except RuntimeError:
-                            log = f'Error in find_stimulus for '
-                            log += self.layers[i]['name']
-                            #  self.write_log(log)
-
-                    pbar.update(1)
-
-            log_str = 'cumulative_time_sec: {:.2f}\n'.format(time() - tic)
-
+        log_str = 'cumulative_time_sec: {:.2f}\n'.format(time() - tic)
         self.write_log(log_str)
 
     def init_stimulus(self):
@@ -301,10 +247,12 @@ class Stimulus:
                 
         return prof_dict
             
-    def compute_feature_map(self, layer, imgs):
+    def compute_feature_map(self, layer, prev_f_map, res_f_map=None):
         # Compute feature map. feature_map: [B, N, W, H]
         # where B is batch size and N is the number of neurons
-        feature_map = layer(imgs)
+        feature_map = layer(prev_f_map)
+        if res_f_map is not None:
+            feature_map = feature_map + res_f_map
         return feature_map
 
 

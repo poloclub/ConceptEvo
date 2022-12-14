@@ -471,7 +471,6 @@ class InceptionV3:
         log += 'topk test accuracy = {} / {} = {}\n'.format(
             topk_corrects, total, topk_corrects / total
         )
-        print(log)
         return top1_corrects, topk_corrects, total
 
     def forward(self, imgs):

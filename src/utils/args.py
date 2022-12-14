@@ -349,6 +349,13 @@ class ArgParser:
             help='k for top-k most stimulating inputs for a neuron'
         )
 
+        self.parser.add_argument(
+            '--profiling_stimulus', 
+            default=False, 
+            type=bool,
+            help='Whether to measure the time of each operation in finding stimulus'
+        )
+
 
     """
     Settings for embedding for general

@@ -1,3 +1,4 @@
+import re
 import json
 from time import time
 
@@ -41,7 +42,7 @@ class Stimulus:
         self.init_setting()
         # self.test_whether_shuffle()
         self.get_layer_info()
-        self.find_stimulus()
+        self.find_stimulus(profiling=self.args.profiling_stimulus)
         self.save_stimulus()
 
 
@@ -95,16 +96,63 @@ class Stimulus:
     """
     Find stimulus (i.e., inputs that activate neurons the most) for each neuron
     """
-    def find_stimulus(self):
+    def find_stimulus(self, profiling=False):
         self.write_first_log()
         self.init_stimulus()
-
         tic, total = time(), len(self.data_loader)
-        with tqdm(total=total) as pbar:
-            with profile (activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], record_shapes=True) as prof:
-                with record_function("find_stimulus"):
-                    for batch_idx, (imgs, labels) in enumerate(self.data_loader):
 
+        if profiling:
+            prof_dict = {}
+            with tqdm(total=total) as pbar:
+                for batch_idx, (imgs, labels) in enumerate(self.data_loader):
+                    with profile (
+                        activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
+                        record_shapes=True
+                    ) as prof:
+                        with record_function("find_stimulus"):
+                            # Get input images in a batch and their labels
+                            imgs = imgs.to(self.device)
+                            labels = labels.to(self.device)
+
+                            # Update stimulus for the first layer
+                            f_map = self.compute_feature_map(
+                                self.layers[0]['layer'], imgs
+                            )
+                            self.update_stimulus(
+                                self.layers[0]['name'], f_map, batch_idx
+                            )
+
+                            # Update stimulus for remaining layers
+                            for i in range(1, len(self.layers) - 1):
+                                try:
+                                    f_map = self.layers[i]['layer'](f_map)
+                                    self.update_stimulus(
+                                        self.layers[i]['name'], f_map, batch_idx
+                                    )
+                                except RuntimeError:
+                                    log = f'Error in find_stimulus for '
+                                    log += self.layers[i]['name']
+                                    #  self.write_log(log)
+
+                            pbar.update(1)
+
+                    # Check profiling for one batch
+                    prof_batch = prof.key_averages().table(
+                        sort_by="cpu_time_total", row_limit=20
+                    )
+                    prof_batch_dict = self.prof_to_dict(prof_batch)
+
+                    # Combine prof_batch_dict to prof_dict
+                    prof_dict = self.agg_prof_dict(prof_dict, prof_batch_dict)
+
+            log_str = 'cumulative_time_sec: {:.2f}'.format(time() - tic)
+            prof_str = json.dumps(prof_dict, indent=4)
+            log_str += '\n' + prof_str + '\n'
+
+        if not profiling:
+            with tqdm(total=total) as pbar:
+                for batch_idx, (imgs, labels) in enumerate(self.data_loader):
+                    with record_function("find_stimulus"):
                         # Get input images in a batch and their labels
                         imgs = imgs.to(self.device)
                         labels = labels.to(self.device)
@@ -127,12 +175,8 @@ class Stimulus:
 
                         pbar.update(1)
 
-        prof_str = prof.key_averages().table(
-            sort_by="cpu_time_total", row_limit=20
-        )
-        prof_str = str(prof_str)
-        log_str = 'cumulative_time_sec: {:.2f}'.format(time() - tic)
-        log_str += '\n' + prof_str + '\n'
+            log_str = 'cumulative_time_sec: {:.2f}\n'.format(time() - tic)
+
         self.write_log(log_str)
 
     def init_stimulus(self):
@@ -142,7 +186,118 @@ class Stimulus:
                 for neuron in range(self.num_neurons[layer_name])
             ]
 
+    def prof_to_dict(self, prof_str):
 
+        def extract_cells_from_one_row(s, widths, white_spaces):
+            columns = []
+            acc_width = 0
+            for i, width in enumerate(widths):
+                columns.append(s[acc_width: acc_width + width])
+                acc_width += width
+
+                if i < len(white_spaces) - 1:
+                    acc_width += white_spaces[i]
+                    
+            columns = list(map(lambda x: x.strip(), columns))
+            return columns
+
+        def is_new_row(s, widths):
+            if_all_whitespace = s[:widths[0]].isspace()
+            return not if_all_whitespace
+
+        def is_blank_row(s):
+            return s.isspace() or len(s) == 0
+
+        lines = prof_str.split('\n')
+        widths = list(map(len, lines[0].split()))
+        white_spaces = list(map(len, re.findall(r'[ ]{1,}', lines[0])))
+        columns = extract_cells_from_one_row(lines[1], widths, white_spaces)
+
+        rows = []
+        row_idx = -1
+        for line in lines[3:-4]:
+            if is_blank_row(line):
+                continue
+            if is_new_row(line, widths):
+                rows.append([''] * len(columns))
+                row_idx += 1
+            columns_in_row = extract_cells_from_one_row(
+                line, widths, white_spaces
+            )
+            
+            for c, column_in_row in enumerate(columns_in_row):
+                if len(column_in_row) > 0:
+                    rows[row_idx][c] += column_in_row
+
+        prof_dict = {}
+        for r, row in enumerate(rows):
+            d = {}
+            for c, column in enumerate(columns):
+                d[column] = row[c]
+            name = d['Name']
+            prof_dict[name] = d
+
+        return prof_dict
+
+    def convert_time_to_second(self, s):
+        try:
+            t = float(re.findall('\d*\.*\d*', s)[0])
+        except:
+            t = 0
+
+        if 'ms' in s:
+            t = t / 1000
+        elif 'us' in s:
+            t = t / 1000000
+        elif 's' in s:
+            t = t
+        else:
+            t = 0
+            
+        return t
+        
+    def add_time(self, t1, t2):
+        return '{}s'.format(
+            self.convert_time_to_second(t1) + self.convert_time_to_second(t2)
+        )
+
+    def agg_prof_dict(self, prof_dict, d):
+        for name in d:
+            if name not in prof_dict:
+                keys = [
+                    '# of Call', '# of Calls', 'Self CPU', \
+                    'CPU total', 'CPU time avg', 'Self CUDA', \
+                    'CUDA total', 'CUDA time avg'
+                ]
+                prof_dict[name] = dict()
+                for key in keys:
+                    if key in d[name]:
+                        prof_dict[name][key] = d[name][key]
+                    else:
+                        prof_dict[name][key] = 0
+            else:
+                # Simple addition
+                keys = ['# of Call', '# of Calls']
+                for key in keys:
+                    if key not in d[name]:
+                        continue
+                    prof_dict[name][key] = \
+                        int(prof_dict[name][key]) + int(d[name][key])
+                    
+                # Add times
+                keys = [
+                    'Self CPU', 'CPU total', 'CPU time avg', \
+                    'Self CUDA', 'CUDA total', 'CUDA time avg'
+                ]
+                for key in keys:
+                    if key not in d[name]:
+                        continue
+                    prof_dict[name][key] = self.add_time(
+                        prof_dict[name][key], d[name][key]
+                    )
+                
+        return prof_dict
+            
     def compute_feature_map(self, layer, imgs):
         # Compute feature map. feature_map: [B, N, W, H]
         # where B is batch size and N is the number of neurons

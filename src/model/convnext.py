@@ -13,6 +13,8 @@ from tqdm import tqdm
 
 
 class ConvNeXt:
+    """Defines ConvNeXt model"""
+
     def __init__(self, args, data_path, pretrained=False, from_to=None):
         self.args = args
         self.data_path = data_path
@@ -340,47 +342,45 @@ class ConvNeXt:
         if write_log:
             self.write_test_first_log()
 
-        # Test model on training data
+        # Test model
         if test_on == 'training':
-            total, log, top1_corrects, topk_corrects = \
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.training_data_loader)
-
-        # Test model on test data
-        if test_on == 'test':
-            total, log, top1_corrects, topk_corrects = \
+        elif test_on == 'test':
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.test_data_loader)
+        else:
+            err = 'Unknown option for test_on={} in test_model'.format(test_on)
+            raise ValueError(err) 
 
         # Save log
-        log = ('-' * 10) + test_on + '\n' + log + ('-' * 10) + '\n'
         if write_log:
-            if_test = test_on == 'test'
-            self.write_log(log, append=True, test=if_test)
+            acc_log = self.gen_acc_log([total, top1_corrects, topk_corrects])
+            log = '\n'.
+            log = ('-' * 10) + test_on + '\n' + acc_log + ('-' * 10) + '\n'
+            self.write_log(log, append=True, test=(test_on == 'test'))
+
         return total, top1_corrects, topk_corrects
 
     def measure_acc(self, data_loader):
-        # Get ready to test the model on dataset
-        tic = time()
         total = len(data_loader.dataset)
-
-        # Measure accuracy
         final_top1_corrects, final_topk_corrects = 0, 0
         for imgs, labels in data_loader:
             top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
             final_top1_corrects += top1_corrects
             final_topk_corrects += topk_corrects
-        toc = time()
-
-        # Generate log
+        return total, final_top1_corrects, final_topk_corrects
+    
+    def gen_acc_log(self, stats):
+        total, top1_corrects, topk_corrects = stats
         log = 'total = {}\n'.format(total)
         log += 'top1 accuracy = {} / {} = {}\n'.format(
-            final_top1_corrects, total, final_top1_corrects / total
+            top1_corrects, total, top1_corrects / total
         )
         log += 'topk accuracy = {} / {} = {}\n'.format(
-            final_topk_corrects, total, final_topk_corrects / total
+            topk_corrects, total, topk_corrects / total
         )
-        log += 'time: {} sec\n'.format(toc - tic)
-        
-        return total, log, final_top1_corrects, final_topk_corrects
+        return log
 
     def test_one_batch(self, test_imgs, test_labels):
         # Get test images and labels
@@ -406,6 +406,9 @@ class ConvNeXt:
         top1_test_corrects = torch.sum(
             top1_test_preds == test_labels.data
         )
+
+        top1_test_corrects = top1_test_corrects.double()
+        top1_test_corrects = top1_test_corrects.double()
 
         return top1_test_corrects, topk_test_corrects
 

@@ -18,7 +18,6 @@ from importantevo.eval_important_evo import *
 from importantevo.important_evo import *
 # CNN Models
 from model.convnext import *
-from model.inception_v1 import *
 from model.inception_v3 import *
 from model.vgg16 import *
 from model.vgg16_cifar10 import *

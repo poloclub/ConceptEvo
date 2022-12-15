@@ -5,3 +5,4 @@ model_path: ../data/model/vgg16-512-0.01-0.9/data/model-207.pth
 topk_s=10
 
 
+Find stimulus: 1:07:08

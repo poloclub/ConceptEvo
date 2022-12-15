@@ -356,9 +356,8 @@ class ConvNeXt:
         # Save log
         if write_log:
             acc_log = self.gen_acc_log([total, top1_corrects, topk_corrects])
-            log = '\n'.
             log = ('-' * 10) + test_on + '\n' + acc_log + ('-' * 10) + '\n'
-            self.write_log(log, append=True, test=(test_on == 'test'))
+            self.write_test_log(log)
 
         return total, top1_corrects, topk_corrects
 
@@ -428,7 +427,7 @@ class ConvNeXt:
         )
 
     """
-    Log
+    Log for training the model
     """
     def write_training_first_log(self):
         log_param_sets = {
@@ -441,7 +440,7 @@ class ConvNeXt:
         first_log = ', '.join(
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]
         )
-        self.write_log(first_log, append=True)
+        self.write_training_log(first_log)
 
     def write_training_epoch_log(self, tic, epoch, stats):
         num_training_data = len(self.training_data_loader.dataset)
@@ -455,7 +454,7 @@ class ConvNeXt:
         epoch_top1_test_acc = top1_test_corrects / test_total
         epoch_topk_test_acc = topk_test_corrects / test_total
 
-        self.write_log_with_log_info({
+        log = self.gen_training_epoch_log({
             'epoch': epoch,
             'cumulative_time_sec': '{:.2f}'.format(time() - tic),
             'loss': '{:.4f}'.format(epoch_loss),
@@ -465,13 +464,32 @@ class ConvNeXt:
             'topk_test_acc': '{:.4f}'.format(epoch_topk_test_acc),
         })
 
-    def write_log_with_log_info(self, log_info):
-        log = ', '.join([f'{key}={log_info[key]}' for key in log_info])
-        self.write_log(log)
+        self.write_training_log(log)
 
-    def write_log(self, log, append=True, test=False):
-        log_opt = 'a' if append else 'w'
-        key = 'test-log' if test else 'train-log'
-        path = self.data_path.get_path(key)
-        with open(path, log_opt) as f:
+    def gen_training_epoch_log(self, log_info):
+        log = ', '.join([f'{key}={log_info[key]}' for key in log_info])
+        return log
+
+    def write_training_log(self, log):
+        path = self.data_path.get_path('train-log')
+        with open(path, 'a') as f:
+            f.write(log + '\n')
+
+    """
+    Log for testing the model
+    """
+    def write_test_first_log(self):
+        log_param_sets = {
+            'model_nickname': self.args.model_nickname,
+            'model_path': self.args.model_path,
+            'k': self.args.topk
+        }
+        first_log = '\n'.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        self.write_test_log(first_log)
+
+    def write_test_log(self, log):
+        path = self.data_path.get_path('test-log')
+        with open(path, 'a') as f:
             f.write(log + '\n')

@@ -334,10 +334,10 @@ class Vgg16:
 
         # Test model
         if test_on == 'training':
-            total, log, top1_corrects, topk_corrects = \
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.training_data_loader)
         elif test_on == 'test':
-            total, log, top1_corrects, topk_corrects = \
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.test_data_loader)
         else:
             err = 'Unknown option for test_on={} in test_model'.format(test_on)
@@ -346,7 +346,6 @@ class Vgg16:
         # Save log
         if write_log:
             acc_log = self.gen_acc_log([total, top1_corrects, topk_corrects])
-            log = '\n'.
             log = ('-' * 10) + test_on + '\n' + acc_log + ('-' * 10) + '\n'
             self.write_test_log(log)
 
@@ -359,7 +358,7 @@ class Vgg16:
             top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
             final_top1_corrects += top1_corrects
             final_topk_corrects += topk_corrects
-        return total, log, final_top1_corrects, final_topk_corrects
+        return total, final_top1_corrects, final_topk_corrects
 
     def gen_acc_log(self, stats):
         total, top1_corrects, topk_corrects = stats

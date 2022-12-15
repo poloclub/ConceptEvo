@@ -118,11 +118,6 @@ def load_model(args, data_path):
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 
-    if args.model_name not in ['convnext', 'inception_v3', 'resnet18']:
-        model.init_basic_setting()
-        model.init_model()
-        model.init_training_setting()
-
     return model
 
 
@@ -143,14 +138,6 @@ def load_models(args, data_path):
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
     
-    from_model.init_basic_setting()
-    from_model.init_model()
-    from_model.init_training_setting()
-
-    to_model.init_basic_setting()
-    to_model.init_model()
-    to_model.init_training_setting()
-
     return from_model, to_model
 
 

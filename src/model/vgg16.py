@@ -96,7 +96,7 @@ class Vgg16:
         # Set criterion
         self.init_criterion()
 
-    def check_if_need_load_model(self):
+    def check_if_need_to_load_model(self):
         check1 = len(self.args.model_path) > 0
         check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
         check3 = not self.pretrained
@@ -484,11 +484,8 @@ class Vgg16:
         with open(path, 'a') as f:
             f.write(log + '\n')
 
-
-
-    
-        
-
+    """
+    """
     def forward(self, imgs):
         # Initialize feature maps
         imgs = imgs.to(self.device)
@@ -547,13 +544,5 @@ class Vgg16:
         self.model.load_state_dict(torch.load(path))
         self.model.to(self.device)
         self.set_all_parameter_requires_grad()
-
-
-    
-
-    
-
-
-    
 
     

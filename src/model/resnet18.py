@@ -223,6 +223,22 @@ class ResNet18:
                     param_group['weight_decay'] = self.args.weight_decay
 
     """
+    Residual layers
+    """
+    def layer_is_res_input(self, layer_idx):
+        """Check if a layer's output can be used as
+        a residual input in later layers"""
+        # TODO: Complete this
+        layer_idxs = []
+        return layer_idx in layer_idxs
+
+    def layer_take_res_input(self, layer_idx):
+        """Check if the current layer takes the residual input"""
+        # TODO: Complete this
+        layer_idxs = []
+        return layer_idx in layer_idxs
+
+    """
     Train model
     """
     def train_model(self):
@@ -321,15 +337,16 @@ class ResNet18:
         if write_log:
             self.write_test_first_log()
 
-        # Test model on training data
+        # Test model
         if test_on == 'training':
-            total, log, top1_corrects, topk_corrects = \
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.training_data_loader)
-
-        # Test model on test data
-        if test_on == 'test':
-            total, log, top1_corrects, topk_corrects = \
+        elif test_on == 'test':
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.test_data_loader)
+        else:
+            err = 'Unknown option for test_on={} in test_model'.format(test_on)
+            raise ValueError(err) 
 
         # Save log
         if write_log:
@@ -345,7 +362,7 @@ class ResNet18:
             top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
             final_top1_corrects += top1_corrects
             final_topk_corrects += topk_corrects
-        return total, log, final_top1_corrects, final_topk_corrects
+        return total, final_top1_corrects, final_topk_corrects
 
     def gen_acc_log(self, stats):
         total, top1_corrects, topk_corrects = stats

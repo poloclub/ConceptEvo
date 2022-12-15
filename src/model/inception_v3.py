@@ -274,6 +274,18 @@ class InceptionV3:
                     param_group['weight_decay'] = self.args.weight_decay
 
     """
+    Residual layers
+    """
+    def layer_is_res_input(self, layer_idx):
+        """Check if a layer's output can be used as
+        a residual input in later layers"""
+        return False
+
+    def layer_take_res_input(self, layer_idx):
+        """Check if the current layer takes the residual input"""
+        return False
+
+    """
     Train the model
     """
     def train_model(self):
@@ -368,47 +380,43 @@ class InceptionV3:
         if write_log:
             self.write_test_first_log()
 
-        # Test model on training data
+        # Test model
         if test_on == 'training':
-            total, log, top1_corrects, topk_corrects = \
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.training_data_loader)
-
-        # Test model on test data
-        if test_on == 'test':
-            total, log, top1_corrects, topk_corrects = \
+        elif test_on == 'test':
+            total, top1_corrects, topk_corrects = \
                 self.measure_acc(self.test_data_loader)
+        else:
+            err = 'Unknown option for test_on={} in test_model'.format(test_on)
+            raise ValueError(err) 
 
         # Save log
-        log = ('-' * 10) + test_on + '\n' + log + ('-' * 10) + '\n'
         if write_log:
-            if_test = test_on == 'test'
-            self.write_log(log, append=True, test=if_test)
+            acc_log = self.gen_acc_log([total, top1_corrects, topk_corrects])
+            log = ('-' * 10) + test_on + '\n' + acc_log + ('-' * 10) + '\n'
+            self.write_test_log(log)
+
         return total, top1_corrects, topk_corrects
 
     def measure_acc(self, data_loader):
-        # Get ready to test the model on dataset
-        tic = time()
-        total = len(data_loader.dataset)
-
-        # Measure accuracy
         final_top1_corrects, final_topk_corrects = 0, 0
         for imgs, labels in data_loader:
             top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)
             final_top1_corrects += top1_corrects
             final_topk_corrects += topk_corrects
-        toc = time()
+        return total, final_top1_corrects, final_topk_corrects
 
-        # Generate log
+    def gen_acc_log(self, stats):
+        total, top1_corrects, topk_corrects = stats
         log = 'total = {}\n'.format(total)
         log += 'top1 accuracy = {} / {} = {}\n'.format(
-            final_top1_corrects, total, final_top1_corrects / total
+            top1_corrects, total, top1_corrects / total
         )
         log += 'topk accuracy = {} / {} = {}\n'.format(
-            final_topk_corrects, total, final_topk_corrects / total
+            topk_corrects, total, topk_corrects / total
         )
-        log += 'time: {} sec\n'.format(toc - tic)
-        
-        return total, log, final_top1_corrects, final_topk_corrects
+        return log
 
     def test_one_batch(self, test_imgs, test_labels):
         # Get test images and labels
@@ -435,6 +443,9 @@ class InceptionV3:
             top1_test_preds == test_labels.data
         )
 
+        top1_test_corrects = top1_test_corrects.double()
+        top1_test_corrects = top1_test_corrects.double()
+
         return top1_test_corrects, topk_test_corrects
 
     """
@@ -451,8 +462,78 @@ class InceptionV3:
             }, 
             path
         )
-        
 
+    """
+    Log for training the model
+    """
+    def write_training_first_log(self):
+        log_param_sets = {
+            'batch_size': self.args.batch_size,
+            'lr': self.args.lr,
+            'weight_decay': self.args.weight_decay,
+            'eps': self.args.learning_eps,
+            'k': self.args.topk,
+            'start_model_path': self.args.model_path
+        }
+        first_log = ', '.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        self.write_training_log(first_log)
+
+    def write_training_epoch_log(self, tic, epoch, stats):
+        num_training_data = len(self.training_data_loader.dataset)
+
+        running_loss, top1_train_corrects, topk_train_corrects, \
+            test_total, top1_test_corrects, topk_test_corrects = stats
+
+        epoch_loss = running_loss / num_training_data
+        epoch_top1_train_acc = top1_train_corrects / num_training_data
+        epoch_topk_train_acc = topk_train_corrects / num_training_data
+        epoch_top1_test_acc = top1_test_corrects / test_total
+        epoch_topk_test_acc = topk_test_corrects / test_total
+
+        log = self.gen_training_epoch_log({
+            'epoch': epoch,
+            'cumulative_time_sec': '{:.2f}'.format(time() - tic),
+            'loss': '{:.4f}'.format(epoch_loss),
+            'top1_train_acc': '{:.4f}'.format(epoch_top1_train_acc),
+            'topk_train_acc': '{:.4f}'.format(epoch_topk_train_acc),
+            'top1_test_acc': '{:.4f}'.format(epoch_top1_test_acc),
+            'topk_test_acc': '{:.4f}'.format(epoch_topk_test_acc),
+        })
+
+        self.write_training_log(log)
+
+    def gen_training_epoch_log(self, log_info):
+        log = ', '.join([f'{key}={log_info[key]}' for key in log_info])
+        return log
+
+    def write_training_log(self, log):
+        path = self.data_path.get_path('train-log')
+        with open(path, 'a') as f:
+            f.write(log + '\n')
+
+    """
+    Log for testing the model
+    """
+    def write_test_first_log(self):
+        log_param_sets = {
+            'model_nickname': self.args.model_nickname,
+            'model_path': self.args.model_path,
+            'k': self.args.topk
+        }
+        first_log = '\n'.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        self.write_test_log(first_log)
+
+    def write_test_log(self, log):
+        path = self.data_path.get_path('test-log')
+        with open(path, 'a') as f:
+            f.write(log + '\n')
+        
+    """
+    """
     def eval_for_label(self):
         total = len(self.training_data_loader.dataset)
         top1_corrects, topk_corrects = 0, 0
@@ -504,10 +585,7 @@ class InceptionV3:
             })
 
         return f_maps, layer_info
-
-
-    
-        
+      
     def load_model(self, epoch):
         path = self.data_path.get_model_path_during_training(epoch)
         self.load_model_from_path(path)
@@ -518,66 +596,3 @@ class InceptionV3:
         self.model.load_state_dict(torch.load(path))
         self.model.to(self.device)
         self.set_all_parameter_requires_grad()
-        
-
-    def write_log(self, log, append=True, test=False):
-        log_opt = 'a' if append else 'w'
-        key = 'test-log' if test else 'train-log'
-        path = self.data_path.get_path(key)
-        with open(path, log_opt) as f:
-            f.write(log + '\n')
-
-
-    def write_log_with_log_info(self, log_info):
-        log = ', '.join([f'{key}={log_info[key]}' for key in log_info])
-        self.write_log(log)
-
-
-    def write_training_first_log(self):
-        log_param_sets = {
-            'batch_size': self.args.batch_size,
-            'lr': self.args.lr,
-            'weight_decay': self.args.weight_decay,
-            'eps': self.args.learning_eps,
-            'k': self.args.topk,
-            'start_model_path': self.args.model_path
-        }
-        first_log = ', '.join(
-            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
-        )
-        self.write_log(first_log, append=True)
-
-    
-    def write_test_first_log(self):
-        log_param_sets = {
-            'model_nickname': self.args.model_nickname,
-            'model_path': self.args.model_path,
-            'k': self.args.topk
-        }
-        first_log = '\n'.join(
-            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
-        )
-        self.write_log(first_log, append=True, test=True)
-
-    
-    def write_training_epoch_log(self, tic, epoch, stats):
-        num_training_data = len(self.training_data_loader.dataset)
-
-        running_loss, top1_train_corrects, topk_train_corrects, \
-            test_total, top1_test_corrects, topk_test_corrects = stats
-
-        epoch_loss = running_loss / num_training_data
-        epoch_top1_train_acc = top1_train_corrects / num_training_data
-        epoch_topk_train_acc = topk_train_corrects / num_training_data
-        epoch_top1_test_acc = top1_test_corrects / test_total
-        epoch_topk_test_acc = topk_test_corrects / test_total
-
-        self.write_log_with_log_info({
-            'epoch': epoch,
-            'cumulative_time_sec': '{:.2f}'.format(time() - tic),
-            'loss': '{:.4f}'.format(epoch_loss),
-            'top1_train_acc': '{:.4f}'.format(epoch_top1_train_acc),
-            'topk_train_acc': '{:.4f}'.format(epoch_topk_train_acc),
-            'top1_test_acc': '{:.4f}'.format(epoch_top1_test_acc),
-            'topk_test_acc': '{:.4f}'.format(epoch_topk_test_acc),
-        })

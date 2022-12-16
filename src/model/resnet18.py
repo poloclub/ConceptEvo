@@ -357,6 +357,7 @@ class ResNet18:
         return total, top1_corrects, topk_corrects
 
     def measure_acc(self, data_loader):
+        total = len(data_loader.dataset)
         final_top1_corrects, final_topk_corrects = 0, 0
         for imgs, labels in data_loader:
             top1_corrects, topk_corrects = self.test_one_batch(imgs, labels)

@@ -36,7 +36,6 @@ class Vgg16NoDropout:
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
-        self.check_if_need_load_model()
         self.ckpt = None
 
         self.device = None
@@ -79,11 +78,11 @@ class Vgg16NoDropout:
         # Create an empty model
         self.model = models.vgg16(pretrained=False)
 
-        # Remove the dropout layer
-        self.remove_dropout()
-
         # Load a saved model
         self.load_saved_model()
+
+        # Remove the dropout layer
+        self.remove_dropout()
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()

@@ -35,7 +35,6 @@ class Vgg16Cifar10:
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
-        self.check_if_need_load_model()
         self.ckpt = None
 
         self.device = None

@@ -12,6 +12,19 @@ python main.py \
     --model_name convnext \
     --model_nickname convnext_4e-3
 
+# ConvNeXt, train the model from a pre-trained model
+python main.py \
+    --gpu $gpu \
+    --train T \
+    --training_data ../../ILSVRC2012/train \
+    --test_data ../../ILSVRC2012/val-by-class \
+    --model_path ../data/model/convnext_4e-3/data/model-34.pth \
+    --lr 4e-3 \
+    --weight_decay 0.05 \
+    --num_epochs 300 \
+    --model_name convnext \
+    --model_nickname convnext_4e-3
+
 # InceptionV3
 python main.py \
     --gpu $gpu \

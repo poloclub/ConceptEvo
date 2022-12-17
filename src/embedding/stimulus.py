@@ -271,9 +271,11 @@ class Stimulus:
         N = self.num_neurons[layer_name]
         max_act = self.compute_max_act_of_feature_map(feature_map)
         for neuron in range(N):
+            # torch.sort -> torch.topk
             act_vals, img_indices = torch.sort(
                 max_act[:, neuron], descending=True
             )
+            
             act_vals = act_vals.cpu().data.numpy()
             img_indices = img_indices.cpu().data.numpy()
 

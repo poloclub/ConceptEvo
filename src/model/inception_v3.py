@@ -212,6 +212,20 @@ class InceptionV3:
             
             # Save the total number of neurons
             self.num_neurons[layer_name] = num_out_channels
+
+    def save_layer_info(self):
+        if self.args.train:
+            # Save model information
+            s = str(self.model)
+            p = self.data_path.get_path('model-info')
+            with open(p, 'a') as f:
+                f.write(s + '\n')
+
+            # Save layer names
+            p = self.data_path.get_path('layer-info')
+            for layer in self.layers:
+                with open(p, 'a') as f:
+                    f.write(layer['name'] + '\n')
         
     def init_criterion(self):
         self.criterion = nn.CrossEntropyLoss()

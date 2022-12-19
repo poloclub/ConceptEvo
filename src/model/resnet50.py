@@ -84,6 +84,7 @@ class ResNet50:
 
         # Update layer info
         self.get_layer_info()
+        self.save_layer_info()
 
         # Set criterion
         self.init_criterion()
@@ -152,6 +153,20 @@ class ResNet50:
         if type(layer) == nn.Conv2d:
             self.conv_layers.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
+
+    def save_layer_info(self):
+        if self.args.train:
+            # Save model information
+            s = str(self.model)
+            p = self.data_path.get_path('model-info')
+            with open(p, 'a') as f:
+                f.write(s + '\n')
+
+            # Save layer names
+            p = self.data_path.get_path('layer-info')
+            for layer in self.layers:
+                with open(p, 'a') as f:
+                    f.write(layer['name'] + '\n')
 
     def update_layer_info(self, layer_name, layer):
         self.layers.append({

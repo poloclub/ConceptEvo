@@ -120,7 +120,8 @@ class Stimulus:
                                 self.layers[i]['name'], f_map, batch_idx
                             )
                         else:
-                            # Residual input
+                            # Residual input: res_input is not None for 
+                            # some models such as ResNets and ConvNeXt
                             res_input = None
                             if self.model.layer_take_res_input(i):
                                 res_input = f_map_res_input

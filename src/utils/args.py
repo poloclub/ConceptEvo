@@ -145,6 +145,7 @@ class ArgParser:
                 'inception_v3_pretrained',
                 'convnext',
                 'resnet18',
+                'resnet18_dropout',
                 'vgg16_cifar10' # remove the harcode later
             ],
             type=str,                
@@ -319,6 +320,13 @@ class ArgParser:
             default=0.05, 
             type=float,
             help='eps (can be used in RMSProp)'
+        )
+
+        self.parser.add_argument(
+            '--dropout',
+            default=0.5, 
+            type=float,
+            help='dropout rate'
         )
 
         self.parser.add_argument(

@@ -228,14 +228,17 @@ class ResNet18:
     def layer_is_res_input(self, layer_idx):
         """Check if a layer's output can be used as
         a residual input in later layers"""
-        # TODO: Complete this
-        layer_idxs = []
+        layer_idxs = [3, 8, 13, 19, 24, 30, 35, 41]
         return layer_idx in layer_idxs
 
     def layer_take_res_input(self, layer_idx):
         """Check if the current layer takes the residual input"""
-        # TODO: Complete this
-        layer_idxs = []
+        layer_idxs = [8, 13, 19, 24, 30, 35, 41, 46]
+        return layer_idx in layer_idxs
+
+    def layer_is_downsample(self, layer_idx):
+        """Check if the current layer is a downsample layer"""
+        layer_idxs = [19, 30, 42]
         return layer_idx in layer_idxs
 
     """

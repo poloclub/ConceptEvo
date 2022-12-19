@@ -11,10 +11,7 @@ import torchvision.models as models
 from torchvision import datasets, transforms, ops
 from tqdm import tqdm
 
-
-class ConvNeXt:
-    """Defines ConvNeXt model"""
-
+class ResNet50:
     def __init__(self, args, data_path, pretrained=False, from_to=None):
         self.args = args
         self.data_path = data_path
@@ -74,7 +71,7 @@ class ConvNeXt:
         self.load_checkpoint()
 
         # Create an empty model
-        self.model = models.convnext_tiny(pretrained=self.pretrained)
+        self.model = models.resnet50(pretrained=self.pretrained)
 
         # Load a saved model
         self.load_saved_model()
@@ -94,8 +91,7 @@ class ConvNeXt:
     def check_if_need_to_load_model(self):
         check1 = len(self.args.model_path) > 0
         check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-        check3 = not self.pretrained
-        self.need_loading_a_saved_model = check1 and check2 and check3
+        self.need_loading_a_saved_model = check1 and check2
 
     def load_checkpoint(self):
         if self.need_loading_a_saved_model:
@@ -127,33 +123,36 @@ class ConvNeXt:
             param.requires_grad = True
 
     def get_layer_info(self):
-        # Get layers by the preorder traversal of the layer tree
-        layer_stack = []
-        layers = []
-        visited = {}
-        num_layers = 0
-        start = True
-        while start or len(layer_stack) > 0:
-            if start:
-                children = list(self.model.children())
-                start = False
-            else:
-                layer = layer_stack.pop()
-                children = list(layer.children())
+        # https://pytorch.org/vision/0.8/_modules/torchvision/models/resnet.html
 
-                if layer not in visited:
-                    visited[layer] = True
-                    if len(children) == 0:
-                        layer_name = '{}_{}'.format(
-                            type(layer).__name__, num_layers
+        model_children = list(self.model.children())
+        for i, child in enumerate(model_children):
+            if type(child) == nn.Sequential:
+                basic_blks = child.children()
+                for j, basic_blk in enumerate(basic_blks):
+                    layers = basic_blk.children()
+                    for k, layer in enumerate(layers):
+                        layer_name = '{}_{}_{}_{}_{}_{}'.format(
+                            type(child).__name__, i,
+                            type(basic_blk).__name__, j,
+                            type(layer).__name__, k
                         )
-                        num_layers += 1
                         self.update_layer_info(layer_name, layer)
-            
-            for child in children[::-1]:
-                if child not in visited:
-                    layer_stack.append(child)
-        
+            else:
+                layer_name = '{}_{}'.format(
+                    type(child).__name__, i
+                )
+                self.update_layer_info(layer_name, child)
+    
+    def update_layer_info(self, layer_name, layer):
+        self.layers.append({
+            'name': layer_name,
+            'layer': layer
+        })
+        if type(layer) == nn.Conv2d:
+            self.conv_layers.append(layer_name)
+            self.num_neurons[layer_name] = layer.out_channels
+
     def update_layer_info(self, layer_name, layer):
         self.layers.append({
             'name': layer_name,
@@ -209,46 +208,38 @@ class ConvNeXt:
         )
 
     def init_optimizer(self):
-        self.optimizer = optim.AdamW(
+        self.optimizer = optim.SGD(
             self.model.parameters(), 
             lr=self.args.lr,
-            weight_decay=self.args.weight_decay
+            weight_decay=self.args.weight_decay,
+            momentum=self.args.momentum,
         )
         if self.need_loading_a_saved_model:
             if 'optimizer_state_dict' in self.ckpt:
                 self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
                 for param_group in self.optimizer.state_dict()['param_groups']:
                     param_group['lr'] = self.args.lr
+                    param_group['momentum'] = self.args.momentum
                     param_group['weight_decay'] = self.args.weight_decay
-    
+
     """
     Residual layers
     """
     def layer_is_res_input(self, layer_idx):
         """Check if a layer's output can be used as
         a residual input in later layers"""
-        layer_idxs = [
-            1, 9, 17, 25, 27, 35, 43, 51, \
-            53, 61, 69, 77, 85, 93, 101, \
-            109, 117, 125, 127, 135, 143, 151
-        ]
+        # TODO: Complete this
+        layer_idxs = []
         return layer_idx in layer_idxs
 
     def layer_take_res_input(self, layer_idx):
         """Check if the current layer takes the residual input"""
-        layer_idxs = [
-            9, 17, 25, 35, 43, 51, \
-            61, 69, 77, 85, 93, 101, \
-            109, 117, 125, 135, 143, 151
-        ]
+        # TODO: Complete this
+        layer_idxs = []
         return layer_idx in layer_idxs
 
-    def layer_is_downsample(self, layer_idx):
-        """Check if the current layer is a downsample layer"""
-        return False
-
     """
-    Train the model
+    Train model
     """
     def train_model(self):
         # Make the first log
@@ -373,7 +364,7 @@ class ConvNeXt:
             final_top1_corrects += top1_corrects
             final_topk_corrects += topk_corrects
         return total, final_top1_corrects, final_topk_corrects
-    
+
     def gen_acc_log(self, stats):
         total, top1_corrects, topk_corrects = stats
         log = 'total = {}\n'.format(total)
@@ -438,6 +429,7 @@ class ConvNeXt:
             'batch_size': self.args.batch_size,
             'lr': self.args.lr,
             'weight_decay': self.args.weight_decay,
+            'momentum': self.args.momentum,
             'k': self.args.topk,
             'model_path': self.args.model_path
         }

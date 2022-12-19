@@ -101,18 +101,28 @@ class Stimulus:
                 # Update stimulus for remaining layers
                 for i in range(1, len(self.layers) - 1):
                     try:
-                        # Residual input
-                        res_input = None
-                        if self.model.layer_take_res_input(i):
-                            res_input = f_map_res_input
+                        if self.model.layer_is_downsample(i):
+                            # Downsample in ResNet
+                            res_input = self.compute_feature_map(
+                                self.layers[i]['layer'], res_input, None
+                            )
+                            f_map = f_map + res_input
+                            self.update_stimulus(
+                                self.layers[i]['name'], f_map, batch_idx
+                            )
+                        else:
+                            # Residual input
+                            res_input = None
+                            if self.model.layer_take_res_input(i):
+                                    res_input = f_map_res_input
 
-                        # Compute feature map of the layer
-                        f_map = self.compute_feature_map(
-                            self.layers[i]['layer'], f_map, res_input
-                        )
-                        self.update_stimulus(
-                            self.layers[i]['name'], f_map, batch_idx
-                        )
+                            # Compute feature map of the layer
+                            f_map = self.compute_feature_map(
+                                self.layers[i]['layer'], f_map, res_input
+                            )
+                            self.update_stimulus(
+                                self.layers[i]['name'], f_map, batch_idx
+                            )
 
                         # Update residual input
                         if self.model.layer_is_res_input(i):

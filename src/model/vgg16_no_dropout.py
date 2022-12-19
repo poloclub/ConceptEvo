@@ -78,11 +78,11 @@ class Vgg16NoDropout:
         # Create an empty model
         self.model = models.vgg16(pretrained=False)
 
-        # Load a saved model
-        self.load_saved_model()
-
         # Remove the dropout layer
         self.remove_dropout()
+
+        # Load a saved model
+        self.load_saved_model()
         
         # Set all parameters learnable
         self.set_all_parameter_requires_grad()
@@ -234,6 +234,10 @@ class Vgg16NoDropout:
 
     def layer_take_res_input(self, layer_idx):
         """Check if the current layer takes the residual input"""
+        return False
+    
+    def layer_is_downsample(self, layer_idx):
+        """Check if the current layer is a downsample layer"""
         return False
     
     """

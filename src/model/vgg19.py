@@ -218,6 +218,10 @@ class Vgg19:
         """Check if the current layer takes the residual input"""
         return False
     
+    def layer_is_downsample(self, layer_idx):
+        """Check if the current layer is a downsample layer"""
+        return False
+    
     """
     Train the model
     """

@@ -438,8 +438,12 @@ class DataPath:
         if self.args.train:
             data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
             train_log_path = os.path.join(log_dir_path, 'training-log.txt')
+            model_info_path = os.path.join(log_dir_path, 'model-info.txt')
+            layer_info_path = os.path.join(log_dir_path, 'layer-info.txt')
             self.path['model-dir'] = data_dir_path
             self.path['train-log'] = train_log_path
+            self.path['model-info'] = model_info_path
+            self.path['layer-info'] = layer_info_path
         if self.args.test:
             data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
             test_log_path = os.path.join(log_dir_path, 'test-log.txt')

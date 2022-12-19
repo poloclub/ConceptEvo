@@ -24,6 +24,7 @@ from model.vgg16_cifar10 import *
 from model.vgg16_no_dropout import *
 from model.vgg19 import *
 from model.resnet18 import *
+from model.resnet18_dropout import *
 # Utils
 from utils.args import *
 from utils.datapath import *
@@ -114,6 +115,8 @@ def load_model(args, data_path):
         model = ConvNeXt(args, data_path)
     elif args.model_name == 'resnet18':
         model = ResNet18(args, data_path)
+    elif args.model_name == 'resnet18_dropout':
+        model = ResNet18Dropout(args, data_path)
     else:
         raise ValueError(f'Error: unkonwn model {args.model_name}')
 

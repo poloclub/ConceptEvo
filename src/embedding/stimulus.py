@@ -31,6 +31,8 @@ class Stimulus:
         self.training_dataset = None
         self.data_loader = None
 
+        self.relu = nn.ReLU(inplace=True)
+
         self.stimulus = {}
 
 
@@ -102,11 +104,18 @@ class Stimulus:
                 for i in range(1, len(self.layers) - 1):
                     try:
                         if self.model.layer_is_downsample(i):
-                            # Downsample in ResNet
+                            # Downsample input (for ResNets)
                             res_input = self.compute_feature_map(
-                                self.layers[i]['layer'], res_input, None
+                                self.layers[i]['layer'], f_map_res_input, None
                             )
+
+                            # Add residual input
                             f_map = f_map + res_input
+
+                            # ReLU
+                            f_map = self.relu(f_map)
+                            
+                            # Update stimulus
                             self.update_stimulus(
                                 self.layers[i]['name'], f_map, batch_idx
                             )
@@ -114,7 +123,7 @@ class Stimulus:
                             # Residual input
                             res_input = None
                             if self.model.layer_take_res_input(i):
-                                    res_input = f_map_res_input
+                                res_input = f_map_res_input
 
                             # Compute feature map of the layer
                             f_map = self.compute_feature_map(

@@ -86,6 +86,7 @@ class InceptionV3:
 
         # Update layer info
         self.get_layer_info()
+        self.save_layer_info()
     
         # Set criterion
         self.init_criterion()

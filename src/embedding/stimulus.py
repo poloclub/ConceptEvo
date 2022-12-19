@@ -40,7 +40,7 @@ class Stimulus:
     def compute_stimulus(self):
         self.init_setting()
         self.get_layer_info()
-        self.find_stimulus(profiling=self.args.profiling_stimulus)
+        self.find_stimulus()
         self.save_stimulus()
 
     """
@@ -73,7 +73,7 @@ class Stimulus:
     """
     Find stimulus (i.e., inputs that activate neurons the most) for each neuron
     """
-    def find_stimulus(self, profiling=False):
+    def find_stimulus(self):
         self.write_first_log()
         self.init_stimulus()
         f_map_res_input = None

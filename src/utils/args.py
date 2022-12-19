@@ -146,6 +146,7 @@ class ArgParser:
                 'convnext',
                 'resnet18',
                 'resnet18_dropout',
+                'resnet50',
                 'vgg16_cifar10' # remove the harcode later
             ],
             type=str,                
@@ -355,13 +356,6 @@ class ArgParser:
             default=10, 
             type=int,
             help='k for top-k most stimulating inputs for a neuron'
-        )
-
-        self.parser.add_argument(
-            '--profiling_stimulus', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to measure the time of each operation in finding stimulus'
         )
 
 

@@ -238,6 +238,12 @@ class ResNet50:
         layer_idxs = []
         return layer_idx in layer_idxs
 
+    def layer_is_downsample(self, layer_idx):
+        """Check if the current layer is a downsample layer"""
+        # TODO: Complete this
+        layer_idxs = []
+        return layer_idx in layer_idxs
+
     """
     Train model
     """

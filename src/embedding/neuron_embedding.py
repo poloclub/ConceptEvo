@@ -4,7 +4,7 @@ from tqdm import tqdm
 from time import time
 
 class Emb:
-    """Generate neuron embeddings."""
+    """Generate neuron embeddings"""
 
     """
     Constructor
@@ -20,14 +20,12 @@ class Emb:
 
         self.num_total_neurons = 0
 
-
     """
     A wrapper function called by main.py
     """
     def compute_neuron_embedding(self):
         self.compute_co_activated_neurons()
         self.compute_embedding_of_neurons()
-
 
     """
     Find co-activated neurons
@@ -54,23 +52,19 @@ class Emb:
         # Save co-activated neurons
         self.save_co_activated_neurons()
 
-
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         stimulus = self.load_json(stimulus_path)
         self.stimulus = stimulus
 
-
     def save_co_activated_neurons(self):
         file_path = self.data_path.get_path('co_act')
         self.save_json(self.co_act_neurons, file_path)
-
     
     def load_co_activated_neurons(self):
         if len(self.co_act_neurons) <= 0:
             file_path = self.data_path.get_path('co_act')
             self.co_act_neurons = self.load_json(file_path)
-
 
     """
     Compute neuron embedding
@@ -91,7 +85,6 @@ class Emb:
         ]
 
         # Learn neuron embedding
-        print(self.args.num_emb_epochs)
         tic, total = time(), self.args.num_emb_epochs * len(self.co_act_neurons)
         with tqdm(total=total) as pbar:
             for emb_epoch in range(self.args.num_emb_epochs):
@@ -102,40 +95,43 @@ class Emb:
                     # Compute neuron embedding
                     for i, neuron in enumerate(neurons[:-1]):
                         next_neuron = neurons[i + 1]
-                        v_neuron = self.emb[neuron]
-                        v_next_neuron = self.emb[next_neuron]
+                        v_n = self.emb[neuron]
+                        v_m = self.emb[next_neuron]
 
-                        # 1 - sigma(V_u \dot V_v)
-                        coeff = 1 - self.sigmoid(
-                            v_neuron.dot(v_next_neuron)
-                        )
+                        # 1 - sigma(v_n \dot v_m)
+                        coeff = 1 - self.sigmoid(v_n.dot(v_m))
 
                         # Update gradients through negative sampling
-                        g_u = coeff * v_next_neuron
+                        g_n = coeff * v_m
+                        g_m = coeff * v_n
                         for neg_i in range(self.args.num_emb_negs):
                             neg_neuron = self.sample_neg_neuron()
-                            v_neg_neuron = self.emb[neg_neuron]
-                            dot_u = v_neg_neuron.dot(v_neuron)
-                            g_u -= self.sigmoid(dot_u) * v_neg_neuron
+                            v_r = self.emb[neg_neuron]
+                            dot_n = v_r.dot(v_n)
+                            dot_m = v_r.dot(v_m)
+                            g_n -= np.log(1 - self.sigmoid(dot_m)) \
+                                * self.sigmoid(dot_n) * v_r
+                            g_m -= np.log(1 - self.sigmoid(dot_n)) \
+                                * self.sigmoid(dot_m) * v_r
 
-                        # Update gradients through negative sampling
-                        g_v = coeff * v_neuron
-                        for neg_i in range(self.args.num_emb_negs):
-                            neg_neuron = self.sample_neg_neuron()
-                            v_neg_neuron = self.emb[neg_neuron]
-                            dot_v = v_neg_neuron.dot(v_next_neuron)
-                            g_v -= self.sigmoid(dot_v) * v_neg_neuron
+                        # # Update gradients through negative sampling
+                        # g_v = coeff * v_neuron
+                        # for neg_i in range(self.args.num_emb_negs):
+                        #     neg_neuron = self.sample_neg_neuron()
+                        #     v_neg_neuron = self.emb[neg_neuron]
+                        #     dot_v = v_neg_neuron.dot(v_next_neuron)
+                        #     g_v -= self.sigmoid(dot_v) * v_neg_neuron
 
                         # Update embedding
-                        self.emb[neuron] += self.args.lr_emb * g_u
-                        self.emb[next_neuron] += self.args.lr_emb * g_v
+                        self.emb[neuron] += self.args.lr_emb * g_n
+                        self.emb[next_neuron] += self.args.lr_emb * g_m
 
                     pbar.update(1)
 
-                if emb_epoch % 10 == 0:
-                    self.save_embedding(emb_epoch)
+                # if emb_epoch % 10 == 0:
+                #     self.save_embedding(emb_epoch)
 
-        err = self.compute_err()
+        # err = self.compute_err()
 
         # Save neuron embedding
         self.save_embedding()

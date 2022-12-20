@@ -237,22 +237,6 @@ class Vgg16:
                     param_group['momentum'] = self.args.momentum
 
     """
-    Residual layers
-    """
-    def layer_is_res_input(self, layer_idx):
-        """Check if a layer's output can be used as
-        a residual input in later layers"""
-        return False
-
-    def layer_take_res_input(self, layer_idx):
-        """Check if the current layer takes the residual input"""
-        return False
-
-    def layer_is_downsample(self, layer_idx):
-        """Check if the current layer is a downsample layer"""
-        return False
-
-    """
     Train the model
     """
     def train_model(self):

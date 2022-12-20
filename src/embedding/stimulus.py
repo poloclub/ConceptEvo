@@ -88,55 +88,18 @@ class Stimulus:
                 labels = labels.to(self.device)
 
                 # Update stimulus for the first layer
-                f_map = self.compute_feature_map(
-                    self.layers[0]['layer'], imgs, None
-                )
+                f_map = self.model.forward_one_layer(0, imgs)
                 self.update_stimulus(
                     self.layers[0]['name'], f_map, batch_idx
                 )
 
-                # Check if the output of the first layer
-                # can be used as a residual input for later layers
-                if self.model.layer_is_res_input(0):
-                    f_map_res_input = f_map.clone()
-                    
                 # Update stimulus for remaining layers
                 for i in range(1, len(self.layers) - 1):
                     try:
-                        if self.model.layer_is_downsample(i):
-                            # Downsample input (for ResNets)
-                            res_input = self.compute_feature_map(
-                                self.layers[i]['layer'], f_map_res_input, None
-                            )
-
-                            # Add residual input
-                            f_map = f_map + res_input
-
-                            # ReLU
-                            f_map = self.relu(f_map)
-                            
-                            # Update stimulus
-                            self.update_stimulus(
-                                self.layers[i]['name'], f_map, batch_idx
-                            )
-                        else:
-                            # Residual input: res_input is not None for 
-                            # some models such as ResNets and ConvNeXt
-                            res_input = None
-                            if self.model.layer_take_res_input(i):
-                                res_input = f_map_res_input
-
-                            # Compute feature map of the layer
-                            f_map = self.compute_feature_map(
-                                self.layers[i]['layer'], f_map, res_input
-                            )
-                            self.update_stimulus(
-                                self.layers[i]['name'], f_map, batch_idx
-                            )
-
-                        # Update residual input
-                        if self.model.layer_is_res_input(i):
-                            f_map_res_input = f_map.clone()
+                        f_map = self.model.forward_one_layer(i, f_map)
+                        self.update_stimulus(
+                            self.layers[i]['name'], f_map, batch_idx
+                        )
                         
                     except RuntimeError:
                         log = f'Error in find_stimulus for '

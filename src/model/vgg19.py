@@ -491,6 +491,13 @@ class Vgg19:
             f.write(log + '\n')
 
     """
+    Forward
+    """
+    def forward_one_layer(self, layer_idx, prev_f_map):
+        f_map = self.layers[layer_idx]['layer'](prev_f_map)
+        return f_map
+
+    """
     """
     def forward(self, imgs):
         # Initialize feature maps
@@ -543,7 +550,6 @@ class Vgg19:
     def load_model(self, epoch):
         path = self.data_path.get_model_path_during_training(epoch)
         self.load_model_from_path(path)
-
 
     def load_model_from_path(self, path):
         self.init_model()

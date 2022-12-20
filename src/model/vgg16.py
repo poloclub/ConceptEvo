@@ -436,6 +436,13 @@ class Vgg16:
         )
 
     """
+    Forward
+    """
+    def forward_one_layer(self, layer_idx, prev_f_map):
+        f_map = self.layers[layer_idx]['layer'](prev_f_map)
+        return f_map
+
+    """
     Log for training the model
     """
     def write_training_first_log(self):

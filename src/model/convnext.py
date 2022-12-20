@@ -45,6 +45,8 @@ class ConvNeXt:
         self.optimizer = None
         self.criterion = None
 
+        self.f_map_res_input = None
+
         self.init()
 
     """
@@ -444,6 +446,34 @@ class ConvNeXt:
             }, 
             path
         )
+
+    """
+    Forward
+    """
+    def forward_one_layer(self, layer_idx, prev_f_map):
+        # Residual input
+        res_input = None
+        if self.layer_take_res_input(layer_idx):
+            res_input = self.f_map_res_input
+
+        # Compute feature map of the layer
+        f_map = self.compute_feature_map(
+            self.layers[layer_idx]['layer'], prev_f_map, res_input
+        )
+
+        # Update residual input
+        if self.layer_is_res_input(layer_idx):
+            self.f_map_res_input = f_map.clone()
+
+        return f_map
+        
+    def compute_feature_map(self, layer, prev_f_map, res_f_map=None):
+        # Compute feature map. feature_map: [B, N, W, H]
+        # where B is batch size and N is the number of neurons
+        feature_map = layer(prev_f_map)
+        if res_f_map is not None:
+            feature_map = feature_map + res_f_map
+        return feature_map
 
     """
     Log for training the model

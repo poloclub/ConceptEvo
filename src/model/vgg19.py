@@ -34,6 +34,7 @@ class Vgg19:
 
         self.need_loading_a_saved_model = None
         self.ckpt = None
+        self.training_start_epoch = 0
 
         self.device = None
         self.training_dataset = None
@@ -72,7 +73,10 @@ class Vgg19:
         self.load_checkpoint()
 
         # Create an empty model
-        self.model = models.vgg19(pretrained=self.pretrained)
+        if self.pretrained:
+            self.model = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
+        else:
+            self.model = models.vgg19()
 
         # Load a saved model
         self.load_saved_model()
@@ -95,6 +99,10 @@ class Vgg19:
         check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
         check3 = not self.pretrained
         self.need_loading_a_saved_model = check1 and check2 and check3
+
+        if self.need_loading_a_saved_model and self.args.train:
+            last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])
+            self.training_start_epoch = last_epoch + 1
     
     def load_checkpoint(self):
         if self.need_loading_a_saved_model:
@@ -244,11 +252,11 @@ class Vgg19:
                     self.test_model(write_log=False, test_on='test')
 
                 # Save the model
-                self.save_model(epoch)
+                self.save_model(self.training_start_epoch + epoch)
 
                 # Save log
                 self.write_training_epoch_log(
-                    tic, epoch,
+                    tic, self.training_start_epoch + epoch,
                     [
                         running_loss, top1_train_corrects, topk_train_corrects,
                         test_total, top1_test_corrects, topk_test_corrects

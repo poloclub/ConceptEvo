@@ -1,8 +1,0 @@
-Find Stimulus
-model_nickname: inception_v3-512-1.5-0.9-69
-model_path: ../data/model/inception_v3-512-1.5-0.9/data/model-69.pth
-
-topk_s=10
-
-
-cumulative_time_sec: 16825.86

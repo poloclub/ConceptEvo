@@ -20,11 +20,9 @@ from importantevo.important_evo import *
 from model.convnext import *
 from model.inception_v3 import *
 from model.vgg16 import *
-from model.vgg16_cifar10 import *
 from model.vgg16_no_dropout import *
 from model.vgg19 import *
 from model.resnet18 import *
-from model.resnet18_dropout import *
 from model.resnet50 import *
 # Utils
 from utils.args import *
@@ -110,14 +108,10 @@ def load_model(args, data_path):
         model = InceptionV3(args, data_path, pretrained=True)
     elif args.model_name == 'inception_v1_pretrained':
         model = InceptionV1(args, data_path, pretrained=True)
-    elif args.model_name == 'vgg16_cifar10':
-        model = Vgg16Cifar10(args, data_path)
     elif args.model_name == 'convnext':
         model = ConvNeXt(args, data_path)
     elif args.model_name == 'resnet18':
         model = ResNet18(args, data_path)
-    elif args.model_name == 'resnet18_dropout':
-        model = ResNet18Dropout(args, data_path)
     elif args.model_name == 'resnet50':
         model = ResNet50(args, data_path)
     else:

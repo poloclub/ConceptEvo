@@ -1,7 +1,9 @@
 import json
+import umap
 import numpy as np
 from tqdm import tqdm
 from time import time
+import matplotlib.pyplot as plt
 
 class Emb:
     """Generate neuron embeddings"""
@@ -26,6 +28,7 @@ class Emb:
     def compute_neuron_embedding(self):
         self.compute_co_activated_neurons()
         self.compute_embedding_of_neurons()
+        self.save_embedding_vis()
 
     """
     Find co-activated neurons
@@ -88,6 +91,7 @@ class Emb:
         tic, total = time(), self.args.num_emb_epochs * len(self.co_act_neurons)
         with tqdm(total=total) as pbar:
             for emb_epoch in range(self.args.num_emb_epochs):
+                grad_l2 = 0
                 for neurons in co_act_neurons:
                     # Shuffle neurons
                     np.random.shuffle(neurons)
@@ -101,46 +105,43 @@ class Emb:
                         # 1 - sigma(v_n \dot v_m)
                         coeff = 1 - self.sigmoid(v_n.dot(v_m))
 
-                        # Update gradients through negative sampling
+                        # Update gradients for v_n
                         g_n = coeff * v_m
+                        for neg_i in range(self.args.num_emb_negs):
+                            neg_neuron = self.sample_neg_neuron()
+                            v_r = self.emb[neg_neuron]
+                            g_n -= self.sigmoid(v_n.dot(v_r)) * v_r
+
+                        # Update gradients for v_m
                         g_m = coeff * v_n
                         for neg_i in range(self.args.num_emb_negs):
                             neg_neuron = self.sample_neg_neuron()
                             v_r = self.emb[neg_neuron]
-                            dot_n = v_r.dot(v_n)
-                            dot_m = v_r.dot(v_m)
-                            g_n -= np.log(1 - self.sigmoid(dot_m)) \
-                                * self.sigmoid(dot_n) * v_r
-                            g_m -= np.log(1 - self.sigmoid(dot_n)) \
-                                * self.sigmoid(dot_m) * v_r
-
-                        # # Update gradients through negative sampling
-                        # g_v = coeff * v_neuron
-                        # for neg_i in range(self.args.num_emb_negs):
-                        #     neg_neuron = self.sample_neg_neuron()
-                        #     v_neg_neuron = self.emb[neg_neuron]
-                        #     dot_v = v_neg_neuron.dot(v_next_neuron)
-                        #     g_v -= self.sigmoid(dot_v) * v_neg_neuron
+                            g_m -= self.sigmoid(v_m.dot(v_r)) * v_r
+                        
+                        # Regularization
+                        # lb = 0.1
+                        # g_n -= lb * v_n
+                        # g_m -= lb * v_m
 
                         # Update embedding
                         self.emb[neuron] += self.args.lr_emb * g_n
                         self.emb[next_neuron] += self.args.lr_emb * g_m
 
+                        grad_l2 += g_n.dot(g_n) + g_m.dot(g_m)
+
                     pbar.update(1)
 
-                # if emb_epoch % 10 == 0:
-                #     self.save_embedding(emb_epoch)
-
-        # err = self.compute_err()
+                if grad_l2 <= 0.01:
+                    break
 
         # Save neuron embedding
         self.save_embedding()
 
         # Write embedding log
         log = 'runnig_time: {}sec\n'.format(time() - tic)
-        log += 'err(?): {}\n'.format(err)
+        log += 'grad_l2: {}\n'.format(grad_l2)
         self.write_log(log)
-
 
     def compute_err(self):
         err = 0
@@ -155,12 +156,10 @@ class Emb:
                 err += -np.log(self.sigmoid(v_neuron.dot(v_next_neuron)))
         return err
 
-
     def get_num_samples(self, n):
         num_samples = int(self.args.t * np.sqrt(n))
         num_samples = np.min([num_samples, n]) 
         return num_samples
-
 
     def init_neuron_embedding(self):
         for layer in self.stimulus:
@@ -168,10 +167,8 @@ class Emb:
                 neuron_id = f'{layer}-{i}'
                 self.emb[neuron_id] = np.random.rand(self.args.dim) - 0.5
    
-
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-
 
     def sample_neg_neuron(self):
         if self.num_total_neurons == 0:
@@ -183,7 +180,6 @@ class Emb:
 
         return neuron
 
-
     def save_embedding(self, epoch=None):
         path = self.data_path.get_path('neuron_emb')
         if epoch != None:
@@ -194,6 +190,19 @@ class Emb:
             emb_to_save[neuron] = self.emb[neuron].tolist()
         self.save_json(emb_to_save, path)
 
+    def get_emb_arr(self):
+        X = np.zeros((len(self.emb), self.args.dim))
+        for i, neuron in enumerate(self.emb):
+            X[i] = self.emb[neuron]
+        return X
+
+    def save_embedding_vis(self):
+        X = self.get_emb_arr()
+        reducer = umap.UMAP(n_components=2)
+        fitted_emb2d = reducer.fit_transform(X)
+        emb2d = reducer.transform(X)
+        plt.scatter(emb2d[:, 0], emb2d[:, 1], s=2, alpha=0.5)
+        plt.savefig(self.data_path.get_path('neuron_emb-vis'))
 
     """
     Handle external files (e.g., output, log, ...)

@@ -180,6 +180,7 @@ class DataPath:
         ]
 
         self.action_to_args['neuron_emb'] = [
+            ['topk_s', self.args.topk_s],
             ['dim', self.args.dim],
             ['lr_emb', self.args.lr_emb],
             ['num_emb_epochs', self.args.num_emb_epochs],
@@ -277,9 +278,9 @@ class DataPath:
 
         Returns:
             - data_dir_path: data sub directory path 
-                (self.args.output_dir/self.args.model_nickname/dir_name/data)
+                (self.args.output_dir/dir_name/inner_dirname/data)
             - log_dir_path: data sub directory path 
-                (self.args.output_dir/self.args.model_nickname/dir_name/log)
+                (self.args.output_dir/dir_name/inner_dirname/log)
         """
 
         if inner_dirname is None:
@@ -325,7 +326,7 @@ class DataPath:
         if not self.check_if_arg_given(self.args.model_nickname):
             if 'pretrained' in self.args.model_name:
                 self.args.model_nickname = self.args.model_name
-                # self.args.model_path = self.args.model_name
+                self.args.model_path = self.args.model_name
 
 
     def check_model_nickname_and_path(self):
@@ -335,9 +336,8 @@ class DataPath:
         self.raise_err_for_ungiven_arg(
             self.args.model_nickname, 'model_nickname'
         )
-
-        use_pretrained = (self.args.model_nickname == self.args.model_name)
-        use_pretrained = use_pretrained and 'pretrained' in self.args.model_name
+        
+        use_pretrained = 'pretrained' in self.args.model_name
         if not use_pretrained:
             self.raise_err_for_ungiven_arg(
                 self.args.model_path, 'model_path'
@@ -528,22 +528,21 @@ class DataPath:
 
         self.check_model_nickname_and_path()
 
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
         apdx = self.gen_act_setting_str('neuron_emb')
-        file_path = os.path.join(
-            data_dir_path, 'neuron_emb-{}-{}.json'.format(
-                self.args.model_nickname.replace('-', '_'),
-                apdx
-            )
+
+        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', 
+            inner_dirname='emb-{}-{}'.format(self.args.model_nickname, apdx)
         )
-        log_path = os.path.join(
-            log_dir_path, 'neuron_emb-log-{}-{}.txt'.format(
-                self.args.model_nickname.replace('-', '_'),
-                apdx
-            )
-        )
+        data_dir_path = os.path.join(data_dir_path, 'emb')
+        self.make_dir(data_dir_path)
+
+        file_path = os.path.join(data_dir_path, 'emb.json')
+        vis_path = os.path.join(data_dir_path, 'emb.png')
+        log_path = os.path.join(log_dir_path, 'log.txt')
 
         self.path['neuron_emb'] = file_path
+        self.path['neuron_emb-vis'] = vis_path
         self.path['neuron_emb-log'] = log_path
 
 

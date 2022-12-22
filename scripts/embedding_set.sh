@@ -5,6 +5,33 @@ model_path='../data/model/vgg16-512-0.01-0.9/data/model-207.pth'
 img_emb_path='../data/embedding/vgg16-512-0.01-0.9-207/data/img_emb-dim=30-lr_img_emb=10.0-thr_img_emb=0.001-max_iter_img_emb=10000-k=10.txt' 
 emb_store_dirname='emb-3-base-vgg16-207'
 
+
+
+
+
+
+
+# batch_size=512
+# basemodel_name='vgg19_pretrained'
+# basemodel_nickname='vgg19_pretrained'
+
+# dim=30
+# topk=20
+# lr_emb=0.01
+# num_emb_epochs=100
+# num_emb_negs=3
+
+# python main.py \
+#     --gpu $gpu \
+#     --neuron_emb True \
+#     --model_name $basemodel_name \
+#     --model_nickname $basemodel_nickname \
+#     --topk_s $topk \
+#     --dim $dim \
+#     --lr_emb $lr_emb \
+#     --num_emb_epochs $num_emb_epochs \
+#     --num_emb_negs $num_emb_negs
+
 # Run neuron embedding (Base model Vgg16-0.01-207)
 # python main.py \
 #     --gpu $gpu \

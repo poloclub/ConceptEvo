@@ -147,6 +147,7 @@ class ArgParser:
                 'resnet18',
                 'resnet18_dropout',
                 'resnet50',
+                'resnext50_32x4d',
                 'vgg16_cifar10' # remove the harcode later
             ],
             type=str,                

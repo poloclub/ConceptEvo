@@ -1,48 +1,40 @@
 ###############################################################################
-# test_model.sh
+# stimulus.sh
 # 
-# Measure the training and test accuracy of a model.
+# Find the most stimulating images for each neuron 
+# in the base model.
 # Run this script at `../src` where `main.py` exists.
 # 
-# The result will be saved at 
-# `../data/model/<model_nickname>/log/test-epoch=<epoch>.txt`.
+# The result will be saved at
+# `../data/stimulus/<model_nickname>/data/stimulus-topk_s=<topk_s>.json``.
 ###############################################################################
 
 ###############################################################################
 # Provide a correct value for each "?" below:
 # 
 # gpu=?
-# training_data=?
-# test_data=?
 # model_name=?
 # model_nickname=?
-# epoch=?
 # model_path=?
 # batch_size=?
-# topk=?
+# topk_s=?
 # 
 # For example:
 gpu=0
-training_data=../../ILSVRC2012/train
-test_data=../../ILSVRC2012/val-by-class
-model_name=convnext
-model_nickname=convnext_0.004
-epoch=7
-model_path=../data/model/convnext_0.004/data/model-7.pth
+model_name=vgg16
+model_nickname=$model_name-0.01-207
+model_path="../data/model/$model_name-512-0.01-0.9/data/model-207.pth"
 batch_size=512
-topk=5
+topk_s=20
 ###############################################################################
 
 ###############################################################################
 python main.py \
     --gpu $gpu \
-    --test T \
-    --training_data $training_data \
-    --test_data $test_data \
+    --stimulus T \
     --model_name $model_name \
     --model_nickname $model_nickname \
-    --epoch $epoch \
     --model_path $model_path \
     --batch_size $batch_size \
-    --topk $topk
- ###############################################################################
+    --topk_s $topk_s
+###############################################################################

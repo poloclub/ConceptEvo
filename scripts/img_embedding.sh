@@ -3,6 +3,7 @@
 # 
 # Create image embeddings from base model's neuron embeddings.
 # Run this script at `../src` where `main.py` exists.
+###############################################################
 
 ###############################################################
 # File structure:
@@ -69,9 +70,9 @@ dim=30
 lr_emb=0.01
 num_emb_epochs=100
 num_emb_negs=3
-lr_img_emb=0.01
+lr_img_emb=1.0
 thr_img_emb=0.01
-max_iter_img_emb=1000
+max_iter_img_emb=10000
 k=$topk_s
 ###############################################################
 

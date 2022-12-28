@@ -4,7 +4,9 @@ from tqdm import tqdm
 from time import time
 
 class ProjNeuronEmb:
-    """Generate neuron embeddings that projected on shared space."""
+    """
+    Generate neuron embeddings that projected on shared space
+    """
 
     """
     Constructor
@@ -16,7 +18,6 @@ class ProjNeuronEmb:
         self.stimulus = {}
         self.img_emb = None
         self.neuron_emb = {}
-
     
     """
     A wrapper function called by main.py
@@ -28,18 +29,15 @@ class ProjNeuronEmb:
         self.project_neuron_embedding()
         self.save_projected_neuron_embedding()
 
-
     """
     Utils
     """
     def load_img_emb(self):
         self.img_emb = np.loadtxt(self.args.img_emb_path)
 
-    
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
-
     
     def save_projected_neuron_embedding(self):
         for neuron in self.neuron_emb:
@@ -55,7 +53,6 @@ class ProjNeuronEmb:
         if store_path != None:
             self.save_json(self.neuron_emb, store_path)
 
-
     """
     Compute projected neuron embedding
     """
@@ -66,19 +63,16 @@ class ProjNeuronEmb:
                 neuron = f'{layer}-{i}'
                 self.neuron_emb[neuron] = np.random.rand(self.args.dim) - 0.5
 
-
     def get_stimulus_of_neuron(self, neuron):
         layer, neuron_idx = neuron.split('-')
         neuron_idx = int(neuron_idx)
         return self.stimulus[layer][neuron_idx][:self.args.k]
 
-    
     def compute_approx_neuron_vec(self, X_n):
         vec_sum = np.zeros(self.args.dim)
         for x in X_n:
             vec_sum += self.img_emb[x]
         return vec_sum / len(X_n)
-
     
     def project_neuron_embedding(self):
         self.write_first_log()
@@ -90,7 +84,6 @@ class ProjNeuronEmb:
         toc = time()
         self.write_log('running_time: {}sec'.format(toc - tic))
 
-
     """
     Handle external files (e.g., output, log, ...)
     """
@@ -99,12 +92,10 @@ class ProjNeuronEmb:
             data = json.load(f)
         return data
 
-
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
             json.dump(data, f)
-
-    
+   
     def write_first_log(self):
         hyperpara_setting = self.data_path.gen_act_setting_str(
             'proj_neuron_emb', '\n'
@@ -116,8 +107,7 @@ class ProjNeuronEmb:
         log += 'img_emb_path: {}\n\n'.format(self.args.img_emb_path)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
-
-    
+   
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         with open(self.data_path.get_path('proj_neuron_emb-log'), log_opt) as f:

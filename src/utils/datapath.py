@@ -2,7 +2,8 @@ import os
 from datetime import datetime
 
 class DataPath:
-    """Manage data paths.
+    """
+    Manage data paths
 
     This class manages path of input and output data. Some paths are 
     auto-generated. Details of the generated data paths are documented in 

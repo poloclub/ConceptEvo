@@ -325,13 +325,6 @@ class ArgParser:
         )
 
         self.parser.add_argument(
-            '--dropout',
-            default=0.5, 
-            type=float,
-            help='dropout rate'
-        )
-
-        self.parser.add_argument(
             '--num_epochs', 
             default=300, 
             type=int,

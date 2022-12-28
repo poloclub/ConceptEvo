@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 
 class ImageEmb:
-    """Generate image embeddings."""
+    """Generate image embeddings"""
 
     """
     Constructor

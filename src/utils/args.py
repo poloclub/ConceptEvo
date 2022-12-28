@@ -291,7 +291,7 @@ class ArgParser:
 
 
     """
-    Settings for training models
+    Settings for training or testing models
     """
     def parse_model_training_setting(self):
         """Parse arguments for training models."""
@@ -336,6 +336,13 @@ class ArgParser:
             default=5, 
             type=int,
             help='k for evaluating top-k accuracy'
+        )
+
+        self.parser.add_argument(
+            '--epoch', 
+            default=0, 
+            type=int,
+            help='Epoch of a model to test'
         )
 
 

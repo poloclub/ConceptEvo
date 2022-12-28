@@ -45,13 +45,11 @@ class ImageEmb:
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
 
-
     def load_neuron_emb(self):
         self.neuron_emb = self.load_json(self.data_path.get_path('neuron_emb'))
         for neuron in self.neuron_emb:
             self.neuron_emb[neuron] = np.array(self.neuron_emb[neuron])
         self.num_neurons = len(self.neuron_emb)
-
 
     def gen_neurons_activated_by_stimulus(self):
         for layer in self.stimulus:
@@ -62,12 +60,10 @@ class ImageEmb:
                         self.stimuluated_neurons_by[img] = []
                     self.stimuluated_neurons_by[img].append(neuron_id)
 
-
     def get_stimulus_of_neuron(self, neuron):
         layer, neuron_idx = neuron.split('-')
         neuron_idx = int(neuron_idx)
         return self.stimulus[layer][neuron_idx][:self.args.k]
-
 
     def random_sample_imgs(self):
         if len(self.imgs) == 0:
@@ -76,13 +72,11 @@ class ImageEmb:
         sampled_imgs = np.random.choice(self.imgs, num_sample, replace=False)
         return sampled_imgs
 
-
     """
     Compute image embedding
     """
     def init_img_emb(self):
         self.img_emb = np.random.random((self.num_imgs, self.args.dim)) - 0.5
-
 
     def compute_approx_neuron_vec(self, X_n):
         vec_sum = np.zeros(self.args.dim)
@@ -90,18 +84,15 @@ class ImageEmb:
             vec_sum += self.img_emb[x]
         return vec_sum / len(X_n)
 
-
     def compute_vec_approx_err(self, v_n_p, v_n):
         diff = v_n_p - v_n
         err = diff.dot(diff)
         return err
-
     
     def update_img_embedding(self):
         for j in self.stimuluated_neurons_by:
             grad_j = self.compute_gradient(j)
             self.img_emb[j] -= self.args.lr_img_emb * grad_j
-
 
     def compute_gradient(self, img):
         grad = np.zeros(self.args.dim)
@@ -113,7 +104,6 @@ class ImageEmb:
         grad = grad / self.num_neurons
         return grad
 
-
     def compute_err(self):
         err = 0
         for neuron in self.neuron_emb:
@@ -122,8 +112,7 @@ class ImageEmb:
             v_n_p = self.compute_approx_neuron_vec(X_n)
             err += self.compute_vec_approx_err(v_n_p, v_n)
         err = err / (2 * self.num_neurons)
-        return err
-    
+        return err  
 
     def compute_img_emb_from_neuron_emb(self):
         self.write_first_log()
@@ -145,11 +134,9 @@ class ImageEmb:
                         f'iter={i}, err={err}, cum_time={toc - tic}sec'
                     )
 
-
     def save_img_emb(self):
         file_path = self.data_path.get_path('img_emb')
         np.savetxt(file_path, self.img_emb, fmt='%.3f')
-
 
     """
     Handle external files (e.g., output, log, ...)
@@ -159,11 +146,9 @@ class ImageEmb:
             data = json.load(f)
         return data
 
-
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
             json.dump(data, f)
-
 
     def write_first_log(self):
         hyperpara_setting = self.data_path.gen_act_setting_str('img_emb', '\n')
@@ -172,7 +157,6 @@ class ImageEmb:
         log += 'model_path: {}\n\n'.format(self.args.model_path)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
-
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'

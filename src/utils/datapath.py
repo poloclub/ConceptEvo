@@ -19,7 +19,6 @@ class DataPath:
 
         self.path_keys = [
             'train-data', 'test-data', 
-            # 'label-data',
             'stimulus', 'co_act', 'neuron_emb', 'img_emb',
             'proj_neuron_emb', 'dim_reduction', 'neuron_feature', 
             'find_important_evo', 'eval_important_evo'
@@ -231,7 +230,7 @@ class DataPath:
         ]
 
 
-    def check_need_to_gen_path(self, path_key):
+    def need_to_gen_path(self, path_key):
         """Check if data paths of a given path_key needs to be generated.
 
         Args:
@@ -270,7 +269,7 @@ class DataPath:
         For a given dir_path, it generates 
             self.args.output_dir
                 └── dir_name
-                    └── inner_dirname
+                    └── inner_dirname (model_nickname if it's not given)
                         ├── data
                         └── log
 
@@ -313,6 +312,8 @@ class DataPath:
         elif 'str' in str(type(arg)):
             if (len(arg) > 0) and (arg.lower() != 'none'):
                 given_or_not = True
+        else:
+            given_or_not = True
 
         return given_or_not
 
@@ -445,9 +446,13 @@ class DataPath:
             self.path['train-log'] = train_log_path
             self.path['model-info'] = model_info_path
             self.path['layer-info'] = layer_info_path
-        if self.args.test:
+        elif self.args.test:
+            self.raise_err_for_ungiven_arg(self.args.epoch, 'epoch')
             data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
-            test_log_path = os.path.join(log_dir_path, 'test-log.txt')
+            test_log_path = os.path.join(
+                log_dir_path, 
+                'test-epoch={}.txt'.format(self.args.epoch)
+            )
             train_log_path = os.path.join(log_dir_path, 'training-test-log.txt')
             self.path['test-log'] = test_log_path
             self.path['train-log'] = train_log_path
@@ -484,7 +489,7 @@ class DataPath:
     def set_stimulus_path(self):
         """Set paths for stimulus."""
 
-        if not self.check_need_to_gen_path('stimulus'):
+        if not self.need_to_gen_path('stimulus'):
             return
 
         self.check_model_nickname_and_path()
@@ -508,7 +513,7 @@ class DataPath:
     def set_co_act_neurons_path(self):
         """Set paths for finding co-activated neurons."""
 
-        if not self.check_need_to_gen_path('co_act'):
+        if not self.need_to_gen_path('co_act'):
             return
 
         self.check_model_nickname_and_path()
@@ -523,8 +528,7 @@ class DataPath:
 
     def set_neuron_emb_path(self):
         """Set paths for neuron embedding."""
-
-        if not self.check_need_to_gen_path('neuron_emb'):
+        if not self.need_to_gen_path('neuron_emb'):
             return
 
         self.check_model_nickname_and_path()
@@ -551,28 +555,38 @@ class DataPath:
     Setting paths for image embedding
     """
     def set_img_emb_path(self):
-        if not self.check_need_to_gen_path('img_emb'):
+        if not self.need_to_gen_path('neuron_emb'):
             return
 
         self.check_model_nickname_and_path()
 
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir('embedding')
-        apdx = self.gen_act_setting_str('img_emb')
+        # Directory
+        neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
+        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', 
+            inner_dirname='emb-{}-{}'.format(
+                self.args.model_nickname, neuron_emb_apdx
+            )
+        )
+        data_dir_path = os.path.join(data_dir_path, 'emb')
+        self.make_dir(data_dir_path)
+
+        # Files
+        img_emb_apdx = self.gen_act_setting_str('img_emb')
         file_path = os.path.join(
-            data_dir_path, 'img_emb-{}.txt'.format(apdx)
+            data_dir_path, 'img_emb-{}.txt'.format(img_emb_apdx)
         )
         log_path = os.path.join(
-            log_dir_path, 'img_emb-log-{}.txt'.format(apdx)
+            log_dir_path, 'img_emb-log-{}.txt'.format(img_emb_apdx)
         )
         self.path['img_emb'] = file_path
         self.path['img_emb-log'] = log_path
-
 
     """
     Setting paths for approximate projected neuron embedding
     """
     def set_proj_emb_path(self):
-        if not self.check_need_to_gen_path('proj_neuron_emb'):
+        if not self.need_to_gen_path('proj_neuron_emb'):
             return
 
         self.check_model_nickname_and_path()
@@ -610,7 +624,7 @@ class DataPath:
     Setting paths for dimensionality reduction of embeddings
     """
     def set_emb2d_path(self):
-        if not self.check_need_to_gen_path('dim_reduction'):
+        if not self.need_to_gen_path('dim_reduction'):
             return
 
         self.raise_err_for_ungiven_arg(self.args.emb_set_dir, 'emb_set_dir')
@@ -648,7 +662,7 @@ class DataPath:
     Setting paths for generating neurons' feature
     """
     def set_neuron_feature_path(self):
-        if not self.check_need_to_gen_path('neuron_feature'):
+        if not self.need_to_gen_path('neuron_feature'):
             return
 
         self.auto_fill_model_nickname_and_model_path()
@@ -671,7 +685,7 @@ class DataPath:
     Setting paths for finding important evolution
     """
     def set_important_evolution_path(self):
-        if not self.check_need_to_gen_path('find_important_evo'):
+        if not self.need_to_gen_path('find_important_evo'):
             return
 
         self.auto_fill_model_nickname_and_model_path()
@@ -715,7 +729,7 @@ class DataPath:
     Setting paths for evaluating important evolution
     """
     def set_eval_important_evolution_path(self):
-        if not self.check_need_to_gen_path('eval_important_evo'):
+        if not self.need_to_gen_path('eval_important_evo'):
             return
 
         self.auto_fill_model_nickname_and_model_path()

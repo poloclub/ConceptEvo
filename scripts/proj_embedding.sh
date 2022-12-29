@@ -1,5 +1,47 @@
-# Run the script in `../src` where `main.py` exists.
-# Get approximate projected embeddings from an InceptionV3.
+###############################################################################
+# proj_embedding.sh
+# 
+# Create (approximated) neuron embeddings of a non-base model.
+# Run this script at `../src` where `main.py` exists.
+###############################################################################
+
+###############################################################################
+# File structure:
+# 
+# ../data
+#     └── embedding
+#             └── emb-<model_nickname>-<apdx1>
+#                   └── data
+#                   │     └── emb
+#                   │     │    ├── emb.json     
+#                   │     │    └── img_emb-<apdx2>.txt
+#                   │     └── emb2d
+#                   └── log
+# <apdx1>: 
+# ```
+# '-'.join([
+#     topk_s=<topk_s>,
+#     dim=<dim>,
+#     lr_emb=<lr_emb>,
+#     num_emb_epochs=<num_emb_epochs>,
+#     num_emb_negs=<num_emb_negs>
+# ])
+# ```
+# 
+# <apdx2>:
+# ```
+# '-'.join([
+#     dim=<dim>,
+#     lr_img_emb=<lr_img_emb>,
+#     thr_img_emb=<thr_img_emb>,
+#     max_iter_img_emb=<max_iter_img_emb>,
+#     k=<k>
+# ])
+# ```
+###############################################################################
+
+
+
 python main.py \
     --gpu 1 \
     --proj_neuron_emb T \

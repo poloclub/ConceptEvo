@@ -12,26 +12,31 @@
 #     └── embedding
 #             └── emb-<model_nickname>-<apdx1>
 #                   └── data
-#                         └── emb
-#                              ├── emb.json     
-#                              └── img_emb-<apdx2>.txt
-# 
+#                   │     └── emb
+#                   │     │    ├── emb.json     
+#                   │     │    └── img_emb-<apdx2>.txt
+#                   │     └── emb2d
+#                   └── log
 # <apdx1>: 
 # ```
-# topk_s=<topk_s>-
-# dim=<dim>-
-# lr_emb=<lr_emb>-
-# num_emb_epochs=<num_emb_epochs>-
-# num_emb_negs=<num_emb_negs>
-# ``
+# '-'.join([
+#     topk_s=<topk_s>,
+#     dim=<dim>,
+#     lr_emb=<lr_emb>,
+#     num_emb_epochs=<num_emb_epochs>,
+#     num_emb_negs=<num_emb_negs>
+# ])
+# ```
 # 
 # <apdx2>:
 # ```
-# dim=<dim>-
-# lr_img_emb=<lr_img_emb>-
-# thr_img_emb=<thr_img_emb>-
-# max_iter_img_emb=<max_iter_img_emb>-
-# k=<k>
+# '-'.join([
+#     dim=<dim>,
+#     lr_img_emb=<lr_img_emb>,
+#     thr_img_emb=<thr_img_emb>,
+#     max_iter_img_emb=<max_iter_img_emb>,
+#     k=<k>
+# ])
 # ```
 ###############################################################################
 
@@ -64,7 +69,7 @@
 gpu=0
 model_name=vgg19_pretrained
 model_nickname=vgg19_pretrained
-model_path='DO_NOT_NEED_CURRENTLY'
+model_path='DO_NOT_NEED_CURRENTLY' # Use this for a pytorch pretrained model
 topk_s=20
 dim=30
 lr_emb=0.01

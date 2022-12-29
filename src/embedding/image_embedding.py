@@ -104,14 +104,14 @@ class ImageEmb:
         grad = grad / self.num_neurons
         return grad
 
-    def compute_err(self):
+    def compute_rmse(self):
         err = 0
         for neuron in self.neuron_emb:
-            X_n = self.get_stimulus_of_neuron(neuron)
             v_n = self.neuron_emb[neuron]
+            X_n = self.get_stimulus_of_neuron(neuron)
             v_n_p = self.compute_approx_neuron_vec(X_n)
             err += self.compute_vec_approx_err(v_n_p, v_n)
-        err = err / (2 * self.num_neurons)
+        err = np.sqrt(err / self.num_neurons)
         return err  
 
     def compute_img_emb_from_neuron_emb(self):
@@ -125,7 +125,7 @@ class ImageEmb:
                 pbar.update(1)
 
                 # Check convergence
-                err = self.compute_err()
+                err = self.compute_rmse()
                 if err < self.args.thr_img_emb:
                     break
                 if i % 100 == 0:

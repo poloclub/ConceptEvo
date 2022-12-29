@@ -212,7 +212,6 @@ class Emb:
         with open(self.data_path.get_path('neuron_emb-log'), log_opt) as f:
             f.write(log + '\n')
 
-
     def write_first_log(self):
         hypara_setting = self.data_path.gen_act_setting_str('neuron_emb', '\n')
         log = 'Neuron Embedding\n'
@@ -221,12 +220,10 @@ class Emb:
         log += hypara_setting + '\n\n'
         self.write_log(log, False)
             
-
     def load_json(self, file_path):
         with open(file_path, 'r') as f:
             data = json.load(f)
         return data
-
 
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:

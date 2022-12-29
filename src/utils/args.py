@@ -12,7 +12,7 @@ class ArgParser:
     Constructor
     """
     def __init__(self):
-        self.parser = argparse.ArgumentParser(description='NeuEvo')
+        self.parser = argparse.ArgumentParser(description='ConceptEvo')
         self.parse_basic_setting()
         self.parse_model_setting()
         self.parse_action_setting()
@@ -368,7 +368,7 @@ class ArgParser:
 
         self.parser.add_argument(
             '--dim', 
-            default=30, 
+            default=10, 
             type=int,
             help='Embedding dimension'
         )
@@ -458,25 +458,10 @@ class ArgParser:
         """Parse arguments for approximate projected embedding."""
 
         self.parser.add_argument(
-            '--img_emb_path', 
+            '--basemodel_nickname', 
             default='', 
             type=str,
-            help='Path of img embedding file'
-        )
-
-        self.parser.add_argument(
-            '--emb_store_dirname', 
-            default='', 
-            type=str,
-            help='Directory name to store the embedding'
-        )
-
-        self.parser.add_argument(
-            '--model_for_emb_space', 
-            default='base', 
-            choices=['all', 'base'],
-            type=str,
-            help='Models to generate the embedding space'
+            help='The nickname of the base model'
         )
 
     

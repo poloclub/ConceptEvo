@@ -11,11 +11,14 @@ from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
 from embedding.reduce_dim import *
 from embedding.stimulus import *
+
 # Concept images of neurons
 from feature.example_patch import *
+
 # Find and evaluate concept evolution for class predictions
 from importantevo.eval_important_evo import *
 from importantevo.important_evo import *
+
 # CNN Models
 from model.convnext import *
 from model.inception_v3 import *
@@ -24,6 +27,7 @@ from model.vgg16_no_dropout import *
 from model.vgg19 import *
 from model.resnet18 import *
 from model.resnet50 import *
+
 # Utils
 from utils.args import *
 from utils.datapath import *

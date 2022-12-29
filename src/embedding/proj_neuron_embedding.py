@@ -23,6 +23,7 @@ class ProjNeuronEmb:
     A wrapper function called by main.py
     """
     def compute_projected_neuron_emb(self):
+        self.img_emb_path = self.data_path.get_path('img_emb')
         self.load_img_emb()
         self.load_stimulus()
         self.init_neuron_embedding()
@@ -33,7 +34,7 @@ class ProjNeuronEmb:
     Utils
     """
     def load_img_emb(self):
-        self.img_emb = np.loadtxt(self.args.img_emb_path)
+        self.img_emb = np.loadtxt(self.img_emb_path)
 
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
@@ -104,7 +105,7 @@ class ProjNeuronEmb:
         log = 'Projected Neuron Embedding\n\n'
         log += 'model_nickname: {}\n'.format(self.args.model_nickname)
         log += 'model_path: {}\n'.format(self.args.model_path)
-        log += 'img_emb_path: {}\n\n'.format(self.args.img_emb_path)
+        log += 'img_emb_path: {}\n\n'.format(self.img_emb_path)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
    

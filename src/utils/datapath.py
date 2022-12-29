@@ -110,6 +110,7 @@ class DataPath:
         self.path_key_to_actions['neuron_emb'] = [
             self.args.neuron_emb,
             self.args.img_emb,
+            self.args.proj_neuron_emb,
             self.args.dim_reduction != 'None'
         ]
 
@@ -196,12 +197,13 @@ class DataPath:
         ]
 
         self.action_to_args['proj_neuron_emb'] = [
+            ['model_nickname', self.args.model_nickname],
             ['dim', self.args.dim]
         ]
 
         self.action_to_args['dim_reduction'] = [
             ['dim', self.args.dim],
-            ['model_for_emb_space', self.args.model_for_emb_space]
+            # ['model_for_emb_space', self.args.model_for_emb_space]
         ]
 
         self.action_to_args['neuron_feature'] = [
@@ -244,7 +246,7 @@ class DataPath:
         actions = self.path_key_to_actions[path_key]
         need_or_not = False
         for action in actions:
-            if self.check_if_arg_given(action):
+            if self.is_given_arg(action):
                 need_or_not = True
                 break
         return need_or_not
@@ -296,7 +298,7 @@ class DataPath:
         return data_dir_path, log_dir_path
 
 
-    def check_if_arg_given(self, arg):
+    def is_given_arg(self, arg):
         """Check if a given argument is given by a user.
 
         Args:
@@ -325,7 +327,7 @@ class DataPath:
         argument is not given by the user and a pretrained model provided by
         pytorch is used.
         """
-        if not self.check_if_arg_given(self.args.model_nickname):
+        if not self.is_given_arg(self.args.model_nickname):
             if 'pretrained' in self.args.model_name:
                 self.args.model_nickname = self.args.model_name
                 self.args.model_path = self.args.model_name
@@ -359,7 +361,7 @@ class DataPath:
         Raises:
             - ValueError when arg is not given by the user
         """
-        if not self.check_if_arg_given(arg):
+        if not self.is_given_arg(arg):
             log = f'An argument {arg_name} is not given.'
             raise ValueError(log)
 
@@ -423,16 +425,17 @@ class DataPath:
     def set_model_path(self):
         """Set paths for models."""
 
-        if not self.check_if_arg_given(self.args.model_path):
+        if not self.is_given_arg(self.args.model_path):
             when_to_skip = [
                 self.args.train,
-                self.check_if_arg_given(self.args.dim_reduction),
-                self.check_if_arg_given(self.args.find_important_evo),
-                self.check_if_arg_given(self.args.eval_important_evo)
+                self.is_given_arg(self.args.proj_neuron_emb),
+                self.is_given_arg(self.args.dim_reduction),
+                self.is_given_arg(self.args.find_important_evo),
+                self.is_given_arg(self.args.eval_important_evo)
             ]
             if True in when_to_skip:
                 self.args.model_path = 'DO_NOT_NEED_CURRENTLY'
-            if self.check_if_arg_given(self.args.dim_reduction):
+            if self.is_given_arg(self.args.dim_reduction):
                 self.args.model_nickname = 'DO_NOT_NEED_CURRENTLY'
 
         self.check_model_nickname_and_path()
@@ -495,6 +498,7 @@ class DataPath:
         self.check_model_nickname_and_path()
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir('stimulus')
+
         apdx = self.gen_act_setting_str('stimulus')
         file_path = os.path.join(
             data_dir_path, 'stimulus-{}.json'.format(apdx)
@@ -561,11 +565,15 @@ class DataPath:
         self.check_model_nickname_and_path()
 
         # Directory
+        if self.is_given_arg(self.args.basemodel_nickname):
+            basemodel_nickname = self.args.basemodel_nickname
+        else:
+            basemodel_nickname = self.args.model_nickname
         neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
             'embedding', 
             inner_dirname='emb-{}-{}'.format(
-                self.args.model_nickname, neuron_emb_apdx
+                basemodel_nickname, neuron_emb_apdx
             )
         )
         data_dir_path = os.path.join(data_dir_path, 'emb')
@@ -589,36 +597,38 @@ class DataPath:
         if not self.need_to_gen_path('proj_neuron_emb'):
             return
 
+        # Check if the nicknames of the base model and model are given
         self.check_model_nickname_and_path()
-        self.raise_err_for_ungiven_arg(self.args.img_emb_path, 'img_emb_path')
-
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
-            'embedding', inner_dirname=self.args.model_nickname
+        self.raise_err_for_ungiven_arg(
+            self.args.basemodel_nickname, 'basemodel_nickname'
         )
-        apdx = self.gen_act_setting_str('proj_neuron_emb')
-        file_name = 'proj_neuron_emb-{}-{}.json'.format(
-            self.args.model_nickname.replace('-', '_'),
-            apdx
+
+        # Directory
+        neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
+        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', 
+            inner_dirname='emb-{}-{}'.format(
+                self.args.basemodel_nickname, neuron_emb_apdx
+            )
+        )
+        data_dir_path = os.path.join(data_dir_path, 'emb')
+        self.make_dir(data_dir_path)
+
+        # Files
+        img_emb_apdx = self.gen_act_setting_str('img_emb')
+        file_name = 'proj_emb-{}-{}.json'.format(
+            self.args.model_nickname, img_emb_apdx
         )
         file_path = os.path.join(data_dir_path, file_name)
         log_path = os.path.join(
-            log_dir_path, 'proj_neuron_emb-log-{}-{}.txt'.format(
-                self.args.model_nickname.replace('-', '_'),
-                apdx
+            log_dir_path, 'proj_emb-log-{}-{}.txt'.format(
+                self.args.model_nickname, img_emb_apdx
             )
         )
+
+        # Path
         self.path['proj_neuron_emb'] = file_path
         self.path['proj_neuron_emb-log'] = log_path
-
-        if self.check_if_arg_given(self.args.emb_store_dirname):
-            dir_path = os.path.join(
-                self.args.output_dir, 'embedding', self.args.emb_store_dirname
-            )
-            self.make_dir(dir_path)
-            self.path['proj_neuron_emb-store'] = os.path.join(
-                dir_path, file_name
-            )
-
 
     """
     Setting paths for dimensionality reduction of embeddings

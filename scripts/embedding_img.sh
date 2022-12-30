@@ -1,7 +1,7 @@
 ###############################################################################
-# proj_embedding.sh
+# embedding_img.sh
 # 
-# Create (approximated) neuron embeddings of a non-base model.
+# Create image embeddings from base model's neuron embeddings.
 # Run this script at `../src` where `main.py` exists.
 ###############################################################################
 
@@ -16,10 +16,12 @@
 #                   │     │    └── emb.json 
 #                   │     └── emb-set-<apdx2>
 #                   │          ├── emb_nd
-#                   │          │      ├── emb.json
 #                   │          │      ├── img_emb.txt
 #                   │          │      └── proj_emb-<model_nickname>.json
 #                   │          └── emb_2d
+#                   │                 ├── reducer.sav
+#                   │                 ├── idx2id.json
+#                   │                 ├── model_code.json
 #                   │                 ├── emb_2d-<basemodel_nickname>.json
 #                   │                 └── emb_2d-<model_nickname>.json
 #                   └── log
@@ -47,7 +49,10 @@
 ###############################################################################
 
 ###############################################################################
-# The result will be saved at `proj_emb-<model_nickname>-<apdx2>.json` 
+# It loads the base model's neuron embedding at `emb.json` 
+# in the above file structure.
+# 
+# It saves the image embeddings at `img_emb-<apdx2>.txt`
 # in the above file structure.
 ###############################################################################
 
@@ -55,9 +60,9 @@
 # Provide a correct value for each "?" below:
 # 
 # gpu=?
-# basemodel_nickname=?
 # model_name=?
 # model_nickname=?
+# model_path=?
 # topk_s=?
 # dim=?
 # lr_emb=?
@@ -70,9 +75,9 @@
 # 
 # For example:
 gpu=0
-basemodel_nickname=vgg19_pretrained
-model_name=vgg16
-model_nickname=vgg16-0.01-207
+model_name=vgg19_pretrained
+model_nickname=vgg19_pretrained
+model_path='DO_NOT_NEED_CURRENTLY' # Use this for a pytorch pretrained model
 topk_s=20
 dim=30
 lr_emb=0.01
@@ -87,64 +92,17 @@ k=$topk_s
 ###############################################################################
 python main.py \
     --gpu $gpu \
-    --proj_neuron_emb T \
-    --basemodel_nickname $basemodel_nickname \
+    --img_emb T \
     --model_name $model_name \
     --model_nickname $model_nickname \
-    --topk_s $topk_s \
+    --model_path $model_path \
     --dim $dim \
     --lr_emb $lr_emb \
     --num_emb_epochs $num_emb_epochs \
     --num_emb_negs $num_emb_negs \
+    --topk_s $topk_s \
     --lr_img_emb $lr_img_emb \
     --thr_img_emb $thr_img_emb \
     --max_iter_img_emb $max_iter_img_emb \
     --k $k
-###############################################################################
-
-
-###############################################################################
-# If you have multiple models, uncomment BLOCK1 below and run it.
-# 
-# If you get an error saying `Syntax error: "(" unexpected`,  
-# run this script with `bash` command: `bash proj_embedding.sh`.
-###############################################################################
-
-###############################################################################
-# # BLOCK1: if you have multiple models
-# 
-# model_names=( 
-#     model_0
-#     model_1
-#     model_2
-# )
-
-# model_nicknames=( 
-#     nickname_0
-#     nickname_1
-#     nickname_2
-# )
-
-# for i in "${!model_names[@]}"
-# do
-#     model_name=${model_names[i]}
-#     model_nickname=${model_nicknames[i]}
-#     echo $model_name, $model_nickname
-
-#     python main.py \
-#         --gpu $gpu \
-#         --proj_neuron_emb T \
-#         --basemodel_nickname $basemodel_nickname \
-#         --model_name $model_name \
-#         --model_nickname $model_nickname \
-#         --topk_s $topk_s \
-#         --dim $dim \
-#         --lr_emb $lr_emb \
-#         --num_emb_epochs $num_emb_epochs \
-#         --num_emb_negs $num_emb_negs \
-#         --lr_img_emb $lr_img_emb \
-#         --thr_img_emb $thr_img_emb \
-#         --max_iter_img_emb $max_iter_img_emb \
-#         --k $k
-# done
 ###############################################################################

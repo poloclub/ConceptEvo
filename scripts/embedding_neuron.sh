@@ -1,5 +1,5 @@
 ###############################################################################
-# neuron_embedding.sh
+# embedding_neuron.sh
 # 
 # Create neuron embeddings of a base model.
 # Run this script at `../src` where `main.py` exists.
@@ -16,10 +16,12 @@
 #                   │     │    └── emb.json 
 #                   │     └── emb-set-<apdx2>
 #                   │          ├── emb_nd
-#                   │          │      ├── emb.json
 #                   │          │      ├── img_emb.txt
 #                   │          │      └── proj_emb-<model_nickname>.json
 #                   │          └── emb_2d
+#                   │                 ├── reducer.sav
+#                   │                 ├── idx2id.json
+#                   │                 ├── model_code.json
 #                   │                 ├── emb_2d-<basemodel_nickname>.json
 #                   │                 └── emb_2d-<model_nickname>.json
 #                   └── log

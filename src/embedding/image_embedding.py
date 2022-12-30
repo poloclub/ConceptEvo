@@ -112,7 +112,7 @@ class ImageEmb:
             v_n_p = self.compute_approx_neuron_vec(X_n)
             err += self.compute_vec_approx_err(v_n_p, v_n)
         err = np.sqrt(err / self.num_neurons)
-        return err  
+        return err
 
     def compute_img_emb_from_neuron_emb(self):
         self.write_first_log()

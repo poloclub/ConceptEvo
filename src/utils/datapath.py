@@ -265,7 +265,7 @@ class DataPath:
             os.makedirs(dir_path)
 
 
-    def gen_data_log_sub_dir(self, dir_name, inner_dirname=None):
+    def gen_data_log_sub_dir(self, dir_name, inner_dirname=None, mkdir=True):
         """Generate sub-directories for data and log for a given directory name.
 
         For a given dir_path, it generates 
@@ -277,6 +277,8 @@ class DataPath:
 
         Args:
             - dir_name: a directory name
+            - inner_dirname: the name of inner directory
+            - mkdir: whether to make the directories
 
         Returns:
             - data_dir_path: data sub directory path 
@@ -291,10 +293,12 @@ class DataPath:
         dir_path = os.path.join(self.args.output_dir, dir_name, inner_dirname)
         data_dir_path = os.path.join(dir_path, 'data')
         log_dir_path = os.path.join(dir_path, 'log')
-        self.make_dir(dir_path)
-        self.make_dir(data_dir_path)
-        self.make_dir(log_dir_path)
-        
+
+        if mkdir:
+            self.make_dir(dir_path)
+            self.make_dir(data_dir_path)
+            self.make_dir(log_dir_path)
+            
         return data_dir_path, log_dir_path
 
 
@@ -541,10 +545,10 @@ class DataPath:
 
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
             'embedding', 
-            inner_dirname='emb-{}-{}'.format(self.args.model_nickname, apdx)
+            inner_dirname='emb-{}-{}'.format(self.args.model_nickname, apdx),
+            mkdir=self.args.neuron_emb
         )
         data_dir_path = os.path.join(data_dir_path, 'emb')
-        self.make_dir(data_dir_path)
 
         file_path = os.path.join(data_dir_path, 'emb.json')
         vis_path = os.path.join(data_dir_path, 'emb.png')
@@ -576,14 +580,18 @@ class DataPath:
                 basemodel_nickname, neuron_emb_apdx
             )
         )
-        data_dir_path = os.path.join(data_dir_path, 'emb')
+
+        img_emb_apdx = self.gen_act_setting_str('img_emb')
+        data_dir_path = os.path.join(
+            data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
+        )
+        self.make_dir(data_dir_path)
+
+        data_dir_path = os.path.join(data_dir_path, 'emb_nd')
         self.make_dir(data_dir_path)
 
         # Files
-        img_emb_apdx = self.gen_act_setting_str('img_emb')
-        file_path = os.path.join(
-            data_dir_path, 'img_emb-{}.txt'.format(img_emb_apdx)
-        )
+        file_path = os.path.join(data_dir_path, 'img_emb.txt')
         log_path = os.path.join(
             log_dir_path, 'img_emb-log-{}.txt'.format(img_emb_apdx)
         )
@@ -611,14 +619,17 @@ class DataPath:
                 self.args.basemodel_nickname, neuron_emb_apdx
             )
         )
-        data_dir_path = os.path.join(data_dir_path, 'emb')
+        img_emb_apdx = self.gen_act_setting_str('img_emb')
+        data_dir_path = os.path.join(
+            data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
+        )
+        self.make_dir(data_dir_path)
+
+        data_dir_path = os.path.join(data_dir_path, 'emb_nd')
         self.make_dir(data_dir_path)
 
         # Files
-        img_emb_apdx = self.gen_act_setting_str('img_emb')
-        file_name = 'proj_emb-{}-{}.json'.format(
-            self.args.model_nickname, img_emb_apdx
-        )
+        file_name = 'proj_emb-{}.json'.format(self.args.model_nickname)
         file_path = os.path.join(data_dir_path, file_name)
         log_path = os.path.join(
             log_dir_path, 'proj_emb-log-{}-{}.txt'.format(

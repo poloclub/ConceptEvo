@@ -11,12 +11,17 @@
 # ../data
 #     └── embedding
 #             └── emb-<basemodel_nickname>-<apdx1>
-#                   └── data
-#                   │     └── emb
-#                   │     │    ├── emb.json     
-#                   │     │    ├── img_emb-<apdx2>.txt
-#                   │     │    └── proj_emb-<model_nickname>-<apdx2>.json
-#                   │     └── emb2d 
+#                   ├── data
+#                   │     ├── emb
+#                   │     │    └── emb.json 
+#                   │     └── emb-set-<apdx2>
+#                   │          ├── emb_nd
+#                   │          │      ├── emb.json
+#                   │          │      ├── img_emb.txt
+#                   │          │      └── proj_emb-<model_nickname>.json
+#                   │          └── emb_2d
+#                   │                 ├── emb_2d-<basemodel_nickname>.json
+#                   │                 └── emb_2d-<model_nickname>.json
 #                   └── log
 # <apdx1>: 
 # ```
@@ -42,7 +47,8 @@
 ###############################################################################
 
 ###############################################################################
-# The result will be saved at `emb2d/` in the above file structure.
+# The result will be saved at `proj_emb-<model_nickname>-<apdx2>.json` 
+# in the above file structure.
 ###############################################################################
 
 ###############################################################################

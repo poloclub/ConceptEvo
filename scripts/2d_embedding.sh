@@ -1,7 +1,9 @@
 ###############################################################################
-# neuron_embedding.sh
+# 2d_embedding.sh
 # 
-# Create neuron embeddings of a base model.
+# Create 2D embedding of the base model and non-base models 
+# on the unified semantic space.
+# 
 # Run this script at `../src` where `main.py` exists.
 ###############################################################################
 
@@ -46,49 +48,11 @@
 # ```
 ###############################################################################
 
-###############################################################################
-# The result will be saved at `emb.json` in the above file structure.
-###############################################################################
-
-###############################################################################
-# Provide a correct value for each "?" below:
-# 
-# gpu=?
-# model_name=?
-# model_nickname=?
-# model_path=?
-# topk_s=?
-# dim=?
-# lr_emb=?
-# num_emb_epochs=?
-# num_emb_negs=?
-# lr_img_emb=?
-# thr_img_emb=?
-# max_iter_img_emb=?
-# k=?
-# 
-# For example:
-gpu=0
-model_name=vgg16
-model_nickname=vgg16-0.01-207
-model_path=../data/model/vgg16-512-0.01-0.9/data/model-207.pth
-topk_s=20
-dim=30
-lr_emb=0.01
-num_emb_epochs=100
-num_emb_negs=3
-###############################################################################
-
-###############################################################################
+# Dimensionality reduction
 python main.py \
-    --gpu $gpu \
-    --neuron_emb T \
-    --model_name $model_name \
-    --model_nickname $model_nickname \
-    --model_path $model_path \
-    --topk_s $topk_s \
-    --dim $dim \
-    --lr_emb $lr_emb \
-    --num_emb_epochs $num_emb_epochs \
-    --num_emb_negs $num_emb_negs 
-###############################################################################
+    --gpu 3 \
+    --dim_reduction UMAP \
+    --emb_set_dir ../data/embedding/emb-1 \
+    --dim 30 \
+    --model_for_emb_space base
+

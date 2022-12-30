@@ -16,8 +16,6 @@ class Reducer:
         self.args = args
         self.data_path = data_path
 
-        self.model_code_to_file_path = {}
-
         self.X = None
         self.X_all = None
         self.idx2id = {}
@@ -25,95 +23,81 @@ class Reducer:
         self.num_instances = 0
         self.base_model_nickname = ''
     
-        self.is_reducer_given = len(self.args.reducer_path) > 0
+        self.is_reducer_given = False    
         self.reducer = None
+
         self.emb = {}
         self.emb2d = {}
-
 
     """
     Wrapper function called by main.py
     """
     def reduce_dim(self):
+        self.emb_set_dir = self.data_path.get_path('emb_nd-dir')
         self.init_reducer()
         self.load_embedding()
         self.run_dim_reduction()
         self.save_results()
 
-
     """
     Initial setting
     """
     def init_reducer(self):
+        self.is_reducer_given = os.path.exists(
+            self.data_path.get_path('emb2d-reducer')
+        )
         if self.is_reducer_given:
             self.load_reducer()
         elif self.args.dim_reduction == 'UMAP':
             self.reducer = umap.UMAP(n_components=2)
+        else:
+            err = 'An invalid dimensionality reduction method is given: '
+            err += str(self.args.dim_reduction)
+            raise ValueError(err)
 
-    
     def load_embedding(self):
-        # Assign model code and load embedding
-        for dirpath, dnames, fnames in os.walk(self.args.emb_set_dir):
-            
-            for f in fnames:
-                if '-log-' in f:
-                    continue
-                if 'emb2d' in f:
-                    continue
-                
-                file_path = os.path.join(dirpath, f)
-                if f.startswith('neuron_emb'):
-                    # Base model
-                    model_nickname = f.split('-')[1]
-                    self.model_code_to_file_path[model_nickname] = file_path
-                    self.emb[model_nickname] = self.load_json(file_path)
-                    self.num_instances += len(self.emb[model_nickname])
-                    self.base_model_nickname = model_nickname
+        # Collect file paths for all models' embedding
+        proj_emb_dir = self.data_path.get_path('emb_nd-dir')
+        proj_emb_files = os.listdir(proj_emb_dir)
+        proj_emb_files = [
+            os.path.join(proj_emb_dir, f)
+            for f in proj_emb_files if 'proj_emb' in f
+        ]
+        file_paths = [self.data_path.get_path('neuron_emb')] \
+            + sorted(proj_emb_files)
+        
+        # Load embedding of each model
+        for file_path in file_paths:
+            # Model nickname
+            file_name = os.path.basename(file_path)
+            if file_name == 'emb.json':
+                model_nickname = self.args.basemodel_nickname
+            else:
+                model_nickname = file_name[9:-5]
+            model_nickname = model_nickname.replace('-', '_')
 
-                elif f.startswith('proj_neuron_emb'):
-                    # Other models
-                    model_nickname = f.split('-')[1]
-                    self.model_code_to_file_path[model_nickname] = file_path
-                    if model_nickname not in self.emb:
-                        self.emb[model_nickname] = self.load_json(file_path)
-                        self.num_instances += len(self.emb[model_nickname])
+            # Load embedding
+            self.emb[model_nickname] = self.load_json(file_path)
+            self.num_instances += len(self.emb[model_nickname])
 
-                elif f.startswith('img_emb'):
-                    # Image embedding
-                    self.model_code_to_file_path['img'] = file_path
-                    self.emb['img'] = np.loadtxt(file_path)
-                    self.num_instances += len(self.emb['img'])
-                    
-                else:
-                    log = f'Err. Unknown file type: {f}'
-                    raise ValueError(log)
-
-        if len(self.base_model_nickname) == 0:
-            log = 'A base model file is not given, starting with "neuron_emb"'
-            raise ValueError(log)
-
-        # Generate matrix X for all neurons' vectors
-        num_base_instances = len(self.emb[self.base_model_nickname])
+        # Initialize matrix X for all neurons' vector
+        num_base_instances = len(self.emb[self.args.basemodel_nickname])
         self.X = np.zeros((num_base_instances, self.args.dim))
         self.X_all = np.zeros((self.num_instances, self.args.dim))
-        idx = 0
-        for model_code in self.emb:
-            if 'img' in model_code:
-                num_imgs = len(self.emb[model_code])
-                for i in range(num_imgs):
-                    self.idx2id_all[idx] = '{}-{}'.format(model_code, i)
-                    self.X_all[idx] = self.emb[model_code][i]
-                    idx += 1
-            else:
-                for neuron_i, neuron in enumerate(self.emb[model_code]):
-                    neuron_id = '{}-{}'.format(model_code, neuron)
-                    self.idx2id_all[idx] = neuron_id
-                    self.X_all[idx] = self.emb[model_code][neuron]
-                    idx += 1
-                    if model_code == self.base_model_nickname:
-                        self.X[neuron_i] = self.emb[model_code][neuron]
-                        self.idx2id[neuron_i] = neuron_id
 
+        # Generate X
+        idx = 0
+        for model_nickname in self.emb:
+            for neuron_i, neuron in enumerate(self.emb[model_nickname]):
+                neuron_id = '{}-{}'.format(model_nickname, neuron)
+                self.idx2id_all[idx] = neuron_id
+                self.X_all[idx] = self.emb[model_nickname][neuron]
+                if model_nickname == self.base_model_nickname:
+                    self.X[neuron_i] = self.emb[model_nickname][neuron]
+                    self.idx2id[neuron_i] = neuron_id
+                idx += 1
+
+        self.write_log('Embedding loaded')
     
     """
     Project the embdding to 2D
@@ -121,15 +105,12 @@ class Reducer:
     def run_dim_reduction(self):
         self.write_first_log()
 
-        # Fit reducer if it is not given
+        # Fit the reducer if it is not given
         if not self.is_reducer_given:
-            # Fit reducer and get all 2d embeddings
+            # Fit the reducer and get all 2d embeddings
             tic = time()
-            if self.args.model_for_emb_space == 'base':
-                fitted_emb2d = self.reducer.fit_transform(self.X)
-                emb2d = self.reducer.transform(self.X_all)
-            elif self.args.model_for_emb_space == 'all':
-                emb2d = self.reducer.fit_transform(self.X_all)
+            fitted_emb2d = self.reducer.fit_transform(self.X)
+            emb2d = self.reducer.transform(self.X_all)
             toc = time()
             log = 'Fit and transform: {:.2f} sec'.format(toc - tic)
             self.write_log(log)
@@ -150,57 +131,23 @@ class Reducer:
             for i, emb in enumerate(emb2d):
                 emb_arr = emb.tolist()
                 instance_id = self.idx2id_all[i]
-                model_code = instance_id.split('-')[0]
-                if model_code != 'img':
-                    instance_id = '-'.join(instance_id.split('-')[1:])
-                if model_code not in self.emb2d:
-                    self.emb2d[model_code] = {}
-                self.emb2d[model_code][instance_id] = emb_arr
+                model_nickname = instance_id.split('-')[0]
+                neuron_id = '-'.join(instance_id.split('-')[1:])
+                if model_nickname not in self.emb2d:
+                    self.emb2d[model_nickname] = {}
+                self.emb2d[model_nickname][neuron_id] = emb_arr
                 pbar.update(1)
         toc = time()
         log = '2D Projection: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
-
-    
-    def sample_points(self):
-        if self.args.model_for_emb_space == 'base':
-            num_base_instances = len(self.X)
-            rand_indices = np.random.choice(
-                num_base_instances, 
-                size=int(self.args.sample_rate * num_base_instances), 
-                replace=False
-            )
-            sampled_X = self.X[rand_indices]
-        elif self.args.model_for_emb_space == 'all':
-            num_base_instances = self.num_instances
-            rand_indices = np.random.choice(
-                num_base_instances, 
-                size=int(self.args.sample_rate * num_base_instances), 
-                replace=False
-            )
-            sampled_X = self.X_all[rand_indices]
-        return sampled_X
-
     
     def save_results(self):
-        # Save 2d embedding
-        dir_path = self.data_path.get_path('dim_reduction-dir')
-        apdx = self.data_path.get_path('dim_reduction-apdx')
-        for model_code in self.emb2d:
+        dir_path = self.data_path.get_path('emb2d-dir')
+        for model_nickname in self.emb2d:
             file_path = os.path.join(
-                dir_path, 'emb2d-{}-{}.json'.format(model_code, apdx)
+                dir_path, 'emb2d-{}.json'.format(model_nickname)
             )
-            self.save_json(
-                self.emb2d[model_code], 
-                file_path
-            )
-        
-        # Save model code
-        self.save_json(
-            self.model_code_to_file_path, 
-            self.data_path.get_path('dim_reduction-model_code')
-        )
-
+            self.save_json(self.emb2d[model_code], file_path)
 
     """
     Handle external files (e.g., output, log, ...)
@@ -210,35 +157,23 @@ class Reducer:
             data = json.load(f)
         return data
 
-
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
             json.dump(data, f)
 
-
     def save_reducer(self):
-        file_path = self.data_path.get_path('dim_reduction-reducer')
+        file_path = self.data_path.get_path('emb2d-reducer')
         joblib.dump(self.reducer, file_path)
 
-    
     def load_reducer(self):
-        # file_path = self.data_path.get_path('dim_reduction-reducer')
-        file_path = self.args.reducer_path
+        file_path = self.data_path.get_path('emb2d-reducer')
         self.reducer = joblib.load(file_path)
 
-
     def write_first_log(self):
-        hyperpara_setting = self.data_path.gen_act_setting_str(
-            'dim_reduction', '\n'
-        )
-        
-        log = 'Dimensionality reduction\n\n'
-        log += 'emb_set_dir: {}\n'.format(self.args.emb_set_dir)
-        log += hyperpara_setting + '\n\n'
+        log = 'Dimensionality reduction\n'
         self.write_log(log, False)
-
 
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('dim_reduction-log'), log_opt) as f:
+        with open(self.data_path.get_path('emb2d-log'), log_opt) as f:
             f.write(log + '\n')

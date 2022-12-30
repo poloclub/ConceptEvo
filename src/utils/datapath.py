@@ -202,7 +202,7 @@ class DataPath:
         ]
 
         self.action_to_args['dim_reduction'] = [
-            ['dim', self.args.dim],
+            # ['dim', self.args.dim],
             # ['model_for_emb_space', self.args.model_for_emb_space]
         ]
 
@@ -543,9 +543,13 @@ class DataPath:
 
         apdx = self.gen_act_setting_str('neuron_emb')
 
+        model_nickname = self.args.model_nickname
+        if self.is_given_arg(self.args.dim_reduction):
+            model_nickname = self.args.basemodel_nickname
+
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
             'embedding', 
-            inner_dirname='emb-{}-{}'.format(self.args.model_nickname, apdx),
+            inner_dirname='emb-{}-{}'.format(model_nickname, apdx),
             mkdir=self.args.neuron_emb
         )
         data_dir_path = os.path.join(data_dir_path, 'emb')
@@ -648,36 +652,39 @@ class DataPath:
         if not self.need_to_gen_path('dim_reduction'):
             return
 
-        self.raise_err_for_ungiven_arg(self.args.emb_set_dir, 'emb_set_dir')
+        # Directory
+        if self.is_given_arg(self.args.basemodel_nickname):
+            basemodel_nickname = self.args.basemodel_nickname
+        else:
+            basemodel_nickname = self.args.model_nickname
+
+        neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
         data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
-            'embedding', inner_dirname='emb2d'
+            'embedding', 
+            inner_dirname='emb-{}-{}'.format(
+                basemodel_nickname, neuron_emb_apdx
+            )
         )
-        
-        emb_set_dir_name = self.args.emb_set_dir.split('/')[-1]
-        data_dir_path = os.path.join(data_dir_path, emb_set_dir_name)
+
+        img_emb_apdx = self.gen_act_setting_str('img_emb')
+        data_dir_path = os.path.join(
+            data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
+        )
+        self.make_dir(data_dir_path)
+        self.path['emb_nd-dir'] = os.path.join(data_dir_path, 'emb_nd')
+        data_dir_path = os.path.join(data_dir_path, 'emb_2d')
         self.make_dir(data_dir_path)
 
-        apdx = self.gen_act_setting_str('dim_reduction')
+        # Files
         log_path = os.path.join(
-            log_dir_path, 
-            'emb2d-log-{}-{}.txt'.format(apdx, emb_set_dir_name)
+            log_dir_path, 'emb2d-log-{}.txt'.format(img_emb_apdx)
         )
-        idx_path = os.path.join(
-            data_dir_path, 'emb2d-idx2id-{}.json'.format(apdx)
-        )
-        code_path = os.path.join(
-            data_dir_path, 'model_code-{}.json'.format(apdx)
-        )
-        reducer_path = os.path.join(
-            data_dir_path, 'reducer-{}.sav'.format(apdx)
-        )
-        self.path['dim_reduction-dir'] = data_dir_path
-        self.path['dim_reduction-apdx'] = apdx
-        self.path['dim_reduction-log'] = log_path
-        self.path['dim_reduction-idx2id'] = idx_path
-        self.path['dim_reduction-model_code'] = code_path
-        self.path['dim_reduction-reducer'] = reducer_path
-
+        reducer_path = os.path.join(data_dir_path, 'reducer.sav')
+        
+        # Paths
+        self.path['emb2d-dir'] = data_dir_path
+        self.path['emb2d-log'] = log_path
+        self.path['emb2d-reducer'] = reducer_path
 
     """
     Setting paths for generating neurons' feature

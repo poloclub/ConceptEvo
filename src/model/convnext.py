@@ -77,7 +77,10 @@ class ConvNeXt:
         self.load_checkpoint()
 
         # Create an empty model
-        self.model = models.convnext_tiny(pretrained=self.pretrained)
+        if self.pretrained:
+            self.model = models.convnext_tiny(weights='DEFAULT')
+        else:
+            self.model = models.convnext_tiny()
 
         # Load a saved model
         self.load_saved_model()

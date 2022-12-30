@@ -72,7 +72,10 @@ class ResNet50:
         self.load_checkpoint()
 
         # Create an empty model
-        self.model = models.resnet50(pretrained=self.pretrained)
+        if self.pretrained:
+            self.model = models.resnet50(weights='DEFAULT')
+        else:
+            self.model = models.resnet50()
 
         # Load a saved model
         self.load_saved_model()

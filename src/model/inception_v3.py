@@ -74,7 +74,10 @@ class InceptionV3:
         self.load_checkpoint()
 
         # Create an empty model
-        self.model = models.inception_v3(pretrained=self.pretrained)
+        if self.pretrained:
+            self.model = models.inception_v3(weights='DEFAULT')
+        else:
+            self.model = models.inception_v3()
 
         # Load a saved model
         self.load_saved_model()

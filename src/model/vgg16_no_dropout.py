@@ -77,7 +77,10 @@ class Vgg16NoDropout:
         self.load_checkpoint()
 
         # Create an empty model
-        self.model = models.vgg16(pretrained=False)
+        if self.pretrained:
+            self.model = models.vgg16(weights='DEFAULT')
+        else:
+            self.model = models.vgg16()
 
         # Remove the dropout layer
         self.remove_dropout()

@@ -70,6 +70,7 @@
 # num_emb_negs=?
 # lr_img_emb=?
 # thr_img_emb=?
+# from_iter_img_emb=?
 # max_iter_img_emb=?
 # k=?
 # 
@@ -85,6 +86,7 @@ num_emb_epochs=100
 num_emb_negs=3
 lr_img_emb=1.0
 thr_img_emb=0.01
+from_iter_img_emb=-1
 max_iter_img_emb=10000
 k=$topk_s
 ###############################################################################
@@ -103,6 +105,7 @@ python main.py \
     --topk_s $topk_s \
     --lr_img_emb $lr_img_emb \
     --thr_img_emb $thr_img_emb \
+    --from_iter_img_emb $from_iter_img_emb \
     --max_iter_img_emb $max_iter_img_emb \
     --k $k
 ###############################################################################

@@ -85,7 +85,7 @@ k=$topk_s
 
 ###############################################################################
 python main.py \
-    --gpu 3 \
+    --gpu $gpu \
     --dim_reduction UMAP \
     --basemodel_nickname $basemodel_nickname \
     --topk_s $topk_s \

@@ -15,6 +15,7 @@ class ImageEmb:
         self.args = args
         self.data_path = data_path
 
+        self.start_from_pre_computed = self.args.from_iter_img_emb >= 0
         self.num_imgs = model.num_training_imgs
         self.imgs = []
 
@@ -24,7 +25,6 @@ class ImageEmb:
 
         self.stimuluated_neurons_by = {}
         self.img_emb = None
-
 
     """
     A wrapper function called in main.py
@@ -37,13 +37,15 @@ class ImageEmb:
         self.compute_img_emb_from_neuron_emb()
         self.save_img_emb()
 
-
     """
     Utils
     """
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
+        for layer in self.stimulus:
+            for neuron, neuron_imgs in enumerate(self.stimulus[layer]):
+                self.stimulus[layer][neuron] = neuron_imgs[:self.args.k]
 
     def load_neuron_emb(self):
         self.neuron_emb = self.load_json(self.data_path.get_path('neuron_emb'))
@@ -63,7 +65,7 @@ class ImageEmb:
     def get_stimulus_of_neuron(self, neuron):
         layer, neuron_idx = neuron.split('-')
         neuron_idx = int(neuron_idx)
-        return self.stimulus[layer][neuron_idx][:self.args.k]
+        return self.stimulus[layer][neuron_idx]
 
     def random_sample_imgs(self):
         if len(self.imgs) == 0:
@@ -76,8 +78,13 @@ class ImageEmb:
     Compute image embedding
     """
     def init_img_emb(self):
-        self.img_emb = np.random.random((self.num_imgs, self.args.dim)) - 0.5
-
+        if self.start_from_pre_computed:
+            file_path = self.data_path.get_path('img_emb_from')
+            self.img_emb = np.loadtxt(file_path)
+        else:
+            self.img_emb \
+                = np.random.random((self.num_imgs, self.args.dim)) - 0.5
+        
     def compute_approx_neuron_vec(self, X_n):
         vec_sum = np.zeros(self.args.dim)
         for x in X_n:
@@ -90,9 +97,9 @@ class ImageEmb:
         return err
     
     def update_img_embedding(self):
-        for j in self.stimuluated_neurons_by:
-            grad_j = self.compute_gradient(j)
-            self.img_emb[j] -= self.args.lr_img_emb * grad_j
+        for img in self.stimuluated_neurons_by:
+            grad_img = self.compute_gradient(img)
+            self.img_emb[img] -= self.args.lr_img_emb * grad_img
 
     def compute_gradient(self, img):
         grad = np.zeros(self.args.dim)
@@ -128,10 +135,13 @@ class ImageEmb:
                 err = self.compute_rmse()
                 if err < self.args.thr_img_emb:
                     break
-                if i % 100 == 0:
+                if i % 200 == 0:
                     toc = time()
+                    iter_num = i
+                    if self.start_from_pre_computed:
+                        iter_num += self.args.from_iter_img_emb
                     self.write_log(
-                        f'iter={i}, err={err}, cum_time={toc - tic}sec'
+                        f'iter={iter_num}, rmse={err}, cum_time={toc - tic}sec'
                     )
 
     def save_img_emb(self):
@@ -154,6 +164,7 @@ class ImageEmb:
         hyperpara_setting = self.data_path.gen_act_setting_str('img_emb', '\n')
         log = 'Image Embedding\n'
         log += 'model_nickname: {}\n'.format(self.args.model_nickname)
+        log += 'from_iter_img_emb: {}\n'.format(self.args.from_iter_img_emb)
         log += 'model_path: {}\n\n'.format(self.args.model_path)
         log += hyperpara_setting + '\n\n'
         self.write_log(log, False)

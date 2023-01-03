@@ -437,6 +437,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--from_iter_img_emb', 
+            default=-1, 
+            type=int,
+            help='The number iteration from which further iteration starts'
+        )
+
+        self.parser.add_argument(
             '--sample_rate_img_emb', 
             default=0.01, 
             type=float,
@@ -449,6 +456,7 @@ class ArgParser:
             type=int,
             help='The number of stimulating images used in image embedding.'
         )
+
 
 
     """

@@ -188,11 +188,22 @@ class DataPath:
             ['num_emb_negs', self.args.num_emb_negs]
         ]
 
+        max_iter = self.args.max_iter_img_emb
+        if self.is_given_arg(self.args.from_iter_img_emb):
+            max_iter += self.args.from_iter_img_emb
         self.action_to_args['img_emb'] = [
             ['dim', self.args.dim],
             ['lr_img_emb', self.args.lr_img_emb],
             ['thr_img_emb', self.args.thr_img_emb],
-            ['max_iter_img_emb', self.args.max_iter_img_emb],
+            ['max_iter_img_emb', max_iter],
+            ['k', self.args.k]
+        ]
+
+        self.action_to_args['img_emb_from'] = [
+            ['dim', self.args.dim],
+            ['lr_img_emb', self.args.lr_img_emb],
+            ['thr_img_emb', self.args.thr_img_emb],
+            ['max_iter_img_emb', self.args.from_iter_img_emb],
             ['k', self.args.k]
         ]
 
@@ -313,10 +324,14 @@ class DataPath:
         """
         
         given_or_not = False
-        if 'bool' in str(type(arg)):
+        arg_type = str(type(arg))
+        if 'bool' in arg_type:
             given_or_not = arg
-        elif 'str' in str(type(arg)):
+        elif 'str' in arg_type:
             if (len(arg) > 0) and (arg.lower() != 'none'):
+                given_or_not = True
+        elif 'int' in arg_type:
+            if arg >= 0:
                 given_or_not = True
         else:
             given_or_not = True
@@ -572,27 +587,43 @@ class DataPath:
 
         self.check_model_nickname_and_path()
 
-        # Directory
+        # Basemodel nickname
         if self.is_given_arg(self.args.basemodel_nickname):
             basemodel_nickname = self.args.basemodel_nickname
         else:
             basemodel_nickname = self.args.model_nickname
+
+        # Directory for neuron embedding
         neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+        root_data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
             'embedding', 
             inner_dirname='emb-{}-{}'.format(
                 basemodel_nickname, neuron_emb_apdx
             )
         )
 
+        # Parent directory for image embedding
         img_emb_apdx = self.gen_act_setting_str('img_emb')
         data_dir_path = os.path.join(
-            data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
+            root_data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
         )
         self.make_dir(data_dir_path)
 
+        # Parent directory for image embedding 
+        # from which further iterations starts
+        if self.is_given_arg(self.args.from_iter_img_emb):
+            img_emb_from_apdx = self.gen_act_setting_str('img_emb_from')
+            from_data_dir_path = os.path.join(
+                root_data_dir_path, 'emb-set-{}'.format(img_emb_from_apdx)
+            )
+
+        # Directory for image embedding
         data_dir_path = os.path.join(data_dir_path, 'emb_nd')
         self.make_dir(data_dir_path)
+
+        # Directory for image embedding from which further iterations starts
+        if self.is_given_arg(self.args.from_iter_img_emb):
+            from_data_dir_path = os.path.join(from_data_dir_path, 'emb_nd')
 
         # Files
         file_path = os.path.join(data_dir_path, 'img_emb.txt')
@@ -601,6 +632,10 @@ class DataPath:
         )
         self.path['img_emb'] = file_path
         self.path['img_emb-log'] = log_path
+
+        if self.is_given_arg(self.args.from_iter_img_emb):
+            from_file_path = os.path.join(from_data_dir_path, 'img_emb.txt')
+            self.path['img_emb_from'] = from_file_path
 
     """
     Setting paths for approximate projected neuron embedding

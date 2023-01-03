@@ -56,6 +56,8 @@ class Reducer:
             raise ValueError(err)
 
     def load_embedding(self):
+        tic = time()
+
         # Collect file paths for all models' embedding
         proj_emb_dir = self.data_path.get_path('emb_nd-dir')
         proj_emb_files = os.listdir(proj_emb_dir)
@@ -97,7 +99,11 @@ class Reducer:
                     self.idx2id[neuron_i] = neuron_id
                 idx += 1
 
-        self.write_log('Embedding loaded')
+        toc = time()
+        log = 'Load embeddings of {} models: {:.2f} sec'.format(
+            len(self.emb), toc - tic
+        )
+        self.write_log(log)
     
     """
     Project the embdding to 2D
@@ -127,16 +133,14 @@ class Reducer:
 
         # Parse embeddings into self.emb2d
         tic = time()
-        with tqdm(total = len(emb2d)) as pbar:
-            for i, emb in enumerate(emb2d):
-                emb_arr = emb.tolist()
-                instance_id = self.idx2id_all[i]
-                model_nickname = instance_id.split('-')[0]
-                neuron_id = '-'.join(instance_id.split('-')[1:])
-                if model_nickname not in self.emb2d:
-                    self.emb2d[model_nickname] = {}
-                self.emb2d[model_nickname][neuron_id] = emb_arr
-                pbar.update(1)
+        for i, emb in enumerate(emb2d):
+            emb_arr = emb.tolist()
+            instance_id = self.idx2id_all[i]
+            model_nickname = instance_id.split('-')[0]
+            neuron_id = '-'.join(instance_id.split('-')[1:])
+            if model_nickname not in self.emb2d:
+                self.emb2d[model_nickname] = {}
+            self.emb2d[model_nickname][neuron_id] = emb_arr
         toc = time()
         log = '2D Projection: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
@@ -147,7 +151,7 @@ class Reducer:
             file_path = os.path.join(
                 dir_path, 'emb2d-{}.json'.format(model_nickname)
             )
-            self.save_json(self.emb2d[model_code], file_path)
+            self.save_json(self.emb2d[model_nickname], file_path)
 
     """
     Handle external files (e.g., output, log, ...)

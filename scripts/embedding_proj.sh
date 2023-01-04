@@ -58,7 +58,6 @@
 # 
 # gpu=?
 # basemodel_nickname=?
-# model_name=?
 # model_nickname=?
 # topk_s=?
 # dim=?
@@ -73,7 +72,6 @@
 # For example:
 gpu=0
 basemodel_nickname=vgg19_pretrained
-model_name=vgg16
 model_nickname=vgg16-0.01-207
 topk_s=20
 dim=30
@@ -91,7 +89,6 @@ python main.py \
     --gpu $gpu \
     --proj_neuron_emb T \
     --basemodel_nickname $basemodel_nickname \
-    --model_name $model_name \
     --model_nickname $model_nickname \
     --topk_s $topk_s \
     --dim $dim \
@@ -104,7 +101,6 @@ python main.py \
     --k $k
 ###############################################################################
 
-
 ###############################################################################
 # If you have multiple models, uncomment BLOCK1 below and run it.
 # 
@@ -114,13 +110,6 @@ python main.py \
 
 ###############################################################################
 # # BLOCK1: if you have multiple models
-# 
-# model_names=( 
-#     model_0
-#     model_1
-#     model_2
-# )
-# 
 # model_nicknames=( 
 #     nickname_0
 #     nickname_1
@@ -128,43 +117,6 @@ python main.py \
 # )
 # 
 # For example:
-# model_names=( 
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     convnext
-#     inception_v3
-#     inception_v3
-#     inception_v3
-#     inception_v3
-#     inception_v3
-#     inception_v3
-#     inception_v3
-#     vgg16_no_dropout
-#     vgg16_no_dropout
-#     vgg16_no_dropout
-#     vgg16_no_dropout
-#     vgg16
-#     vgg16
-#     vgg16
-#     vgg16
-#     vgg16
-# )
-# 
 # model_nicknames=( 
 #     convnext-0.02-0
 #     convnext-0.02-3
@@ -182,6 +134,7 @@ python main.py \
 #     convnext-0.004-0
 #     convnext-0.004-1
 #     convnext-0.004-3
+#     convnext-0.004-91
 #     convnext-0.004-lambda0-0
 #     convnext-0.004-lambda0-1
 #     convnext-0.004-lambda0-2
@@ -211,17 +164,12 @@ python main.py \
 #     vgg16-0.05-54
 # )
 # 
-# for i in "${!model_names[@]}"
+# for model_nickname in "${model_nicknames[@]}"
 # do
-#     model_name=${model_names[i]}
-#     model_nickname=${model_nicknames[i]}
-#     echo $model_name, $model_nickname
-
 #     python main.py \
 #         --gpu $gpu \
 #         --proj_neuron_emb T \
 #         --basemodel_nickname $basemodel_nickname \
-#         --model_name $model_name \
 #         --model_nickname $model_nickname \
 #         --topk_s $topk_s \
 #         --dim $dim \

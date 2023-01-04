@@ -21,7 +21,6 @@ class Reducer:
         self.idx2id = {}
         self.idx2id_all = {}
         self.num_instances = 0
-        self.base_model_nickname = ''
     
         self.is_reducer_given = False    
         self.reducer = None
@@ -46,6 +45,8 @@ class Reducer:
         self.is_reducer_given = os.path.exists(
             self.data_path.get_path('emb2d-reducer')
         )
+        # self.is_reducer_given = False
+
         if self.is_reducer_given:
             self.load_reducer()
         elif self.args.dim_reduction == 'UMAP':
@@ -94,10 +95,10 @@ class Reducer:
                 neuron_id = '{}-{}'.format(model_nickname, neuron)
                 self.idx2id_all[idx] = neuron_id
                 self.X_all[idx] = self.emb[model_nickname][neuron]
-                if model_nickname == self.base_model_nickname:
+                idx += 1
+                if model_nickname == self.args.basemodel_nickname:
                     self.X[neuron_i] = self.emb[model_nickname][neuron]
                     self.idx2id[neuron_i] = neuron_id
-                idx += 1
 
         toc = time()
         log = 'Load embeddings of {} models: {:.2f} sec'.format(
@@ -113,10 +114,17 @@ class Reducer:
 
         # Fit the reducer if it is not given
         if not self.is_reducer_given:
-            # Fit the reducer and get all 2d embeddings
             tic = time()
-            fitted_emb2d = self.reducer.fit_transform(self.X)
+            
+            # Fit the reducer only with the base model's embedding
+            self.reducer = self.reducer.fit(self.X)
+
+            # Fit the reducer for all models' embedding
+            # self.reducer = self.reducer.fit(self.X_all)
+            
+            # Get all 2d embeddings
             emb2d = self.reducer.transform(self.X_all)
+
             toc = time()
             log = 'Fit and transform: {:.2f} sec'.format(toc - tic)
             self.write_log(log)

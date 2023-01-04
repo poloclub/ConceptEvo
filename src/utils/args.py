@@ -494,13 +494,6 @@ class ArgParser:
         """Parse arguments for neurons' feature visualization."""
 
         self.parser.add_argument(
-            '--num_features', 
-            default=15, 
-            type=int,
-            help='Number of features for each neuron'
-        )
-
-        self.parser.add_argument(
             '--ex_patch_size_ratio', 
             default=0.3, 
             type=float,

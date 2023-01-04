@@ -9,10 +9,8 @@ Run the script files at `../src`.
 - Test a model
     - Test a model's accuracy, using `test_model.sh`.
 
-<!-- 
-### Create example patches of a model
-Create example patches of neurons in a model, using `example_patch.sh`.
--->
+- Create example patches 
+    - - Create example patches of neurons in a model, using `example_patch.sh`.
 
 ## 2. Embedding
 

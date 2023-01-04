@@ -100,7 +100,8 @@ class DataPath:
             self.args.stimulus,
             self.args.neuron_emb,
             self.args.img_emb,
-            self.args.proj_neuron_emb
+            self.args.proj_neuron_emb,
+            self.args.neuron_feature
         ]
 
         self.path_key_to_actions['co_act'] = [
@@ -218,8 +219,8 @@ class DataPath:
         ]
 
         self.action_to_args['neuron_feature'] = [
-            ['method', self.args.neuron_feature],
-            ['num_features', self.args.num_features],
+            # ['method', self.args.neuron_feature],
+            ['topk_s', self.args.topk_s],
             ['ex_patch_size_ratio', self.args.ex_patch_size_ratio]
         ]
 
@@ -728,17 +729,20 @@ class DataPath:
         if not self.need_to_gen_path('neuron_feature'):
             return
 
-        self.auto_fill_model_nickname_and_model_path()
+        # self.auto_fill_model_nickname_and_model_path()
         self.raise_err_for_ungiven_arg(
             self.args.model_nickname, 'model_nickname'
         )
 
         d_dir_path, l_dir_path = self.gen_data_log_sub_dir('neuron_feature')
+        self.make_dir(d_dir_path)
         apdx = self.gen_act_setting_str('neuron_feature')
+        d_dir_path = os.path.join(d_dir_path, apdx)
+        self.make_dir(d_dir_path)
+
         log_path = os.path.join(
             l_dir_path, 'neuron_feature-log-{}.txt'.format(apdx)
         )
-        self.make_dir(d_dir_path)
 
         self.path['neuron_feature'] = d_dir_path
         self.path['neuron_feature-log'] = log_path

@@ -286,6 +286,7 @@ class InceptionV3:
             self.model.parameters(), 
             lr=self.args.lr, 
             eps=self.args.learning_eps,
+            momentum=self.args.momentum,
             weight_decay=self.args.weight_decay
         )
         if not self.pretrained and self.need_loading_a_saved_model:
@@ -295,6 +296,7 @@ class InceptionV3:
                     param_group['lr'] = self.args.lr
                     param_group['eps'] = self.args.learning_eps
                     param_group['weight_decay'] = self.args.weight_decay
+                    param_group['momentum'] = self.args.momentum
 
     """
     Residual layers

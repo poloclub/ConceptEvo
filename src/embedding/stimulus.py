@@ -35,7 +35,6 @@ class Stimulus:
 
         self.stimulus = {}
 
-
     """
     A wrapper function called by main.py
     """

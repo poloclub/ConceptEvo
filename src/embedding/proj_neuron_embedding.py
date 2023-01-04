@@ -39,6 +39,9 @@ class ProjNeuronEmb:
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
+        for layer in self.stimulus:
+            for neuron, neuron_imgs in enumerate(self.stimulus[layer]):
+                self.stimulus[layer][neuron] = neuron_imgs[:self.args.k]
     
     def save_projected_neuron_embedding(self):
         for neuron in self.neuron_emb:

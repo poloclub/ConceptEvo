@@ -101,17 +101,17 @@ class ExamplePatch:
                 f_map = self.compute_feature_map(self.layers[0]['layer'], imgs)
                 self.update_ex_patch(self.layers[0]['name'], f_map, batch_idx)
 
-                # Update stimulus for remaining layers
-                for i in range(1, len(self.layers) - 1):
-                    try:
-                        f_map = self.layers[i]['layer'](f_map)
-                        self.update_ex_patch(
-                            self.layers[i]['name'], f_map, batch_idx
-                        )
-                    except RuntimeError as e:
-                        log = 'Error in compute_example_patches(): '
-                        log += self.layers[i]['name']
-                        #  self.write_log(log)
+                # # Update stimulus for remaining layers
+                # for i in range(1, len(self.layers) - 1):
+                #     try:
+                #         f_map = self.layers[i]['layer'](f_map)
+                #         self.update_ex_patch(
+                #             self.layers[i]['name'], f_map, batch_idx
+                #         )
+                #     except RuntimeError as e:
+                #         log = 'Error in compute_example_patches(): '
+                #         log += self.layers[i]['name']
+                #         #  self.write_log(log)
 
                 pbar.update(1)
 
@@ -165,8 +165,6 @@ class ExamplePatch:
 
                 # Maximum activation value
                 img_i = img_idx - self.args.batch_size * batch_idx
-                
-                # XXX IndexError: index 940218 is out of bounds for dimension 0 with size 512
                 act_val = max_act[img_i, neuron]
 
                 # Pixel coordinate of maximum activation of feature maps

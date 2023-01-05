@@ -23,9 +23,11 @@ src/*.sh
 
 # Ignore big data
 data/neuron_feature/
+data/act_map/
 data/embedding/
 src/utils/notebook/old/analyze-data.ipynb
 data/neuron_feature-old/
+data/neuron_feature (old)/
 data/embedding-old/
 data/find_important_evo/
 data/model/

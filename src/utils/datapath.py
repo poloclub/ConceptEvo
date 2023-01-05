@@ -20,7 +20,8 @@ class DataPath:
         self.path_keys = [
             'train-data', 'test-data', 
             'stimulus', 'co_act', 'neuron_emb', 'img_emb',
-            'proj_neuron_emb', 'dim_reduction', 'neuron_feature', 
+            'proj_neuron_emb', 'dim_reduction', 
+            'neuron_feature', 'act_map',
             'find_important_evo', 'eval_important_evo'
         ]
 
@@ -45,6 +46,7 @@ class DataPath:
         self.set_proj_emb_path()
         self.set_emb2d_path()
         self.set_neuron_feature_path()
+        self.set_act_map_path()
         self.set_important_evolution_path()
         self.set_eval_important_evolution_path()
 
@@ -101,7 +103,8 @@ class DataPath:
             self.args.neuron_emb,
             self.args.img_emb,
             self.args.proj_neuron_emb,
-            self.args.neuron_feature
+            self.args.neuron_feature,
+            self.args.act_map
         ]
 
         self.path_key_to_actions['co_act'] = [
@@ -130,6 +133,10 @@ class DataPath:
 
         self.path_key_to_actions['neuron_feature'] = [
             self.args.neuron_feature
+        ]
+
+        self.path_key_to_actions['act_map'] = [
+            self.args.act_map
         ]
 
         self.path_key_to_actions['find_important_evo'] = [
@@ -222,6 +229,10 @@ class DataPath:
             # ['method', self.args.neuron_feature],
             ['topk_s', self.args.topk_s],
             ['ex_patch_size_ratio', self.args.ex_patch_size_ratio]
+        ]
+
+        self.action_to_args['act_map'] = [
+            ['topk_s', self.args.topk_s],
         ]
 
         self.action_to_args['find_important_evo'] = [
@@ -746,6 +757,30 @@ class DataPath:
 
         self.path['neuron_feature'] = d_dir_path
         self.path['neuron_feature-log'] = log_path
+
+    """
+    Setting paths for generating activation maps for given stimulus
+    """
+    def set_act_map_path(self):
+        if not self.need_to_gen_path('act_map'):
+            return
+
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+
+        d_dir_path, l_dir_path = self.gen_data_log_sub_dir('act_map')
+        self.make_dir(d_dir_path)
+        apdx = self.gen_act_setting_str('act_map')
+        d_dir_path = os.path.join(d_dir_path, apdx)
+        self.make_dir(d_dir_path)
+
+        log_path = os.path.join(
+            l_dir_path, 'act_map-log-{}.txt'.format(apdx)
+        )
+
+        self.path['act_map'] = d_dir_path
+        self.path['act_map-log'] = log_path
 
 
     """

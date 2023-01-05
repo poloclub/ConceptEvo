@@ -14,6 +14,7 @@ from embedding.stimulus import *
 
 # Concept images of neurons
 from feature.example_patch import *
+from feature.stimulus_act_map import *
 
 # Find and evaluate concept evolution for class predictions
 from importantevo.eval_important_evo import *
@@ -75,6 +76,9 @@ def main():
     # Compute visualized features for neurons
     if args.neuron_feature != 'None':
         compute_neuron_feature(args, data_path, model)
+    
+    if args.act_map:
+        compute_act_maps(args, data_path, model)
 
     # Find concept evolution for class predictions
     if args.find_important_evo:
@@ -182,6 +186,10 @@ def compute_neuron_feature(args, data_path, model):
     if args.neuron_feature == 'example_patch':
         ex_patch = ExamplePatch(args, data_path, model)
         ex_patch.compute_neuron_feature()
+
+def compute_act_maps(args, data_path, model):
+    act_map = StimulusActMap(args, data_path, model)
+    act_map.compute_act_map()
 
 
 def find_important_evolution(args, data_path):

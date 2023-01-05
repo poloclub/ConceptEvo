@@ -197,6 +197,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--act_map', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to activation maps for given stimulus'
+        )
+
+        self.parser.add_argument(
             '--neuron_emb', 
             default=False, 
             type=self.parse_bool_arg,

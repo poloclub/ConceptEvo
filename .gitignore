@@ -22,6 +22,8 @@ yarn.lock
 src/*.sh
 
 # Ignore big data
+data/important_neuron/
+data/important_neuron_act_map/
 data/neuron_feature/
 data/act_map/
 data/embedding/

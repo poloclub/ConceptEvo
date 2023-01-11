@@ -25,7 +25,9 @@ class ArgParser:
         self.parse_proj_neuron_embedding_setting()
         self.parse_dim_reduction_setting()
         self.parse_neuron_feature_setting()
+        self.parse_important_neuron_and_evolution_setting()
         self.parse_important_evolution_setting()
+        self.parse_important_neuron_setting()
 
 
     """
@@ -144,7 +146,9 @@ class ArgParser:
                 'inception_v1_pretrained',
                 'inception_v3_pretrained',
                 'convnext',
+                'convnext_pretrained',
                 'resnet18',
+                'resnet18_pretrained',
                 'resnet18_dropout',
                 'resnet50',
                 'resnext50_32x4d',
@@ -244,7 +248,7 @@ class ArgParser:
             '--find_important_evo', 
             default=False, 
             type=self.parse_bool_arg,
-            help='Whether to find concept evolution for a class prediction'
+            help='Whether to find important evolution for a class prediction'
         )
 
         self.parser.add_argument(
@@ -259,6 +263,20 @@ class ArgParser:
             ],
             type=str,
             help='Option to evaluate important evolution'
+        )
+
+        self.parser.add_argument(
+            '--important_neuron', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to find important neurons for a class prediction'
+        )
+
+        self.parser.add_argument(
+            '--important_neuron_act_map', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute activation maps for class-important neurons'
         )
     
 
@@ -511,15 +529,16 @@ class ArgParser:
     """
     Settings for finding important concept evolution
     """
-    def parse_important_evolution_setting(self):
-        """Parse arguments for finding important concept evolution."""
-
+    def parse_important_neuron_and_evolution_setting(self):
         self.parser.add_argument(
             '--label', 
             default=1, 
             type=int,
             help='Class label'
         )
+
+    def parse_important_evolution_setting(self):
+        """Parse arguments for finding important concept evolution."""
 
         self.parser.add_argument(
             '--from_model_nickname', 
@@ -577,3 +596,20 @@ class ArgParser:
             help='Index of run'
         )
         
+    """
+    Settings for finding important neuron
+    """
+    def parse_important_neuron_setting(self):
+        self.parser.add_argument(
+            '--layer', 
+            default='', 
+            type=str,
+            help='Layer to find important neurons'
+        )
+
+        self.parser.add_argument(
+            '--topk_n', 
+            default=10, 
+            type=int,
+            help='The number of most activating neurons to consider'
+        )

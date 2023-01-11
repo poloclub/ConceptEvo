@@ -31,8 +31,6 @@ class Stimulus:
         self.training_dataset = None
         self.data_loader = None
 
-        self.relu = nn.ReLU(inplace=True)
-
         self.stimulus = {}
 
     """

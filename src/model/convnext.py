@@ -170,9 +170,13 @@ class ConvNeXt:
             'name': layer_name,
             'layer': layer
         })
+        
         if type(layer) == nn.Conv2d:
             self.conv_layers.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
+        elif 'LayerNorm' in type(layer).__name__:
+            self.num_neurons[layer_name] = layer.normalized_shape[0]
+
 
     def save_layer_info(self):
         if self.args.train:

@@ -20,6 +20,10 @@ from feature.stimulus_act_map import *
 from importantevo.eval_important_evo import *
 from importantevo.important_evo import *
 
+# Find important neurons for class predictions
+from importantneuron.important_neuron import *
+from importantneuron.important_neuron_act_map import *
+
 # CNN Models
 from model.convnext import *
 from model.inception_v3 import *
@@ -88,6 +92,14 @@ def main():
     if args.eval_important_evo != 'None':
         eval_important_evolution(args, data_path)
 
+    # Find important neurons for class predictions
+    if args.important_neuron:
+        find_important_neuron(args, data_path, model)
+
+    # Compute activation map of important neurons for class predictions
+    if args.important_neuron_act_map:
+        compute_important_neuron_act_map(args, data_path, model)
+
 
 def load_model(args, data_path):
 
@@ -118,8 +130,12 @@ def load_model(args, data_path):
         model = InceptionV1(args, data_path, pretrained=True)
     elif args.model_name == 'convnext':
         model = ConvNeXt(args, data_path)
+    elif args.model_name == 'convnext_pretrained':
+        model = ConvNeXt(args, data_path, pretrained=True)
     elif args.model_name == 'resnet18':
         model = ResNet18(args, data_path)
+    elif args.model_name == 'resnet18_pretrained':
+        model = ResNet18(args, data_path, pretrained=True)
     elif args.model_name == 'resnet50':
         model = ResNet50(args, data_path)
     else:
@@ -204,6 +220,14 @@ def eval_important_evolution(args, data_path):
     eval_evo.eval_important_evolution()
 
 
+def find_important_neuron(args, data_path, model):
+    imp_neuron = ImportantNeuron(args, data_path, model)
+    imp_neuron.compute_important_neuron()
+
+
+def compute_important_neuron_act_map(args, data_path, model):
+    imp_neuron_act_map = ImportantNeuronActMap(args, data_path, model)
+    imp_neuron_act_map.compute_important_neuron_act_map()
 
 if __name__ == '__main__':
     main()

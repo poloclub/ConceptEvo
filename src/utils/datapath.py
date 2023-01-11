@@ -49,6 +49,8 @@ class DataPath:
         self.set_act_map_path()
         self.set_important_evolution_path()
         self.set_eval_important_evolution_path()
+        self.set_important_neuron_path()
+        self.set_important_neuron_act_map_path()
 
     
     """
@@ -141,11 +143,20 @@ class DataPath:
 
         self.path_key_to_actions['find_important_evo'] = [
             self.args.find_important_evo,
-            self.args.eval_important_evo
+            self.args.eval_important_evo != 'None'
         ]
 
         self.path_key_to_actions['eval_important_evo'] = [
             self.args.eval_important_evo != 'None'
+        ]
+
+        self.path_key_to_actions['important_neuron'] = [
+            self.args.important_neuron,
+            self.args.important_neuron_act_map
+        ]
+
+        self.path_key_to_actions['important_neuron_act_map'] = [
+            self.args.important_neuron_act_map
         ]
 
 
@@ -252,6 +263,17 @@ class DataPath:
             ['from', self.args.from_model_nickname.replace('-', '_')],
             ['to', self.args.to_model_nickname.replace('-', '_')],
             ['idx', self.args.idx]
+        ]
+
+        self.action_to_args['important_neuron'] = [
+            ['label', self.args.label],
+            ['layer', self.args.layer],
+            ['topk_n', self.args.topk_n],
+        ]
+        self.action_to_args['important_neuron_act_map'] = [
+            ['label', self.args.label],
+            ['layer', self.args.layer],
+            ['topk_n', self.args.topk_n],
         ]
 
 
@@ -481,7 +503,8 @@ class DataPath:
             self.path['model-info'] = model_info_path
             self.path['layer-info'] = layer_info_path
         elif self.args.test:
-            self.raise_err_for_ungiven_arg(self.args.epoch, 'epoch')
+            if 'pretrained' not in self.args.model_nickname:
+                self.raise_err_for_ungiven_arg(self.args.epoch, 'epoch')
             data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
             test_log_path = os.path.join(
                 log_dir_path, 
@@ -826,7 +849,6 @@ class DataPath:
         )
         self.path['find_important_evo-log'] = log_path
 
-
     """
     Setting paths for evaluating important evolution
     """
@@ -867,3 +889,77 @@ class DataPath:
         )
         self.path['eval_important_evo-log'] = log_path
        
+    """
+    Setting paths for finding important neuron
+    """
+    def set_important_neuron_path(self):
+        if not self.need_to_gen_path('important_neuron'):
+            return
+
+        self.auto_fill_model_nickname_and_model_path()
+        self.raise_err_for_ungiven_arg(self.args.model_name, 'model_name')
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(self.args.layer, 'layer')
+        self.raise_err_for_ungiven_arg(self.args.label, 'label')
+        self.raise_err_for_ungiven_arg(self.args.topk_n, 'topk_n')
+        
+        # Directory
+        d_dir_path, l_dir_path = self.gen_data_log_sub_dir('important_neuron')
+        self.make_dir(d_dir_path)
+        d_dir_path = os.path.join(d_dir_path, f'label={self.args.label}')
+        self.make_dir(d_dir_path)
+
+        # Data path
+        d_path = os.path.join(
+            d_dir_path, 
+            f'{self.args.layer}-topk_n={self.args.topk_n}.json'
+        )
+        self.path['important_neuron'] = d_path
+
+        # Log path
+        apdx = self.gen_act_setting_str('important_neuron')
+        log_path = os.path.join(
+            l_dir_path, 
+            'important_neuron-log-{}.txt'.format(apdx)
+        )
+        self.path['important_neuron-log'] = log_path
+        
+    def set_important_neuron_act_map_path(self):
+        if not self.need_to_gen_path('important_neuron_act_map'):
+            return
+
+        self.auto_fill_model_nickname_and_model_path()
+        self.raise_err_for_ungiven_arg(self.args.model_name, 'model_name')
+        self.raise_err_for_ungiven_arg(
+            self.args.model_nickname, 'model_nickname'
+        )
+        self.raise_err_for_ungiven_arg(self.args.layer, 'layer')
+        self.raise_err_for_ungiven_arg(self.args.label, 'label')
+        self.raise_err_for_ungiven_arg(self.args.topk_n, 'topk_n')
+        
+        # Directory
+        d_dir_path, l_dir_path = self.gen_data_log_sub_dir(
+            'important_neuron_act_map'
+        )
+        self.make_dir(d_dir_path)
+        d_dir_path = os.path.join(d_dir_path, f'label={self.args.label}')
+        self.make_dir(d_dir_path)
+        d_dir_path = os.path.join(d_dir_path, self.args.layer)
+        self.make_dir(d_dir_path)
+        d_dir_path = os.path.join(d_dir_path, f'topk_n={self.args.topk_n}')
+        self.make_dir(d_dir_path)
+
+        # Data directory path
+        self.path['important_neuron_act_map'] = d_dir_path
+
+        # Log path
+        apdx = self.gen_act_setting_str('important_neuron_act_map')
+        log_path = os.path.join(
+            l_dir_path, 
+            'important_neuron_act_map-log-{}.txt'.format(apdx)
+        )
+        self.path['important_neuron_act_map-log'] = log_path
+        
+        

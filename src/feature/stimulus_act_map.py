@@ -2,6 +2,7 @@ import os
 import cv2
 import json
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from time import time
 
@@ -118,9 +119,9 @@ class StimulusActMap:
         self.write_log('running_time_for_computing: {}sec'.format(time() - tic))
 
         # Save example patches
-        tic = time()
-        self.save_act_maps()
-        self.write_log('running_time_for_saving: {}sec'.format(time() - tic))
+        # tic = time()
+        # self.save_act_maps()
+        # self.write_log('running_time_for_saving: {}sec'.format(time() - tic))
 
     def init_act_maps(self):
         for layer_name in self.conv_layers:
@@ -159,12 +160,26 @@ class StimulusActMap:
                 # Maximum activation value
                 img_i = img_idx - self.args.batch_size * batch_idx
                 neuron_act_map_np = feature_map_np[img_i, neuron, :, :]
+                # print(neuron_act_map_np.shape)
                 
                 # Save activation map
-                self.act_map[layer_name][neuron]['img_idxs'].append(img_idx)
-                self.act_map[layer_name][neuron]['act_maps'].append(
-                    neuron_act_map_np
+                # self.act_map[layer_name][neuron]['img_idxs'].append(img_idx)
+                # a_map = np.einsum('kij->ijk', neuron_act_map_np)
+                file_name = f'{layer_name}-{neuron}-{img_idx}.jpg'
+                file_path = os.path.join(
+                    self.data_path.get_path('act_map'),
+                    file_name
                 )
+                plt.imshow(neuron_act_map_np)
+                plt.savefig(file_path)
+                # cv2.imwrite(
+                #     file_path, 
+                #     cv2.cvtColor(a_map, cv2.COLOR_RGB2BGR)
+                # )
+                
+                # self.act_map[layer_name][neuron]['act_maps'].append(
+                #     neuron_act_map_np
+                # )
                 # self.act_map[layer_name][neuron].append(neuron_act_map_np)
 
             # act_vals, img_indices = torch.sort(
@@ -245,7 +260,7 @@ class StimulusActMap:
                         )   
                         cv2.imwrite(
                             file_path, 
-                            cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
+                            cv2.cvtColor(neuron_act_map, cv2.COLOR_RGB2BGR)
                         )
                     pbar.update(1)
 

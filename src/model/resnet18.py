@@ -44,6 +44,7 @@ class ResNet18:
         self.criterion = None
 
         self.f_map_res_input = None
+        self.relu = nn.ReLU(inplace=True)
 
         self.init()
 

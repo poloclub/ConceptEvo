@@ -42,6 +42,8 @@ class ResNet50:
         self.test_data_loader = None
         self.optimizer = None
         self.criterion = None
+        
+        self.relu = nn.ReLU(inplace=True)
 
         self.init()
 

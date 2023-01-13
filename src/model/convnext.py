@@ -31,7 +31,7 @@ class ConvNeXt:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.conv_layers = []
+        self.layers_for_stimulus = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -167,15 +167,15 @@ class ConvNeXt:
         })
 
         if 'blk' in layer_name:
-            self.conv_layers.append(layer_name)
-            
+            self.layers_for_stimulus.append(layer_name)
+
         # if type(layer) == nn.Conv2d:
-        #     self.conv_layers.append(layer_name)
+        #     self.layers_for_stimulus.append(layer_name)
         #     self.num_neurons[layer_name] = layer.out_channels
         # elif 'LayerNorm' in type(layer).__name__:
         #     self.num_neurons[layer_name] = layer.normalized_shape[0]
         # elif 'StochasticDepth' in type(layer).__name__:
-        #     self.conv_layers.append(layer_name)
+        #     self.layers_for_stimulus.append(layer_name)
         #     prev_lin_layer = self.layers[layer_idx - 2]['layer']
         #     self.num_neurons[layer_name] = prev_lin_layer.out_features
 

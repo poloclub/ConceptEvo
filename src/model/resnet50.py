@@ -28,7 +28,7 @@ class ResNet50:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.conv_layers = []
+        self.layers_for_stimulus = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -161,7 +161,7 @@ class ResNet50:
             'layer': layer
         })
         if type(layer) == nn.Conv2d:
-            self.conv_layers.append(layer_name)
+            self.layers_for_stimulus.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
 
     def save_layer_info(self):
@@ -184,7 +184,7 @@ class ResNet50:
             'layer': layer
         })
         if type(layer) == nn.Conv2d:
-            self.conv_layers.append(layer_name)
+            self.layers_for_stimulus.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
 
     def init_criterion(self):

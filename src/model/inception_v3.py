@@ -30,7 +30,7 @@ class InceptionV3:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.conv_layers = []
+        self.layers_for_stimulus = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -153,11 +153,11 @@ class InceptionV3:
         })
         if 'Conv2d' in layer_name:
             conv_layer = layer.__dict__['_modules']['conv']
-            self.conv_layers.append(layer_name)
+            self.layers_for_stimulus.append(layer_name)
             self.num_neurons[layer_name] = conv_layer.out_channels
         elif 'Inception' in layer_name:
 
-            self.conv_layers.append(layer_name)
+            self.layers_for_stimulus.append(layer_name)
 
             # Count the number of neurons in blocks to be concatenated
             children = layer.__dict__['_modules']

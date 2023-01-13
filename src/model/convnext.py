@@ -138,48 +138,49 @@ class ConvNeXt:
             param.requires_grad = True
 
     def get_layer_info(self):
-        # Get layers by the preorder traversal of the layer tree
-        layer_stack = []
-        layers = []
-        visited = {}
-        num_layers = 0
-        start = True
-        while start or len(layer_stack) > 0:
-            if start:
-                children = list(self.model.children())
-                start = False
+        # Features
+        layer_idx = 0
+        feature_layers = list(self.model.features.children())
+        for i, layer in enumerate(feature_layers):
+            if i == 0:
+                # Stem
+                self.update_layer_info('features_stem', layer, layer_idx)
             else:
-                layer = layer_stack.pop()
-                children = list(layer.children())
+                # Sequence of inverted blocks (CNBlocks)
+                blks = list(layer.children())
+                for j, blk in enumerate(blks):
+                    blk_name = f'features_{i}_blk_{j}'
+                    self.update_layer_info(blk_name, blk, layer_idx)
+                    layer_idx += 1
 
-                if layer not in visited:
-                    visited[layer] = True
-                    if len(children) == 0:
-                        layer_name = '{}_{}'.format(
-                            type(layer).__name__, num_layers
-                        )
-                        num_layers += 1
-                        self.update_layer_info(layer_name, layer)
-            
-            for child in children[::-1]:
-                if child not in visited:
-                    layer_stack.append(child)
-        
-    def update_layer_info(self, layer_name, layer):
+        # Avgpool
+        self.update_layer_info('avgpool', self.model.avgpool, layer_idx)
+        layer_idx += 1
+
+        # Classifier
+        self.update_layer_info('classifier', self.model.classifier, layer_idx)
+
+    def update_layer_info(self, layer_name, layer, layer_idx):
         self.layers.append({
             'name': layer_name,
             'layer': layer
         })
-        
-        if type(layer) == nn.Conv2d:
-            self.conv_layers.append(layer_name)
-            self.num_neurons[layer_name] = layer.out_channels
-        elif 'LayerNorm' in type(layer).__name__:
-            self.num_neurons[layer_name] = layer.normalized_shape[0]
 
+        if 'blk' in layer_name:
+            self.conv_layers.append(layer_name)
+            
+        # if type(layer) == nn.Conv2d:
+        #     self.conv_layers.append(layer_name)
+        #     self.num_neurons[layer_name] = layer.out_channels
+        # elif 'LayerNorm' in type(layer).__name__:
+        #     self.num_neurons[layer_name] = layer.normalized_shape[0]
+        # elif 'StochasticDepth' in type(layer).__name__:
+        #     self.conv_layers.append(layer_name)
+        #     prev_lin_layer = self.layers[layer_idx - 2]['layer']
+        #     self.num_neurons[layer_name] = prev_lin_layer.out_features
 
     def save_layer_info(self):
-        if self.args.train:
+        if self.args.train or self.args.test:
             # Save model information
             s = str(self.model)
             p = self.data_path.get_path('model-info')
@@ -188,9 +189,11 @@ class ConvNeXt:
 
             # Save layer names
             p = self.data_path.get_path('layer-info')
+            layer_info = ''
             for layer in self.layers:
-                with open(p, 'a') as f:
-                    f.write(layer['name'] + '\n')
+                layer_info += layer['name'] + '\n'
+            with open(p, 'w') as f:
+                f.write(layer_info)
 
     def init_criterion(self):
         if self.need_loading_a_saved_model and ('loss' in self.ckpt):
@@ -250,32 +253,6 @@ class ConvNeXt:
                     param_group['lr'] = self.args.lr
                     param_group['weight_decay'] = self.args.weight_decay
     
-    """
-    Residual layers
-    """
-    def layer_is_res_input(self, layer_idx):
-        """Check if a layer's output can be used as
-        a residual input in later layers"""
-        layer_idxs = [
-            1, 9, 17, 25, 27, 35, 43, 51, \
-            53, 61, 69, 77, 85, 93, 101, \
-            109, 117, 125, 127, 135, 143, 151
-        ]
-        return layer_idx in layer_idxs
-
-    def layer_take_res_input(self, layer_idx):
-        """Check if the current layer takes the residual input"""
-        layer_idxs = [
-            9, 17, 25, 35, 43, 51, \
-            61, 69, 77, 85, 93, 101, \
-            109, 117, 125, 135, 143, 151
-        ]
-        return layer_idx in layer_idxs
-
-    def layer_is_downsample(self, layer_idx):
-        """Check if the current layer is a downsample layer"""
-        return False
-
     """
     Train the model
     """
@@ -421,9 +398,7 @@ class ConvNeXt:
 
         # Prediction
         outputs = self.model(test_imgs)
-        _, topk_test_preds = outputs.topk(
-            k=self.args.topk, dim=1
-        )
+        _, topk_test_preds = outputs.topk(k=self.args.topk, dim=1)
         top1_test_preds = topk_test_preds[:, 0]
         topk_test_preds = topk_test_preds.t()
 
@@ -440,7 +415,7 @@ class ConvNeXt:
         )
 
         top1_test_corrects = top1_test_corrects.double()
-        top1_test_corrects = top1_test_corrects.double()
+        topk_test_corrects = topk_test_corrects.double()
 
         return top1_test_corrects, topk_test_corrects
 
@@ -463,29 +438,15 @@ class ConvNeXt:
     Forward
     """
     def forward_one_layer(self, layer_idx, prev_f_map):
-        # Residual input
-        res_input = None
-        if self.layer_take_res_input(layer_idx):
-            res_input = self.f_map_res_input
-
         # Compute feature map of the layer
-        f_map = self.compute_feature_map(
-            self.layers[layer_idx]['layer'], prev_f_map, res_input
-        )
+        f_map = self.layers[layer_idx]['layer'](prev_f_map)
+        # if self.layer_take_res_input(layer_idx):
+        #     f_map = f_map + self.f_map_res_input
 
-        # Update residual input
-        if self.layer_is_res_input(layer_idx):
-            self.f_map_res_input = f_map.clone()
-
+        # # Update residual input
+        # if self.layer_is_res_input(layer_idx):
+        #     self.f_map_res_input = f_map.clone().detach()
         return f_map
-        
-    def compute_feature_map(self, layer, prev_f_map, res_f_map=None):
-        # Compute feature map. feature_map: [B, N, W, H]
-        # where B is batch size and N is the number of neurons
-        feature_map = layer(prev_f_map)
-        if res_f_map is not None:
-            feature_map = feature_map + res_f_map
-        return feature_map
 
     """
     Log for training the model

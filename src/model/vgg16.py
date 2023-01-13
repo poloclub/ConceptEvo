@@ -163,6 +163,8 @@ class Vgg16:
                 layer_name = '{}_{}'.format(child_name, i)
                 self.update_layer_info(layer_name, child)
 
+        # self.update_layer_info('classifier', self.model.classifier)
+
     def update_layer_info(self, layer_name, layer):
         self.layers.append({
             'name': layer_name,
@@ -342,6 +344,9 @@ class Vgg16:
         # Make the first log
         if write_log:
             self.write_test_first_log()
+
+        total, top1_corrects, topk_corrects = \
+        self.measure_acc(self.test_data_loader)
 
         # Test model
         if test_on == 'training':

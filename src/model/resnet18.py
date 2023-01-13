@@ -469,7 +469,7 @@ class ResNet18:
 
         # Update residual input
         if self.layer_is_res_input(layer_idx):
-            self.f_map_res_input = f_map.clone()
+            self.f_map_res_input = f_map.clone().detach()
 
         return f_map
         

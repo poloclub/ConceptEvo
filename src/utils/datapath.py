@@ -503,16 +503,20 @@ class DataPath:
             self.path['model-info'] = model_info_path
             self.path['layer-info'] = layer_info_path
         elif self.args.test:
+            filename = 'test.txt'
             if 'pretrained' not in self.args.model_nickname:
                 self.raise_err_for_ungiven_arg(self.args.epoch, 'epoch')
+                filename = 'test-epoch={}.txt'.format(self.args.epoch)
+                
             data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
-            test_log_path = os.path.join(
-                log_dir_path, 
-                'test-epoch={}.txt'.format(self.args.epoch)
-            )
+            test_log_path = os.path.join(log_dir_path, filename)
             train_log_path = os.path.join(log_dir_path, 'training-test-log.txt')
+            model_info_path = os.path.join(log_dir_path, 'model-info.txt')
+            layer_info_path = os.path.join(log_dir_path, 'layer-info.txt')
             self.path['test-log'] = test_log_path
             self.path['train-log'] = train_log_path
+            self.path['model-info'] = model_info_path
+            self.path['layer-info'] = layer_info_path
         
         self.path['model-file'] = self.args.model_path
     

@@ -1,59 +1,13 @@
 ###############################################################################
 # embedding_img_max_act.sh
 # 
-# Create image embeddings from base model's neuron activation.
+# Create image embeddings from base model's layer activation.
 # Run this script at `../src` where `main.py` exists.
 ###############################################################################
 
 ###############################################################################
-# File structure:
-# XXXX ../data/img_act_emb/vgg19_pretrained/data/Sequential_0_Conv2d_34/img_emb-dim=30.txt
-# ../data
-#     └── embedding
-#             └── emb-<basemodel_nickname>-<apdx1>
-#                   ├── data
-#                   │     ├── emb
-#                   │     │    └── emb.json 
-#                   │     └── emb-set-<apdx2>
-#                   │          ├── emb_nd
-#                   │          │      ├── img_emb.txt
-#                   │          │      └── proj_emb-<model_nickname>.json
-#                   │          └── emb_2d
-#                   │                 ├── reducer.sav
-#                   │                 ├── idx2id.json
-#                   │                 ├── model_code.json
-#                   │                 ├── emb_2d-<basemodel_nickname>.json
-#                   │                 └── emb_2d-<model_nickname>.json
-#                   └── log
-# <apdx1>: 
-# ```
-# '-'.join([
-#     topk_s=<topk_s>,
-#     dim=<dim>,
-#     lr_emb=<lr_emb>,
-#     num_emb_epochs=<num_emb_epochs>,
-#     num_emb_negs=<num_emb_negs>
-# ])
-# ```
-# 
-# <apdx2>:
-# ```
-# '-'.join([
-#     dim=<dim>,
-#     lr_img_emb=<lr_img_emb>,
-#     thr_img_emb=<thr_img_emb>,
-#     max_iter_img_emb=<max_iter_img_emb>,
-#     k=<k>
-# ])
-# ```
-###############################################################################
-
-###############################################################################
-# It loads the base model's neuron embedding at `emb.json` 
-# in the above file structure.
-# 
-# It saves the image embeddings at `img_emb-<apdx2>.txt`
-# in the above file structure.
+# The result will be saved at
+# ../data/img_act_emb/<model_nickname>/data/<layer>/img_emb-dim=<dim>.txt
 ###############################################################################
 
 ###############################################################################

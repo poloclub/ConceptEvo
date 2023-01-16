@@ -75,13 +75,14 @@ basemodel_nickname=vgg19_pretrained
 model_nickname=vgg16-0.01-207
 topk_s=20
 dim=30
-lr_emb=0.01
-num_emb_epochs=100
+lr_emb=0.05
+num_emb_epochs=10000
 num_emb_negs=3
-lr_img_emb=1.0
-thr_img_emb=0.01
+lr_img_emb=10.0
+thr_img_emb=0.001
 max_iter_img_emb=10000
-k=$topk_s
+k=10
+
 ###############################################################################
 
 ###############################################################################

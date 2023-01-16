@@ -95,6 +95,9 @@ class ConvNeXt:
         self.get_layer_info()
         self.save_layer_info()
 
+        # Update number of neurons
+        self.get_num_neurons()
+
         # Set criterion
         self.init_criterion()
 
@@ -169,15 +172,15 @@ class ConvNeXt:
         if 'blk' in layer_name:
             self.layers_for_stimulus.append(layer_name)
 
-        # if type(layer) == nn.Conv2d:
-        #     self.layers_for_stimulus.append(layer_name)
-        #     self.num_neurons[layer_name] = layer.out_channels
-        # elif 'LayerNorm' in type(layer).__name__:
-        #     self.num_neurons[layer_name] = layer.normalized_shape[0]
-        # elif 'StochasticDepth' in type(layer).__name__:
-        #     self.layers_for_stimulus.append(layer_name)
-        #     prev_lin_layer = self.layers[layer_idx - 2]['layer']
-        #     self.num_neurons[layer_name] = prev_lin_layer.out_features
+    def get_num_neurons(self):
+        dummy_input = torch.zeros(1, 3, self.input_size, self.input_size)
+        dummy_input = dummy_input.to(self.device)
+        for i, layer in enumerate(self.layers):
+            layer_name = layer['name']
+            if i == 0:
+                f_map = dummy_input
+            f_map = layer['layer'](f_map)
+            self.num_neurons[layer_name] = f_map.shape[1]
 
     def save_layer_info(self):
         if self.args.train or self.args.test:

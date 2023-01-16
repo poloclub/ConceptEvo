@@ -7,6 +7,7 @@ argumensts. An instruction for setting arguments can be found in
 
 # Embedding
 from embedding.image_embedding import *
+from embedding.image_act_embedding import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
 from embedding.reduce_dim import *
@@ -68,6 +69,10 @@ def main():
     # Compute image embedding
     if args.img_emb:
         compute_image_embedding(args, data_path, model)
+
+    # Cpmpute image embedding from max activation
+    if args.img_act_emb:
+        compute_img_embedding_from_activation(args, data_path, model)
 
     # Compute projected neuron embedding
     if args.proj_neuron_emb:
@@ -187,6 +192,10 @@ def compute_image_embedding(args, data_path, model):
     img_emb = ImageEmb(args, data_path, model)
     img_emb.compute_img_embedding()
 
+
+def compute_img_embedding_from_activation(args, data_path, model):
+    img_emb = ImageActEmb(args, data_path, model)
+    img_emb.compute_img_embedding_from_activation()
 
 def compute_proj_neuron_emb(args, data_path, model):
     proj_neuron_emb = ProjNeuronEmb(args, data_path, model)

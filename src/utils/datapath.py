@@ -19,7 +19,8 @@ class DataPath:
 
         self.path_keys = [
             'train-data', 'test-data', 
-            'stimulus', 'co_act', 'neuron_emb', 'img_emb',
+            'stimulus', 'co_act', 'neuron_emb', 
+            'img_emb', 'img_act_emb',
             'proj_neuron_emb', 'dim_reduction', 
             'neuron_feature', 'act_map',
             'find_important_evo', 'eval_important_evo'
@@ -43,6 +44,7 @@ class DataPath:
         self.set_co_act_neurons_path()
         self.set_neuron_emb_path()
         self.set_img_emb_path()
+        self.set_img_act_emb_path()
         self.set_proj_emb_path()
         self.set_emb2d_path()
         self.set_neuron_feature_path()
@@ -116,13 +118,17 @@ class DataPath:
         self.path_key_to_actions['neuron_emb'] = [
             self.args.neuron_emb,
             self.args.img_emb,
-            self.args.proj_neuron_emb,
+            # self.args.proj_neuron_emb,
             self.args.dim_reduction != 'None'
         ]
 
         self.path_key_to_actions['img_emb'] = [
             self.args.img_emb,
             self.args.proj_neuron_emb
+        ]
+
+        self.path_key_to_actions['img_act_emb'] = [
+            self.args.img_act_emb
         ]
 
         self.path_key_to_actions['proj_neuron_emb'] = [
@@ -216,6 +222,11 @@ class DataPath:
             ['thr_img_emb', self.args.thr_img_emb],
             ['max_iter_img_emb', max_iter],
             ['k', self.args.k]
+        ]
+
+        self.action_to_args['img_act_emb'] = [
+            ['layer', self.args.layer],
+            ['dim', self.args.dim],
         ]
 
         self.action_to_args['img_emb_from'] = [
@@ -607,6 +618,7 @@ class DataPath:
             mkdir=self.args.neuron_emb
         )
         data_dir_path = os.path.join(data_dir_path, 'emb')
+        self.make_dir(data_dir_path)
 
         file_path = os.path.join(data_dir_path, 'emb.json')
         vis_path = os.path.join(data_dir_path, 'emb.png')
@@ -621,7 +633,7 @@ class DataPath:
     Setting paths for image embedding
     """
     def set_img_emb_path(self):
-        if not self.need_to_gen_path('neuron_emb'):
+        if not self.need_to_gen_path('img_emb'):
             return
 
         self.check_model_nickname_and_path()
@@ -675,6 +687,33 @@ class DataPath:
         if self.is_given_arg(self.args.from_iter_img_emb):
             from_file_path = os.path.join(from_data_dir_path, 'img_emb.txt')
             self.path['img_emb_from'] = from_file_path
+
+    """
+    Setting paths for image embedding
+    """
+    def set_img_act_emb_path(self):
+        if not self.need_to_gen_path('img_act_emb'):
+            return
+
+        self.check_model_nickname_and_path()
+
+        d_path, l_path = self.gen_data_log_sub_dir('img_act_emb')
+        self.make_dir(d_path)
+
+        d_path = os.path.join(d_path, self.args.layer)
+        self.make_dir(d_path)
+
+        f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
+        self.path['img_act_emb'] = f_path
+        print(f_path)
+
+        apdx = self.gen_act_setting_str('img_act_emb')
+        l_path = os.path.join(
+            l_path,
+            f'log-img_act_emb-{self.args.model_nickname}-{apdx}.txt'
+        )
+        self.path['img_act_emb-log'] = l_path
+
 
     """
     Setting paths for approximate projected neuron embedding

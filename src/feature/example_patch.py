@@ -25,7 +25,7 @@ class ExamplePatch:
         self.S = model.input_size
         
         self.layers = []
-        self.conv_layers = []
+        self.layers_for_stimulus = []
         self.num_neurons = {}
 
         self.device = model.device
@@ -78,7 +78,7 @@ class ExamplePatch:
 
     def get_layer_info(self):
         self.layers = self.model.layers[:]
-        self.conv_layers = self.model.conv_layers[:]
+        self.layers_for_stimulus = self.model.layers_for_stimulus[:]
         self.num_neurons = self.model.num_neurons
 
 
@@ -101,17 +101,17 @@ class ExamplePatch:
                 f_map = self.compute_feature_map(self.layers[0]['layer'], imgs)
                 self.update_ex_patch(self.layers[0]['name'], f_map, batch_idx)
 
-                # # Update stimulus for remaining layers
-                # for i in range(1, len(self.layers) - 1):
-                #     try:
-                #         f_map = self.layers[i]['layer'](f_map)
-                #         self.update_ex_patch(
-                #             self.layers[i]['name'], f_map, batch_idx
-                #         )
-                #     except RuntimeError as e:
-                #         log = 'Error in compute_example_patches(): '
-                #         log += self.layers[i]['name']
-                #         #  self.write_log(log)
+                # Update stimulus for remaining layers
+                for i in range(1, len(self.layers) - 1):
+                    try:
+                        f_map = self.layers[i]['layer'](f_map)
+                        self.update_ex_patch(
+                            self.layers[i]['name'], f_map, batch_idx
+                        )
+                    except RuntimeError as e:
+                        log = 'Error in compute_example_patches(): '
+                        log += self.layers[i]['name']
+                        #  self.write_log(log)
 
                 pbar.update(1)
 
@@ -123,7 +123,7 @@ class ExamplePatch:
         self.write_log('running_time_for_saving: {}sec'.format(time() - tic))
 
     def init_example_patches(self):
-        for layer_name in self.conv_layers:
+        for layer_name in self.layers_for_stimulus:
             self.ex_patch[layer_name] = []
             for neuron_i in range(self.num_neurons[layer_name]):
                 self.ex_patch[layer_name].append({
@@ -144,7 +144,7 @@ class ExamplePatch:
     
     def update_ex_patch(self, layer_name, feature_map, batch_idx):
         # Check if the layer is a convolutional layer
-        if layer_name not in self.conv_layers:
+        if layer_name not in self.layers_for_stimulus:
             return
         
         # Iterate through all neurons to update information of example patches 

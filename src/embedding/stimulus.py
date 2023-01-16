@@ -75,7 +75,6 @@ class Stimulus:
     def find_stimulus(self):
         self.write_first_log()
         self.init_stimulus()
-        f_map_res_input = None
         tic, total = time(), len(self.data_loader)
 
         with tqdm(total=total) as pbar:
@@ -123,15 +122,13 @@ class Stimulus:
             feature_map = feature_map + res_f_map
         return feature_map
 
-
     def compute_max_act_of_feature_map(self, feature_map):
         # Get the maximum activation of the feature map. max_act: [B, N]
         # where B is batch size and N is the number of neurons
         return torch.max(torch.max(feature_map, dim=2).values, dim=2).values
-    
 
     def update_stimulus(self, layer_name, feature_map, batch_idx):
-        # Check if the layer is a convolutional layer
+        # Check if the layer is one of what we want
         if layer_name not in self.layers_for_stimulus:
             return
         

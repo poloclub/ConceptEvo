@@ -4,8 +4,8 @@ import numpy as np
 from tqdm import tqdm
 from time import time
 
-import torch
 from torchvision import datasets, transforms
+import torch
 
 
 class ImportantNeuron:
@@ -100,9 +100,9 @@ class ImportantNeuron:
         self.write_first_log()
         self.init_important_neurons()
         
-        tic, total = time(), len(self.data_loader)
+        tic, total = time(), self.end_idx - self.start_idx
 
-        with tqdm(total=total) as pbar:
+        with tqdm(total=total) as pb:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
                 # Get input images in a batch and their labels
                 imgs = imgs.to(self.device)
@@ -111,19 +111,18 @@ class ImportantNeuron:
                 # First layer
                 f_map = self.model.forward_one_layer(0, imgs)
                 if self.layers[0]['name'] == self.args.layer:
-                    self.update_important_neurons(f_map, batch_idx)
+                    self.update_important_neurons(f_map, batch_idx, pb)
                 
                 # Remaining layers
                 for i in range(1, len(self.layers) - 1):
                     try:
                         f_map = self.model.forward_one_layer(i, f_map)
                         if self.layers[i]['name'] == self.args.layer:
-                            self.update_important_neurons(f_map, batch_idx)
+                            self.update_important_neurons(f_map, batch_idx, pb)
                     except RuntimeError:
-                        log = f'Error in find_stimulus for '
+                        log = f'Error in important_neuron for '
                         log += self.layers[i]['name']
                         #  self.write_log(log)
-                pbar.update(1)
 
     def init_important_neurons(self):
         if self.args.layer not in self.num_neurons:
@@ -136,7 +135,7 @@ class ImportantNeuron:
                 'max_acts': []
             }
 
-    def update_important_neurons(self, f_map, batch_idx):
+    def update_important_neurons(self, f_map, batch_idx, pbar):
         layer_name = self.args.layer
         max_act = self.compute_max_act_of_feature_map(f_map)
         B, N = max_act.shape
@@ -168,10 +167,13 @@ class ImportantNeuron:
             # Get most activating neurons for the image
             for k in range(self.args.topk_n):
                 n = neuron_idxs[k]
-                neuron_id = f'{layer_name}-{n}'
+                neuron = f'{layer_name}-{n}'
                 act_val = act_vals[k]
-                self.important_neurons[neuron_id]['img_idxs'].append(img_idx)
-                self.important_neurons[neuron_id]['max_acts'].append(act_val)
+                if act_val > 0:
+                    self.important_neurons[neuron]['img_idxs'].append(img_idx)
+                    self.important_neurons[neuron]['max_acts'].append(act_val)
+            
+            pbar.update(1)
 
     def compute_max_act_of_feature_map(self, feature_map):
         # Get the maximum activation of the feature map. max_act: [B, N]

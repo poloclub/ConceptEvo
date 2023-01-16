@@ -222,6 +222,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--img_act_emb', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute image embedding from activation in the base model'
+        )
+
+        self.parser.add_argument(
             '--proj_neuron_emb', 
             default=False, 
             type=self.parse_bool_arg,
@@ -481,7 +488,6 @@ class ArgParser:
             type=int,
             help='The number of stimulating images used in image embedding.'
         )
-
 
 
     """

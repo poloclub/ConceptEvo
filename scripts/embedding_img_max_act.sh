@@ -17,7 +17,6 @@
 # model_name=?
 # model_nickname=?
 # model_path=?
-# dim=?
 # layer=?
 # 
 # For example:
@@ -25,7 +24,6 @@ gpu=0
 model_name=vgg19_pretrained
 model_nickname=vgg19_pretrained
 model_path='DO_NOT_NEED_CURRENTLY' # Use this for a pytorch pretrained model
-dim=30
 layer=Sequential_0_Conv2d_34
 ###############################################################################
 
@@ -36,6 +34,5 @@ python main.py \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --model_path $model_path \
-    --dim $dim \
     --layer $layer 
 ###############################################################################

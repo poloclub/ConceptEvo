@@ -73,6 +73,7 @@
 # from_iter_img_emb=?
 # max_iter_img_emb=?
 # k=?
+# layer=?
 # 
 # For example:
 gpu=0
@@ -84,10 +85,11 @@ dim=30
 lr_emb=0.01
 num_emb_epochs=100
 num_emb_negs=3
-lr_img_emb=1.0
+lr_img_emb=0.1
 thr_img_emb=0.01
 from_iter_img_emb=-1
 max_iter_img_emb=10000
+layer=Sequential_0_Conv2d_34
 k=$topk_s
 ###############################################################################
 
@@ -98,6 +100,7 @@ python main.py \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --model_path $model_path \
+    --layer $layer \
     --dim $dim \
     --lr_emb $lr_emb \
     --num_emb_epochs $num_emb_epochs \

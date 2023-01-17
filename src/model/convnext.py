@@ -441,15 +441,27 @@ class ConvNeXt:
     Forward
     """
     def forward_one_layer(self, layer_idx, prev_f_map):
-        # Compute feature map of the layer
         f_map = self.layers[layer_idx]['layer'](prev_f_map)
-        # if self.layer_take_res_input(layer_idx):
-        #     f_map = f_map + self.f_map_res_input
-
-        # # Update residual input
-        # if self.layer_is_res_input(layer_idx):
-        #     self.f_map_res_input = f_map.clone().detach()
         return f_map
+
+    def forward(self, imgs):
+        # Forward the whole layer, and get feature maps and layer info
+
+        # Initialize feature maps
+        imgs = imgs.to(self.device)
+        f_map, f_maps = imgs, []
+
+        # Forward and save feature map for each layer
+        layer_info = []
+        for i, layer in enumerate(self.layers):
+            f_map = forward_one_layer(i, f_map)
+            f_maps.append(f_map)
+            layer_info.append({
+                'name': layer['name'],
+                'num_neurons': f_map.shape[1]    
+            })
+        return f_maps, layer_info
+
 
     """
     Log for training the model

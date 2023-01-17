@@ -439,6 +439,56 @@ class Vgg16:
         f_map = self.layers[layer_idx]['layer'](prev_f_map)
         return f_map
 
+    def forward(self, imgs):
+        # Forward the whole layer, and get feature maps and layer info
+
+        # Initialize feature maps
+        imgs = imgs.to(self.device)
+        f_map, f_maps = imgs, []
+
+        # Layer information
+        layers = list(self.model.children())
+        layer_info = []
+
+        # Forward and save feature map for each layer
+        for i, child in enumerate(layers):
+            if type(child) == nn.Sequential:
+                for j, layer in enumerate(child.children()):
+                    # Compute and save f_map
+                    f_map = layer(f_map)
+                    f_maps.append(f_map)
+
+                    # Save layer info
+                    layer_name = '{}_{}_{}_{}'.format(
+                        type(child).__name__, i,
+                        type(layer).__name__, j
+                    )
+                    layer_info.append({
+                        'name': layer_name,
+                        'num_neurons': f_map.shape[1],
+                    })
+            else:
+                # Compute f_map
+                layer = layers[i]
+                f_map = layer(f_map)
+
+                # Flatten before fully connected layer
+                if type(child) == nn.AdaptiveAvgPool2d:
+                    f_map = torch.flatten(f_map, 1)
+
+                # Save f_map
+                f_maps.append(f_map)
+
+                # Save layer info
+                child_name = type(child).__name__
+                layer_name = '{}_{}'.format(child_name, i)
+                layer_info.append({
+                    'name': layer_name,
+                    'num_neurons': f_map.shape[1],
+                })
+
+        return f_maps, layer_info
+
     """
     Log for training the model
     """
@@ -506,66 +556,3 @@ class Vgg16:
         path = self.data_path.get_path('test-log')
         with open(path, 'a') as f:
             f.write(log + '\n')
-
-    """
-    """
-    def forward(self, imgs):
-        # Initialize feature maps
-        imgs = imgs.to(self.device)
-        f_map, f_maps = imgs, []
-
-        # Layer information
-        layers = list(self.model.children())
-        layer_info = []
-
-        # Forward and save feature map for each layer
-        for i, child in enumerate(layers):
-            if type(child) == nn.Sequential:
-                for j, layer in enumerate(child.children()):
-                    # Compute and save f_map
-                    f_map = layer(f_map)
-                    f_maps.append(f_map)
-
-                    # Save layer info
-                    layer_name = '{}_{}_{}_{}'.format(
-                        type(child).__name__, i,
-                        type(layer).__name__, j
-                    )
-                    layer_info.append({
-                        'name': layer_name,
-                        'num_neurons': f_map.shape[1],
-                    })
-            else:
-                # Compute f_map
-                layer = layers[i]
-                f_map = layer(f_map)
-
-                # Flatten before fully connected layer
-                if type(child) == nn.AdaptiveAvgPool2d:
-                    f_map = torch.flatten(f_map, 1)
-
-                # Save f_map
-                f_maps.append(f_map)
-
-                # Save layer info
-                child_name = type(child).__name__
-                layer_name = '{}_{}'.format(child_name, i)
-                layer_info.append({
-                    'name': layer_name,
-                    'num_neurons': f_map.shape[1],
-                })
-
-        return f_maps, layer_info
-        
-    def load_model(self, epoch):
-        path = self.data_path.get_model_path_during_training(epoch)
-        self.load_model_from_path(path)
-
-
-    def load_model_from_path(self, path):
-        self.init_model()
-        self.model.load_state_dict(torch.load(path))
-        self.model.to(self.device)
-        self.set_all_parameter_requires_grad()
-
-    

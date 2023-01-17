@@ -39,7 +39,7 @@ class ImageActEmb:
         self.init_setting()
         self.get_layer_info()
         self.compute_img_emb_max_act()
-        self.reduce_dim()
+        # self.reduce_dim()
         self.save_img_emb()
 
     """
@@ -130,7 +130,8 @@ class ImageActEmb:
 
     def save_img_emb(self):
         file_path = self.data_path.get_path('img_act_emb')
-        np.savetxt(file_path, self.img_emb, fmt='%.3f')
+        # np.savetxt(file_path, self.img_emb, fmt='%.3f')
+        np.savetxt(file_path, self.img_max_act, fmt='%.3f')
 
     """
     Handle external files (e.g., output, log, ...)

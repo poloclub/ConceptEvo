@@ -98,14 +98,33 @@ class Vgg16:
         self.get_layer_info()
         self.save_layer_info()
 
+        # Update the number of neurons for each layer
+        self.get_num_neurons()
+
         # Set criterion
         self.init_criterion()
 
     def check_if_need_to_load_model(self):
-        check1 = len(self.args.model_path) > 0
-        check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-        check3 = not self.pretrained
-        self.need_loading_a_saved_model = check1 and check2 and check3
+        if self.from_to is None:
+            check1 = len(self.args.model_path) > 0
+            check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
+            check3 = not self.pretrained
+            check = check1 and check2 and check3
+            self.need_loading_a_saved_model = check
+        elif self.from_to == 'from':
+            check1 = len(self.args.from_model_path) > 0
+            check2 = self.args.from_model_path != 'DO_NOT_NEED_CURRENTLY'
+            check3 = not self.pretrained
+            check = check1 and check2 and check3
+            self.need_loading_a_saved_model = check
+        elif self.from_to == 'to':
+            check1 = len(self.args.to_model_path) > 0
+            check2 = self.args.to_model_path != 'DO_NOT_NEED_CURRENTLY'
+            check3 = not self.pretrained
+            check = check1 and check2 and check3
+            self.need_loading_a_saved_model = check
+        else:
+            raise ValueError(f'Unknown from_to is given: "{self.from_to}"')
 
         if self.need_loading_a_saved_model and self.args.train:
             last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])
@@ -172,7 +191,7 @@ class Vgg16:
         })
         if type(layer) == nn.Conv2d:
             self.layers_for_stimulus.append(layer_name)
-            self.num_neurons[layer_name] = layer.out_channels
+            # self.num_neurons[layer_name] = layer.out_channels
     
     def save_layer_info(self):
         if self.args.train:
@@ -187,6 +206,16 @@ class Vgg16:
             for layer in self.layers:
                 with open(p, 'a') as f:
                     f.write(layer['name'] + '\n')
+
+    def get_num_neurons(self):
+        dummy_input = torch.zeros(1, 3, self.input_size, self.input_size)
+        dummy_input = dummy_input.to(self.device)
+        for i, layer in enumerate(self.layers):
+            layer_name = layer['name']
+            if i == 0:
+                f_map = dummy_input
+            f_map = layer['layer'](f_map)
+            self.num_neurons[layer_name] = f_map.shape[1]
 
     def init_criterion(self):
         if self.need_loading_a_saved_model and ('loss' in self.ckpt):

@@ -95,10 +95,26 @@ class Vgg19:
         self.init_criterion()
 
     def check_if_need_to_load_model(self):
-        check1 = len(self.args.model_path) > 0
-        check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-        check3 = not self.pretrained
-        self.need_loading_a_saved_model = check1 and check2 and check3
+        if self.from_to is None:
+            check1 = len(self.args.model_path) > 0
+            check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
+            check3 = not self.pretrained
+            check = check1 and check2 and check3
+            self.need_loading_a_saved_model = check
+        elif self.from_to == 'from':
+            check1 = len(self.args.from_model_path) > 0
+            check2 = self.args.from_model_path != 'DO_NOT_NEED_CURRENTLY'
+            check3 = not self.pretrained
+            check = check1 and check2 and check3
+            self.need_loading_a_saved_model = check
+        elif self.from_to == 'to':
+            check1 = len(self.args.to_model_path) > 0
+            check2 = self.args.to_model_path != 'DO_NOT_NEED_CURRENTLY'
+            check3 = not self.pretrained
+            check = check1 and check2 and check3
+            self.need_loading_a_saved_model = check
+        else:
+            raise ValueError(f'Unknown from_to is given: "{self.from_to}"')
 
         if self.need_loading_a_saved_model and self.args.train:
             last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])

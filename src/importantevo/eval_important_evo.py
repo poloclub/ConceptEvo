@@ -361,6 +361,7 @@ class EvalImportantEvo:
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
         path = self.data_path.get_path('eval_important_evo-log')
+        print(f'log_path: {path}')
         with open(path, log_opt) as f:
             f.write(log + '\n')
 

@@ -7,7 +7,7 @@ argumensts. An instruction for setting arguments can be found in
 
 # Embedding
 from embedding.image_embedding import *
-from embedding.image_act_embedding import *
+from embedding.layer_act_embedding import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
 from embedding.reduce_dim import *
@@ -37,7 +37,6 @@ from model.resnet50 import *
 # Utils
 from utils.args import *
 from utils.datapath import *
-
 
 def main():
     # Parse input arguments
@@ -71,7 +70,7 @@ def main():
         compute_image_embedding(args, data_path, model)
 
     # Cpmpute image embedding from max activation
-    if args.img_act_emb:
+    if args.layer_act:
         compute_img_embedding_from_activation(args, data_path, model)
 
     # Compute projected neuron embedding
@@ -94,7 +93,7 @@ def main():
         find_important_evolution(args, data_path)
 
     # Evaluate important concept evolution for class predictions
-    if args.eval_important_evo != 'None':
+    if args.eval_important_evo:
         eval_important_evolution(args, data_path)
 
     # Find important neurons for class predictions
@@ -104,7 +103,6 @@ def main():
     # Compute activation map of important neurons for class predictions
     if args.important_neuron_act_map:
         compute_important_neuron_act_map(args, data_path, model)
-
 
 def load_model(args, data_path):
 
@@ -148,7 +146,6 @@ def load_model(args, data_path):
 
     return model
 
-
 def load_models(args, data_path):
     when_to_load_model = [
         args.find_important_evo,
@@ -171,44 +168,36 @@ def load_models(args, data_path):
     
     return from_model, to_model
 
-
 def train_model(model):
     model.train_model()
-
 
 def test_model(model):
     model.test_model(write_log=True, test_on='training')
     model.test_model(write_log=True, test_on='test')
 
-
 def compute_stimulus(args, data_path, model):
     stimulus = Stimulus(args, data_path, model)
     stimulus.compute_stimulus()
-
 
 def compute_neuron_embedding(args, data_path, model):
     neuron_emb = Emb(args, data_path, model)
     neuron_emb.compute_neuron_embedding()
 
-
 def compute_image_embedding(args, data_path, model):
     img_emb = ImageEmb(args, data_path, model)
     img_emb.compute_img_embedding()
 
-
-def compute_img_embedding_from_activation(args, data_path, model):
-    img_emb = ImageActEmb(args, data_path, model)
-    img_emb.compute_img_embedding_from_activation()
+def compute_img_embedding_from_layer_activation(args, data_path, model):
+    img_emb = LayerActEmb(args, data_path, model)
+    img_emb.compute_img_embedding_from_layer_activation()
 
 def compute_proj_neuron_emb(args, data_path, model):
     proj_neuron_emb = ProjNeuronEmb(args, data_path, model)
     proj_neuron_emb.compute_projected_neuron_emb()
 
-
 def reduce_embedding_dim(args, data_path):
     reducer = Reducer(args, data_path)
     reducer.reduce_dim()
-
 
 def compute_neuron_feature(args, data_path, model):
     if args.neuron_feature == 'example_patch':
@@ -219,23 +208,19 @@ def compute_act_maps(args, data_path, model):
     act_map = StimulusActMap(args, data_path, model)
     act_map.compute_act_map()
 
-
 def find_important_evolution(args, data_path):
     from_model, to_model = load_models(args, data_path)
     find_evo = FindImportantEvo(args, data_path, from_model, to_model)
     find_evo.find_important_evolution()
     
-
 def eval_important_evolution(args, data_path):
     from_model, to_model = load_models(args, data_path)
     eval_evo = EvalImportantEvo(args, data_path, from_model, to_model)
     eval_evo.eval_important_evolution()
 
-
 def find_important_neuron(args, data_path, model):
     imp_neuron = ImportantNeuron(args, data_path, model)
     imp_neuron.compute_important_neuron()
-
 
 def compute_important_neuron_act_map(args, data_path, model):
     imp_neuron_act_map = ImportantNeuronActMap(args, data_path, model)

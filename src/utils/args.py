@@ -222,10 +222,10 @@ class ArgParser:
         )
 
         self.parser.add_argument(
-            '--img_act_emb', 
+            '--layer_act', 
             default=False, 
             type=self.parse_bool_arg,
-            help='Whether to compute image embedding from activation in the base model'
+            help='Whether to compute image embedding from layer activation'
         )
 
         self.parser.add_argument(

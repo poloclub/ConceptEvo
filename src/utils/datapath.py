@@ -20,7 +20,7 @@ class DataPath:
         self.path_keys = [
             'train-data', 'test-data', 
             'stimulus', 'co_act', 'neuron_emb', 
-            'img_emb', 'img_act_emb',
+            'img_emb', 'layer_act',
             'proj_neuron_emb', 'dim_reduction', 
             'neuron_feature', 'act_map',
             'find_important_evo', 'eval_important_evo'
@@ -44,7 +44,7 @@ class DataPath:
         self.set_co_act_neurons_path()
         self.set_neuron_emb_path()
         self.set_img_emb_path()
-        self.set_img_act_emb_path()
+        self.set_layer_act_path()
         self.set_proj_emb_path()
         self.set_emb2d_path()
         self.set_neuron_feature_path()
@@ -127,8 +127,8 @@ class DataPath:
             self.args.proj_neuron_emb
         ]
 
-        self.path_key_to_actions['img_act_emb'] = [
-            self.args.img_act_emb,
+        self.path_key_to_actions['layer_act'] = [
+            self.args.layer_act,
             self.args.img_emb
         ]
 
@@ -225,9 +225,9 @@ class DataPath:
             ['k', self.args.k]
         ]
 
-        self.action_to_args['img_act_emb'] = [
+        self.action_to_args['layer_act'] = [
             ['layer', self.args.layer],
-            # ['dim', self.args.dim],
+            ['dim', self.args.dim],
         ]
 
         self.action_to_args['img_emb_from'] = [
@@ -693,28 +693,28 @@ class DataPath:
     """
     Setting paths for image embedding
     """
-    def set_img_act_emb_path(self):
-        if not self.need_to_gen_path('img_act_emb'):
+    def set_layer_act_path(self):
+        if not self.need_to_gen_path('layer_act'):
             return
 
         self.check_model_nickname_and_path()
 
-        d_path, l_path = self.gen_data_log_sub_dir('img_act_emb')
+        d_path, l_path = self.gen_data_log_sub_dir('layer_act')
         self.make_dir(d_path)
 
         d_path = os.path.join(d_path, self.args.layer)
         self.make_dir(d_path)
 
-        # f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
-        f_path = os.path.join(d_path, 'img_emb.txt')
-        self.path['img_act_emb'] = f_path
+        f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
+        # f_path = os.path.join(d_path, 'img_emb.txt')
+        self.path['layer_act'] = f_path
 
-        apdx = self.gen_act_setting_str('img_act_emb')
+        apdx = self.gen_act_setting_str('layer_act')
         l_path = os.path.join(
             l_path,
-            f'log-img_act_emb-{self.args.model_nickname}-{apdx}.txt'
+            f'log-layer_act-{self.args.model_nickname}-{apdx}.txt'
         )
-        self.path['img_act_emb-log'] = l_path
+        self.path['layer_act-log'] = l_path
 
 
     """

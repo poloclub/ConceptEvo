@@ -10,8 +10,8 @@ import numpy as np
 from tqdm import tqdm
 
 
-class ImageActEmb:
-    """Generate image embeddings from activation of the base model"""
+class LayerActEmb:
+    """Generate image embeddings from layer activation"""
 
     """
     Constructor
@@ -35,11 +35,11 @@ class ImageActEmb:
     """
     A wrapper function called in main.py
     """
-    def compute_img_embedding_from_activation(self):
+    def compute_img_embedding_from_layer_activation(self):
         self.init_setting()
         self.get_layer_info()
         self.compute_img_emb_max_act()
-        # self.reduce_dim()
+        self.reduce_dim()
         self.save_img_emb()
 
     """
@@ -129,7 +129,7 @@ class ImageActEmb:
         self.img_emb = reducer.transform(self.img_max_act)
 
     def save_img_emb(self):
-        file_path = self.data_path.get_path('img_act_emb')
+        file_path = self.data_path.get_path('layer_act')
         # np.savetxt(file_path, self.img_emb, fmt='%.3f')
         np.savetxt(file_path, self.img_max_act, fmt='%.3f')
 
@@ -155,5 +155,5 @@ class ImageActEmb:
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('img_act_emb-log'), log_opt) as f:
+        with open(self.data_path.get_path('layer_act_emb-log'), log_opt) as f:
             f.write(log + '\n')

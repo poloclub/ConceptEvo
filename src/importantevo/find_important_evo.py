@@ -13,7 +13,7 @@ import torch
 from torch import autograd
 from torchvision import datasets, transforms
 
-class ImportantEvo:
+class FindImportantEvo:
     """Find important evolution."""
 
     """
@@ -38,7 +38,6 @@ class ImportantEvo:
         self.sensitivity = {}
         self.importance_score = {}
 
-
     """
     A wrapper function called by main.py
     """
@@ -48,31 +47,27 @@ class ImportantEvo:
         self.find_imp_evo()
         self.save_results()
 
-
     """
     Initial setting
     """
     def init_setting(self):
         self.init_device()
         self.init_data_loader()
-
     
     def init_device(self):
         self.device = torch.device(
             'cuda:{}'.format(self.args.gpu) if torch.cuda.is_available() 
             else 'cpu'
         )
-        print('Run on {}'.format(self.device))
+        print(f'Run on {self.device}')
 
-    
     def init_data_loader(self):
         data_transform = transforms.Compose([
-            transforms.Resize((self.input_size, self.input_size)),
+            transforms.Resize(
+                (self.from_model.input_size, self.from_model.input_size)
+            ),
             transforms.ToTensor(),
-            transforms.Normalize(
-                [0.485, 0.456, 0.406], 
-                [0.229, 0.224, 0.225]
-            )
+            transforms.Normalize(*self.from_model.input_normalization)
         ])
         self.training_dataset = datasets.ImageFolder(
             self.data_path.get_path('train_data'), data_transform
@@ -89,32 +84,38 @@ class ImportantEvo:
             num_workers=4
         )
 
-
     def find_idx_training_dataset_for_class(self):
-        total = len(self.training_dataset)
-        unit = int(total / self.num_classes)
-        start = max(0, unit * (self.args.label - 6))
-        end = min(total, unit * (self.args.label + 5))
+        if len(self.args.label_img_idx_path) > 0:
+            d = self.load_json(self.args.label_img_idx_path)
+            img_idx_data = {}
+            for label in d:
+                img_idx_data[int(label)] = d[label]
+            self.start_idx, self.end_idx = img_idx_data[self.args.label]
+        else:
+            total = len(self.training_dataset)
+            unit = int(total / self.num_classes)
+            start = max(0, unit * (self.args.label - 6))
+            end = min(total, unit * (self.args.label + 5))
 
-        start_idx, end_idx = -1, -1
-        with tqdm(total=(end - start)) as pbar:
-            for i in range(start, end):
-                img, label = self.training_dataset[i]
-                if (self.args.label == label) and (start_idx == -1):
-                    start_idx = i
-                    end_idx = -2
-                if (self.args.label < label) and (end_idx == -2):
-                    end_idx = i
-                    break
-                pbar.update(1)
+            start_idx, end_idx = -1, -1
+            with tqdm(total=(end - start)) as pbar:
+                for i in range(start, end):
+                    img, label = self.training_dataset[i]
+                    if (self.args.label == label) and (start_idx == -1):
+                        start_idx = i
+                        end_idx = -2
+                    if (self.args.label < label) and (end_idx == -2):
+                        end_idx = i
+                        break
+                    pbar.update(1)
 
-        if (start_idx != -1) and (end_idx < 0):
-            end_idx = end
+            if (start_idx != -1) and (end_idx < 0):
+                end_idx = end
 
-        self.start_idx = start_idx
-        self.end_idx = end_idx
-        print('find important evo', self.start_idx, self.end_idx)
+            self.start_idx = start_idx
+            self.end_idx = end_idx
 
+        print(f'Label={self.args.label}, [{self.start_idx}, {self.end_idx}]')
 
     """
     Find important evolution
@@ -123,7 +124,6 @@ class ImportantEvo:
         tic, total = time(), len(self.data_loader.dataset)
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-                
                 # Find important evolution for one batch
                 self.find_imp_evo_one_batch(imgs, labels)
                 pbar.update(self.args.batch_size)
@@ -131,7 +131,7 @@ class ImportantEvo:
                 # Find evolutions for only a few batches
                 # Basically sampling the first few shuffled batches
                 total_num_so_far = (batch_idx + 1) * self.args.batch_size
-                if total_num_so_far >= self.args.find_num_sample_imgs:
+                if total_num_so_far >= self.args.num_sampled_imgs:
                     break
 
         self.compute_importance_score()
@@ -139,19 +139,19 @@ class ImportantEvo:
         log = 'Find important evo: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
-    
     def find_imp_evo_one_batch(self, imgs, labels):
         # Forward
-        from_f_maps, layer_info = self.from_model.forward(imgs)
-        to_f_maps, layer_info = self.to_model.forward(imgs)
+        imgs = imgs.to(self.device)
+        labels = labels.to(self.device)
+        from_f_maps = self.from_model.forward(imgs)
+        to_f_maps = self.to_model.forward(imgs)
         f_maps = {'from': from_f_maps, 'to': to_f_maps}
         
         # Compute importance score
-        self.compute_sensitivity(imgs, f_maps, layer_info)
+        self.compute_sensitivity(imgs, f_maps)
 
-
-    def compute_sensitivity(self, imgs, f_maps, layer_info):
-        num_layers = len(layer_info)
+    def compute_sensitivity(self, imgs, f_maps):
+        num_layers = len(self.to_model.layers)
         for img_idx, img in enumerate(imgs):
             for layer_idx in range(num_layers - 1):
                 # Gradient (N, W, H)
@@ -163,8 +163,8 @@ class ImportantEvo:
                 grad = grad[0][img_idx]
 
                 # Compute sensitivity
-                layer_name = layer_info[layer_idx]['name']
-                num_neurons = layer_info[layer_idx]['num_neurons']
+                layer_name = self.to_model.layers[layer_idx]['name']
+                num_neurons = self.to_model.num_neurons[layer_name]
                 if layer_name not in self.sensitivity:
                     self.sensitivity[layer_name] = {}
                 for neuron_idx in range(num_neurons):
@@ -257,18 +257,3 @@ class ImportantEvo:
             path = self.data_path.get_path('find_important_evo-log')
             with open(path, log_opt) as f:
                 f.write(log + '\n')
-
-
-    """
-    Utils
-    """
-    def test_input(self):
-        for batch_idx, (imgs, labels) in enumerate(self.data_loader):
-            for idx in range(5):
-                img = imgs[idx] * 255
-                img = np.einsum('kij->ijk', img)
-                file_path = f'img-{idx}.jpg'
-                cv2.imwrite(
-                    file_path, 
-                    cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                )

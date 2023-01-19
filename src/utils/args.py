@@ -260,15 +260,8 @@ class ArgParser:
 
         self.parser.add_argument(
             '--eval_important_evo', 
-            default='None', 
-            choices=[
-                'None', 
-                'perturbation', 
-                'reverting',
-                'reverting_by_layer', 
-                'reverting_by_layer_by_bin'
-            ],
-            type=str,
+            default=False,
+            type=self.parse_bool_arg,
             help='Option to evaluate important evolution'
         )
 
@@ -312,6 +305,13 @@ class ArgParser:
             default='../../ILSVRC2012/val-by-class', 
             type=str,
             help='Test data path'
+        )
+
+        self.parser.add_argument(
+            '--label_img_idx_path', 
+            default='', 
+            type=str,
+            help='The path of image index range for each label'
         )
 
         self.parser.add_argument(
@@ -575,24 +575,17 @@ class ArgParser:
         )
 
         self.parser.add_argument(
-            '--eps', 
-            default=0.3, 
-            type=float,
-            help='Perturbation strength'
-        )
-
-        self.parser.add_argument(
-            '--eval_sample_ratio', 
-            default=0.3, 
-            type=float,
-            help='Ratio of neurons to be evaluated for given layer'
-        )
-
-        self.parser.add_argument(
-            '--find_num_sample_imgs', 
+            '--num_sampled_imgs', 
             default=250, 
             type=int,
-            help='Number of sampled images to find important evolution'
+            help='The number of sampled images to find important evolution'
+        )
+
+        self.parser.add_argument(
+            '--num_bins', 
+            default=4, 
+            type=int,
+            help='The number of bins to split neurons'
         )
 
         self.parser.add_argument(

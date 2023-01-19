@@ -19,7 +19,7 @@ from feature.stimulus_act_map import *
 
 # Find and evaluate concept evolution for class predictions
 from importantevo.eval_important_evo import *
-from importantevo.important_evo import *
+from importantevo.find_important_evo import *
 
 # Find important neurons for class predictions
 from importantneuron.important_neuron import *
@@ -111,11 +111,11 @@ def load_model(args, data_path):
     when_to_skip_loading_model = [
         args.dim_reduction != 'None',
         args.find_important_evo,
-        args.eval_important_evo != 'None'
+        args.eval_important_evo
     ]
 
     if True in when_to_skip_loading_model:
-        return
+        return None
 
     if args.model_name == 'vgg16':
         model = Vgg16(args, data_path)
@@ -144,7 +144,7 @@ def load_model(args, data_path):
     elif args.model_name == 'resnet50':
         model = ResNet50(args, data_path)
     else:
-        raise ValueError(f'Error: unkonwn model {args.model_name}')
+        raise ValueError(f'Error: unknown model given "{args.model_name}"')
 
     return model
 
@@ -152,7 +152,7 @@ def load_model(args, data_path):
 def load_models(args, data_path):
     when_to_load_model = [
         args.find_important_evo,
-        args.eval_important_evo != 'None'
+        args.eval_important_evo
     ]
     if True not in when_to_load_model:
         return
@@ -163,8 +163,11 @@ def load_models(args, data_path):
     elif args.model_name == 'inception_v3':
         from_model = InceptionV3(args, data_path, from_to='from')
         to_model = InceptionV3(args, data_path, from_to='to')
+    elif args.model_name == 'convnext':
+        from_model = ConvNeXt(args, data_path, from_to='from')
+        to_model = ConvNeXt(args, data_path, from_to='to')
     else:
-        raise ValueError(f'Error: unkonwn model {args.model_name}')
+        raise ValueError(f'Error: unknown model {args.model_name}')
     
     return from_model, to_model
 
@@ -219,8 +222,8 @@ def compute_act_maps(args, data_path, model):
 
 def find_important_evolution(args, data_path):
     from_model, to_model = load_models(args, data_path)
-    imp_evo = ImportantEvo(args, data_path, from_model, to_model)
-    imp_evo.find_important_evolution()
+    find_evo = FindImportantEvo(args, data_path, from_model, to_model)
+    find_evo.find_important_evolution()
     
 
 def eval_important_evolution(args, data_path):

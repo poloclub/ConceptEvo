@@ -128,7 +128,8 @@ class DataPath:
         ]
 
         self.path_key_to_actions['img_act_emb'] = [
-            self.args.img_act_emb
+            self.args.img_act_emb,
+            self.args.img_emb
         ]
 
         self.path_key_to_actions['proj_neuron_emb'] = [
@@ -149,11 +150,11 @@ class DataPath:
 
         self.path_key_to_actions['find_important_evo'] = [
             self.args.find_important_evo,
-            self.args.eval_important_evo != 'None'
+            self.args.eval_important_evo
         ]
 
         self.path_key_to_actions['eval_important_evo'] = [
-            self.args.eval_important_evo != 'None'
+            self.args.eval_important_evo
         ]
 
         self.path_key_to_actions['important_neuron'] = [
@@ -226,7 +227,7 @@ class DataPath:
 
         self.action_to_args['img_act_emb'] = [
             ['layer', self.args.layer],
-            ['dim', self.args.dim],
+            # ['dim', self.args.dim],
         ]
 
         self.action_to_args['img_emb_from'] = [
@@ -258,21 +259,19 @@ class DataPath:
         ]
 
         self.action_to_args['find_important_evo'] = [
-            ['label', self.args.label],
-            ['find_num_sample_imgs', self.args.find_num_sample_imgs],
             ['from', self.args.from_model_nickname.replace('-', '_')],
             ['to', self.args.to_model_nickname.replace('-', '_')],
+            ['label', self.args.label],
+            ['num_sampled_imgs', self.args.num_sampled_imgs],
             ['idx', self.args.idx]
         ]
 
         self.action_to_args['eval_important_evo'] = [
-            ['option', self.args.eval_important_evo],
-            ['label', self.args.label],
-            ['find_num_sample_imgs', self.args.find_num_sample_imgs],
-            # ['eps', self.args.eps],
-            ['eval_sample_ratio', self.args.eval_sample_ratio],
             ['from', self.args.from_model_nickname.replace('-', '_')],
             ['to', self.args.to_model_nickname.replace('-', '_')],
+            ['label', self.args.label],
+            ['num_bins', self.args.num_bins],
+            ['num_sampled_imgs', self.args.num_sampled_imgs],
             ['idx', self.args.idx]
         ]
 
@@ -683,6 +682,9 @@ class DataPath:
         )
         self.path['img_emb'] = file_path
         self.path['img_emb-log'] = log_path
+        self.path['label_img_idx'] = os.path.join(
+            self.args.output_dir, 'ILSVRC2012_label_img_idx.json'
+        )
 
         if self.is_given_arg(self.args.from_iter_img_emb):
             from_file_path = os.path.join(from_data_dir_path, 'img_emb.txt')
@@ -703,9 +705,9 @@ class DataPath:
         d_path = os.path.join(d_path, self.args.layer)
         self.make_dir(d_path)
 
-        f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
+        # f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
+        f_path = os.path.join(d_path, 'img_emb.txt')
         self.path['img_act_emb'] = f_path
-        print(f_path)
 
         apdx = self.gen_act_setting_str('img_act_emb')
         l_path = os.path.join(
@@ -927,9 +929,8 @@ class DataPath:
         )
         self.make_dir(d_dir_path)
 
-        self.path['eval_important_evo'] = os.path.join(
-            d_dir_path, 'eval_important_evo-{}.json'.format(apdx)
-        )
+        data_path = os.path.join(d_dir_path, f'eval_evo-{apdx}.json')
+        self.path['eval_important_evo'] = data_path
         self.path['eval_important_evo-log'] = log_path
        
     """

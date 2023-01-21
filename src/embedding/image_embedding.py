@@ -108,7 +108,7 @@ class ImageEmb:
             v_n = self.neuron_emb[neuron]
             v_n_p = self.compute_approx_neuron_vec(X_n)
             grad += (v_n_p - v_n) / len(X_n)
-        grad = grad / self.num_neurons
+        # grad = grad / self.num_neurons
         return grad
 
     def compute_rmse(self):

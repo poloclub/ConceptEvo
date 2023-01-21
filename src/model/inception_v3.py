@@ -91,6 +91,9 @@ class InceptionV3:
         # Update layer info
         self.get_layer_info()
         self.save_layer_info()
+
+        # Update the number of neurons for each layer
+        self.get_num_neurons()
     
         # Set criterion
         self.init_criterion()
@@ -170,7 +173,6 @@ class InceptionV3:
         if 'Conv2d' in layer_name:
             conv_layer = layer.__dict__['_modules']['conv']
             self.layers_for_stimulus.append(layer_name)
-            self.num_neurons[layer_name] = conv_layer.out_channels
         elif 'Inception' in layer_name:
 
             self.layers_for_stimulus.append(layer_name)
@@ -234,9 +236,6 @@ class InceptionV3:
                 fst_child_conv_layer = fst_child.__dict__['_modules']['conv']
                 num_in_channel = fst_child_conv_layer.in_channels
                 num_out_channels += num_in_channel
-            
-            # Save the total number of neurons
-            self.num_neurons[layer_name] = num_out_channels
 
     def save_layer_info(self):
         if self.args.train:
@@ -251,6 +250,18 @@ class InceptionV3:
             for layer in self.layers:
                 with open(p, 'a') as f:
                     f.write(layer['name'] + '\n')
+
+    def get_num_neurons(self):
+        dummy_input = torch.zeros(1, 3, self.input_size, self.input_size)
+        dummy_input = dummy_input.to(self.device)
+        for i, layer in enumerate(self.layers):
+            layer_name = layer['name']
+            if i == 0:
+                f_map = dummy_input
+            elif i == len(self.layers) - 1:
+                break
+            f_map = layer['layer'](f_map)
+            self.num_neurons[layer_name] = f_map.shape[1]
         
     def init_criterion(self):
         self.criterion = nn.CrossEntropyLoss()
@@ -313,22 +324,6 @@ class InceptionV3:
                     param_group['eps'] = self.args.learning_eps
                     param_group['weight_decay'] = self.args.weight_decay
                     param_group['momentum'] = self.args.momentum
-
-    """
-    Residual layers
-    """
-    def layer_is_res_input(self, layer_idx):
-        """Check if a layer's output can be used as
-        a residual input in later layers"""
-        return False
-
-    def layer_take_res_input(self, layer_idx):
-        """Check if the current layer takes the residual input"""
-        return False
-
-    def layer_is_downsample(self, layer_idx):
-        """Check if the current layer is a downsample layer"""
-        return False
 
     """
     Train the model
@@ -510,12 +505,26 @@ class InceptionV3:
         )
 
     """
-    Forward
+    Forward pass
     """
     def forward_one_layer(self, layer_idx, prev_f_map):
-        # XXX: [TODO] Correct this function
         f_map = self.layers[layer_idx]['layer'](prev_f_map)
         return f_map
+
+    def forward(self, imgs):
+        # Forward pass through the whole layer and save all layers' activation
+
+        # Initialize feature maps
+        imgs = imgs.to(self.device)
+        f_map, f_maps = imgs, []
+
+        # Forward pass and save feature map for each layer
+        for i, layer in enumerate(self.layers):
+            if i == len(self.layers) - 1:
+                break
+            f_map = self.forward_one_layer(i, f_map)
+            f_maps.append(f_map)
+        return f_maps
 
     """
     Log for training the model
@@ -585,68 +594,4 @@ class InceptionV3:
         path = self.data_path.get_path('test-log')
         with open(path, 'a') as f:
             f.write(log + '\n')
-        
-    """
-    """
-    def eval_for_label(self):
-        total = len(self.training_data_loader.dataset)
-        top1_corrects, topk_corrects = 0, 0
-        with tqdm(total=total) as pbar:
-            for batch_idx, (imgs, labels) in enumerate(self.training_data_loader):
-                top1, topk = self.test_one_batch(imgs, labels)
-                top1_corrects += top1
-                topk_corrects += topk
-                pbar.update(self.args.batch_size)
-        
-        # Save log
-        log = 'total = {}\n'.format(total)
-        log += 'top1 test accuracy = {} / {} = {}\n'.format(
-            top1_corrects, total, top1_corrects / total
-        )
-        log += 'topk test accuracy = {} / {} = {}\n'.format(
-            topk_corrects, total, topk_corrects / total
-        )
-        return top1_corrects, topk_corrects, total
-
-    def forward(self, imgs):
-        # Initialize feature maps
-        imgs = imgs.to(self.device)
-        f_map, f_maps = imgs, []
-
-        # Layer information
-        layers = list(self.model.children())
-        num_layers, layer_info = len(layers), []
-
-        # Forward and save feature map for each layer
-        for i in range(num_layers):
-            layer = layers[i]
-
-            # Ignore AuxLogits layer
-            layer_name = '{}_{}'.format(type(layer).__name__, i)
-            if 'Aux' in layer_name:
-                continue
-
-            # Flatten before fully connected layer
-            if i == num_layers - 1:
-                f_map = torch.flatten(f_map, 1)
-            
-            # Compute and save current layer's f_map and layer info
-            f_map = layer(f_map)
-            f_maps.append(f_map)
-            layer_info.append({
-                'name': layer_name,
-                'num_neurons': f_map.shape[1],
-            })
-
-        return f_maps, layer_info
-      
-    def load_model(self, epoch):
-        path = self.data_path.get_model_path_during_training(epoch)
-        self.load_model_from_path(path)
-
-
-    def load_model_from_path(self, path):
-        self.init_model()
-        self.model.load_state_dict(torch.load(path))
-        self.model.to(self.device)
-        self.set_all_parameter_requires_grad()
+    

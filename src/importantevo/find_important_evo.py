@@ -140,7 +140,7 @@ class FindImportantEvo:
         self.write_log(log)
 
     def find_imp_evo_one_batch(self, imgs, labels):
-        # Forward
+        # Forward pass
         imgs = imgs.to(self.device)
         labels = labels.to(self.device)
         from_f_maps = self.from_model.forward(imgs)

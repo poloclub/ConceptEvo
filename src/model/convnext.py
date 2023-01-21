@@ -467,7 +467,7 @@ class ConvNeXt:
         imgs = imgs.to(self.device)
         f_map, f_maps = imgs, []
 
-        # Forward and save feature map for each layer
+        # Forward pass and save feature map for each layer
         for i, layer in enumerate(self.layers):
             f_map = self.forward_one_layer(i, f_map)
             f_maps.append(f_map)
@@ -479,7 +479,6 @@ class ConvNeXt:
         for i in range(layer_idx, num_layers):
             f_map = self.forward_one_layer(i, f_map)
         return f_map
-
 
     """
     Log for training the model

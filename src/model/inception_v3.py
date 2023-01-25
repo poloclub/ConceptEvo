@@ -508,6 +508,8 @@ class InceptionV3:
     Forward pass
     """
     def forward_one_layer(self, layer_idx, prev_f_map):
+        if layer_idx == len(self.layers) - 1:
+            prev_f_map = torch.flatten(prev_f_map, 1)
         f_map = self.layers[layer_idx]['layer'](prev_f_map)
         return f_map
 
@@ -520,11 +522,16 @@ class InceptionV3:
 
         # Forward pass and save feature map for each layer
         for i, layer in enumerate(self.layers):
-            if i == len(self.layers) - 1:
-                break
             f_map = self.forward_one_layer(i, f_map)
             f_maps.append(f_map)
         return f_maps
+
+    def forward_until_the_end(self, layer_idx, prev_f_map):
+        num_layers = len(self.layers)
+        f_map = prev_f_map.clone().detach()
+        for i in range(layer_idx, num_layers):
+            f_map = self.forward_one_layer(i, f_map)
+        return f_map
 
     """
     Log for training the model

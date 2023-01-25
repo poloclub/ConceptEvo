@@ -1,3 +1,4 @@
+import os
 import json
 from time import time
 
@@ -5,8 +6,8 @@ import numpy as np
 from tqdm import tqdm
 
 
-class ImageEmb:
-    """Generate image embeddings"""
+class ImageEmbLayerAct:
+    """Generate image embeddings that are not represented by the base model"""
 
     """
     Constructor
@@ -15,58 +16,51 @@ class ImageEmb:
         self.args = args
         self.data_path = data_path
 
-        self.start_from_pre_computed = self.args.from_iter_img_emb >= 0
+        # TODO: How to set layers?
+        # self.layers = [model.layers[-1]]
+        # self.layers = [layer['name'] for layer in self.layers]
+        self.layers = ['Sequential_0_Conv2d_34']
         self.num_imgs = model.num_training_imgs
-        self.imgs = []
 
+        self.layer_acts = {}
         self.stimulus = {}
-        self.neuron_emb = {}
-        self.num_neurons = None
-        self.norm_coeff = -1
+        self.vocab = {}
+        self.added_vocab = {}
 
-        self.label_img_idx = {}
-        self.img_emb_layer_act = {}
-
-        self.stimuluated_neurons_by_img = {}
         self.img_emb = None
+        self.top_neurons_by_img = {}
+        self.co_activating_imgs_by_neuron = {}
+
+        self.img_pairs = {}
 
     """
     A wrapper function called in main.py
     """
-    def compute_img_embedding(self):
-        self.load_label_img_idx()
-        self.load_neuron_emb()
-        self.load_img_emb_layer_act()
+    def compute_img_embedding_with_layer_act(self):
+        self.write_first_log()
+        self.gen_vocab()
+        self.load_img_emb()
+        self.load_layer_act()
+        self.find_top_neurons_by_img()
+        self.find_co_activating_imgs_by_neuron()
+        self.sample_img_pairs()
         self.init_img_emb()
-        self.load_stimulus()
-        self.gen_neurons_activated_by_stimulus()
         self.compute_img_emb()
         self.save_img_emb()
+        self.save_added_vocab()
 
     """
     Utils
     """
-    def load_label_img_idx(self):
-        path = self.data_path.get_path('label_img_idx')
-        data = self.load_json(path)
-        for key in data:
-            self.label_img_idx[int(key)] = data[key]
-    
-    def load_neuron_emb(self):
-        self.neuron_emb = self.load_json(self.data_path.get_path('neuron_emb'))
-        for neuron in self.neuron_emb:
-            self.neuron_emb[neuron] = np.array(self.neuron_emb[neuron])
-            norm = np.linalg.norm(self.neuron_emb[neuron])
-            self.norm_coeff = max(self.norm_coeff, norm)
-        self.num_neurons = len(self.neuron_emb)
-    
-    def load_img_emb_layer_act(self):
-        path = self.data_path.get_path('img_act_emb')
-        self.img_emb_layer_act = np.loadtxt(path)
-        max_norm = 0
-        for img_vec in self.img_emb_layer_act:
-            max_norm = max(max_norm, np.linalg.norm(img_vec))
-        self.img_emb_layer_act = self.img_emb_layer_act / max_norm * self.norm_coeff
+    def gen_vocab(self):
+        self.load_stimulus()
+        for layer in self.stimulus:
+            for neuron_stimuli in self.stimulus[layer]:
+                for img in neuron_stimuli:
+                    if img not in self.vocab:
+                        self.vocab[img] = 0
+                    self.vocab[img] += 1
+        self.write_log(f'Number of imgs in vocab: {len(self.vocab)}')
 
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
@@ -75,125 +69,145 @@ class ImageEmb:
             for neuron, neuron_imgs in enumerate(self.stimulus[layer]):
                 self.stimulus[layer][neuron] = neuron_imgs[:self.args.k]
 
-    def gen_neurons_activated_by_stimulus(self):
-        for layer in self.stimulus:
-            for neuron, neuron_imgs in enumerate(self.stimulus[layer]):
-                neuron_id = f'{layer}-{neuron}'
-                for img in neuron_imgs:
-                    if img not in self.stimuluated_neurons_by_img:
-                        self.stimuluated_neurons_by_img[img] = []
-                    self.stimuluated_neurons_by_img[img].append(neuron_id)
+    def load_img_emb(self):
+        p = self.data_path.get_path('img_emb')
+        self.img_emb = np.loadtxt(p)
 
-    def get_stimulus_of_neuron(self, neuron):
-        layer, neuron_idx = neuron.split('-')
-        neuron_idx = int(neuron_idx)
-        return self.stimulus[layer][neuron_idx]
+    def load_layer_act(self):
+        log = 'Load layer activation'
+        print(log)
+        tic = time()
+        dir_path = self.data_path.get_path('layer_act_dir')
+        for layer in self.layers:
+            p = os.path.join(dir_path, layer)
+            p = os.path.join(p, 'img_emb.txt')
+            self.layer_acts[layer] = np.loadtxt(p)
+        toc = time()
+        self.write_log(f'{log}: {toc - tic:.2f} sec')
 
-    def random_sample_imgs(self):
-        if len(self.imgs) == 0:
-            self.imgs = list(self.stimuluated_neurons_by_img.keys())
-        num_sample = int(self.args.sample_rate_img_emb * self.num_imgs)
-        sampled_imgs = np.random.choice(self.imgs, num_sample, replace=False)
+    def find_top_neurons_by_img(self):
+        log = f'Find top {self.args.k} activated neurons by image'
+        print(log)
+        tic = time()
+        total = len(self.layers) * self.num_imgs
+        with tqdm(total=total) as pbar:
+            for layer in self.layers:
+                self.top_neurons_by_img[layer] = {}
+                for img_i, img_v in enumerate(self.layer_acts[layer]):
+                    neuron_idxs = np.argsort(-img_v)[:self.args.k]
+                    neuron_ids = [f'{layer}-{idx}' for idx in neuron_idxs]
+                    self.top_neurons_by_img[layer][img_i] = neuron_ids
+                    pbar.update(1)
+        toc = time()
+        self.write_log(f'{log}: {toc - tic:.2f} sec')
+    
+    def find_co_activating_imgs_by_neuron(self):
+        log = 'Find co-activating images by neurons'
+        print(log)
+        tic = time()
+        total = len(self.layers) * self.num_imgs
+        with tqdm(toal=total) as pbar:
+            for layer in self.layers:
+                for i in self.top_neurons_by_img[layer]:
+                    for neuron_id in self.top_neurons_by_img[layer][i]:
+                        if neuron_id not in self.co_activating_imgs_by_neuron:
+                            self.co_activating_imgs_by_neuron[neuron_id] = []
+                        self.co_activating_imgs_by_neuron[neuron_id].append(i)
+                    pbar.update(1)
+        toc = time()
+        self.write_log(f'{log}: {toc - tic:.2f} sec')
+    
+    def sample_img_pairs(self):
+        log = 'Sample image pairs'
+        print(log)
+        tic = time()
+        total = len(self.co_activating_imgs_by_neuron)
+        with tqdm(total=total) as pbar:
+            for neuron_id in self.co_activating_imgs_by_neuron:
+                imgs = self.co_activating_imgs_by_neuron[neuron_id]
+                for i, img_i in enumerate(imgs):
+                    if i == len(imgs) - 1:
+                        break
+                    img_j = imgs[i + 1]
+                    key = '-'.join(list(map(str, sorted([img_i, img_j]))))
+                    if key not in self.img_pairs:
+                        self.img_pairs[key] = 0
+                    self.img_pairs[key] += 1
+                pbar.update(1)
+        toc = time()
+        self.write_log(f'{log}: {toc - tic:.2f} sec')
+
+    def sample_rand_imgs(self):
+        n = self.args.num_emb_negs_layer_act
+        sampled_imgs = np.random.choice(self.num_imgs, n, replace=False)
         return sampled_imgs
 
     """
-    Compute image embedding
+    Compute and save image embedding
     """
     def init_img_emb(self):
-        if self.start_from_pre_computed:
-            file_path = self.data_path.get_path('img_emb_from')
-            self.img_emb = np.loadtxt(file_path)
-        else:
-            self.img_emb \
-                = np.random.random((self.num_imgs, self.args.dim)) - 0.5
-            self.img_emb = self.img_emb * self.norm_coeff
+        self.img_emb = np.random.random((self.num_imgs, self.args.dim)) - 0.5
+        # if self.start_from_pre_computed:
+        #     file_path = self.data_path.get_path('img_emb_layer_act_from')
+        #     self.img_emb = np.loadtxt(file_path)
+        # else:
+        #     self.img_emb \
+        #         = np.random.random((self.num_imgs, self.args.dim)) - 0.5
 
     def compute_img_emb(self):
-        self.write_first_log()
-
-        tic, total = time(), self.args.max_iter_img_emb * self.num_imgs
+        tic = time()
+        total = self.args.num_emb_epochs_layer_act * len(self.img_pairs)
         with tqdm(total=total) as pbar:
-            for i in range(total):
-                # Update image embedding
-                self.img_emb_one_iter()
-                for label in self.label_img_idx:
-                    self.img_emb_layer_act_one_iter(label, pbar)
+            for epoch in range(self.args.num_emb_epochs_layer_act):
+                for pair in self.img_pairs:
+                    img_i, img_j = pair.split('-')
+                    img_i, img_j = int(img_i), int(img_j)
+                    cnt = self.img_pairs[pair]
+                    pbar.update(1)
 
-                # Check convergence
-                err = self.compute_rmse()
-                if err < self.args.thr_img_emb:
+                    if (img_i not in self.vocab) and (img_j not in self.vocab):
+                        continue
+                
+                    # Get image vectors
+                    v_i = self.img_emb[img_i]
+                    v_j = self.img_emb[img_j]
+                    coeff = 1 - sigmoid(v_i.dot(v_j))
+
+                    # Update gradients for v_i
+                    if img_i not in self.vocab:
+                        g_i = coeff * cnt * v_j
+                        rand_imgs = self.sample_rand_imgs()
+                        for img_r in rand_imgs:
+                            v_r = self.img_emb[img_r]
+                            g_i -= self.sigmoid(v_i.dot(v_r)) * v_r
+                        self.img_emb[img_i] += lr * g_i
+
+                        if img_i not in self.added_vocab:
+                            self.added_vocab[img_i] = 0
+                        self.added_vocab[img_i] += 1
+
+                    # Update gradients for v_j
+                    if img_j not in self.vocab:
+                        g_j = coeff * cnt * v_i
+                        rand_imgs = self.sample_rand_imgs()
+                        for img_r in rand_imgs:
+                            v_r = self.img_emb[img_r]
+                            g_j -= self.sigmoid(v_j.dot(v_r)) * v_r
+                        self.img_emb[img_j] += lr * g_j
+
+                        if img_j not in self.added_vocab:
+                            self.added_vocab[img_j] = 0
+                        self.added_vocab[img_j] += 1
                     break
-                if i % 2 == 0:
-                    toc = time()
-                    iter_num = i
-                    if self.start_from_pre_computed:
-                        iter_num += self.args.from_iter_img_emb
-                    self.write_log(
-                        f'iter={iter_num}, rmse={err}, cum_time={toc - tic}sec'
-                    )
-
-    def img_emb_one_iter(self):
-        for img in self.stimuluated_neurons_by_img:
-            grad_img = self.compute_gradient(img)
-            self.img_emb[img] -= self.args.lr_img_emb * grad_img
-
-    def compute_gradient(self, img):
-        grad = np.zeros(self.args.dim)
-        for neuron in self.stimuluated_neurons_by_img[img]:
-            X_n = self.get_stimulus_of_neuron(neuron)
-            v_n = self.neuron_emb[neuron]
-            v_n_p = self.compute_approx_neuron_vec(X_n)
-            grad += (v_n_p - v_n) / len(X_n)
-        # grad = grad / self.num_neurons
-        return grad
-
-    def sample_imgs(self, start_img_idx, end_img_idx, ratio=0.1):
-        n_label_imgs = end_img_idx - start_img_idx
-        sampled_imgs = start_img_idx + \
-            np.random.choice(n_label_imgs, int(n_label_imgs * ratio))
-        return sampled_imgs
-
-    def img_emb_layer_act_one_iter(self, label, pbar):
-        start_img_idx, end_img_idx = self.label_img_idx[label]
-        sampled_imgs_i = self.sample_imgs(start_img_idx, end_img_idx, 0.1)
-        sampled_imgs_j = self.sample_imgs(start_img_idx, end_img_idx, 0.1)
-        for img_i in sampled_imgs_i:
-            grad = np.zeros(self.args.dim)
-            for img_j in sampled_imgs_j:
-                if img_i == img_j:
-                    continue
-                v_i = self.img_emb[img_i]
-                v_j = self.img_emb[img_j]
-                l_i = self.img_emb_layer_act[img_i]
-                l_j = self.img_emb_layer_act[img_j]
-                grad += (v_i.dot(v_j) - l_i.dot(l_j)) * v_j
-            self.img_emb[img_i] -= self.args.lr_img_emb * grad
-            pbar.update(10)
-
-    def compute_rmse(self):
-        err = 0
-        for neuron in self.neuron_emb:
-            v_n = self.neuron_emb[neuron]
-            X_n = self.get_stimulus_of_neuron(neuron)
-            v_n_p = self.compute_approx_neuron_vec(X_n)
-            err += self.compute_vec_approx_err(v_n_p, v_n)
-        err = np.sqrt(err / self.num_neurons)
-        return err
-
-    def compute_approx_neuron_vec(self, X_n):
-        vec_sum = np.zeros(self.args.dim)
-        for x in X_n:
-            vec_sum += self.img_emb[x]
-        return vec_sum / len(X_n)
-
-    def compute_vec_approx_err(self, v_n_p, v_n):
-        diff = v_n_p - v_n
-        err = diff.dot(diff)
-        return err
+                break
 
     def save_img_emb(self):
-        file_path = self.data_path.get_path('img_emb')
+        file_path = self.data_path.get_path('img_emb_layer_act')
         np.savetxt(file_path, self.img_emb, fmt='%.3f')
+
+    def save_added_vocab(self):
+        p = self.data_path.get_path('added_vocab_layer_act')
+        self.save_json(self.added_vocab, p)
 
     """
     Handle external files (e.g., output, log, ...)
@@ -208,15 +222,16 @@ class ImageEmb:
             json.dump(data, f)
 
     def write_first_log(self):
-        hyperpara_setting = self.data_path.gen_act_setting_str('img_emb', '\n')
-        log = 'Image Embedding\n'
+        hyp = self.data_path.gen_act_setting_str('img_emb_layer_act', '\n')
+        log = 'Image embedding with layer activation\n'
         log += 'model_nickname: {}\n'.format(self.args.model_nickname)
         log += 'from_iter_img_emb: {}\n'.format(self.args.from_iter_img_emb)
         log += 'model_path: {}\n\n'.format(self.args.model_path)
-        log += hyperpara_setting + '\n\n'
+        log += hyp + '\n\n'
         self.write_log(log, False)
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('img_emb-log'), log_opt) as f:
+        p = self.data_path.get_path('img_emb_layer_act-log')
+        with open(p, log_opt) as f:
             f.write(log + '\n')

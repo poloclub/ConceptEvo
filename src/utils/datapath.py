@@ -44,6 +44,7 @@ class DataPath:
         self.set_co_act_neurons_path()
         self.set_neuron_emb_path()
         self.set_img_emb_path()
+        self.set_img_emb_layer_act_path()
         self.set_layer_act_path()
         self.set_proj_emb_path()
         self.set_emb2d_path()
@@ -106,6 +107,7 @@ class DataPath:
             self.args.stimulus,
             self.args.neuron_emb,
             self.args.img_emb,
+            self.args.img_emb_layer_act,
             self.args.proj_neuron_emb,
             self.args.neuron_feature,
             self.args.act_map
@@ -118,18 +120,25 @@ class DataPath:
         self.path_key_to_actions['neuron_emb'] = [
             self.args.neuron_emb,
             self.args.img_emb,
+            # self.args.img_emb_layer_act,
             # self.args.proj_neuron_emb,
             self.args.dim_reduction != 'None'
         ]
 
         self.path_key_to_actions['img_emb'] = [
             self.args.img_emb,
+            self.args.img_emb_layer_act,
             self.args.proj_neuron_emb
         ]
 
         self.path_key_to_actions['layer_act'] = [
             self.args.layer_act,
             self.args.img_emb
+        ]
+
+        self.path_key_to_actions['img_emb_layer_act'] = [
+            self.args.img_emb_layer_act,
+            self.args.proj_neuron_emb
         ]
 
         self.path_key_to_actions['proj_neuron_emb'] = [
@@ -227,7 +236,15 @@ class DataPath:
 
         self.action_to_args['layer_act'] = [
             ['layer', self.args.layer],
+            # ['dim', self.args.dim],
+        ]
+
+        self.action_to_args['img_emb_layer_act'] = [
             ['dim', self.args.dim],
+            ['lr_img_emb_layer_act', self.args.lr_img_emb_layer_act],
+            ['num_emb_epochs_layer_act', self.args.num_emb_epochs],
+            ['num_emb_negs_layer_act', self.args.num_emb_negs_layer_act],
+            ['k', self.args.k]
         ]
 
         self.action_to_args['img_emb_from'] = [
@@ -705,8 +722,8 @@ class DataPath:
         d_path = os.path.join(d_path, self.args.layer)
         self.make_dir(d_path)
 
-        f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
-        # f_path = os.path.join(d_path, 'img_emb.txt')
+        # f_path = os.path.join(d_path, f'img_emb-dim={self.args.dim}.txt')
+        f_path = os.path.join(d_path, 'img_emb.txt')
         self.path['layer_act'] = f_path
 
         apdx = self.gen_act_setting_str('layer_act')
@@ -715,6 +732,55 @@ class DataPath:
             f'log-layer_act-{self.args.model_nickname}-{apdx}.txt'
         )
         self.path['layer_act-log'] = l_path
+
+    """
+    Setting paths for image embedding with layer activation
+    """
+    def set_img_emb_layer_act_path(self):
+        if not self.need_to_gen_path('img_emb_layer_act'):
+            return
+
+        # Basemodel nickname
+        if self.is_given_arg(self.args.basemodel_nickname):
+            basemodel_nickname = self.args.basemodel_nickname
+        else:
+            basemodel_nickname = self.args.model_nickname
+
+        # Layer activation path
+        d_path, l_path = self.gen_data_log_sub_dir('layer_act')
+        self.path['layer_act_dir'] = d_path
+
+        # Directory for neuron embedding
+        neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
+        root_data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', 
+            inner_dirname='emb-{}-{}'.format(
+                basemodel_nickname, neuron_emb_apdx
+            )
+        )
+
+        # Parent directory for image embedding
+        apdx2 = self.gen_act_setting_str('img_emb')
+        apdx3 = self.gen_act_setting_str('img_emb_layer_act')
+        data_dir_path = os.path.join(
+            root_data_dir_path, 
+            f'emb-set-{apdx2}-{apdx3}'
+        )
+        self.make_dir(data_dir_path)
+
+        # Directory for image embedding
+        data_dir_path = os.path.join(data_dir_path, 'emb_nd')
+        self.make_dir(data_dir_path)
+
+        # Files
+        file_path = os.path.join(data_dir_path, 'img_emb.txt')
+        added_vocab_path = os.path.join(data_dir_path, 'added_vocab.json')
+        log_path = os.path.join(
+            log_dir_path, 'img_emb_layer_act-log-{}.txt'.format(apdx3)
+        )
+        self.path['img_emb_layer_act'] = file_path
+        self.path['img_emb_layer_act-log'] = log_path
+        self.path['added_vocab_layer_act'] = added_vocab_path
 
 
     """

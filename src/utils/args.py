@@ -229,6 +229,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--img_emb_layer_act', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute image embedding with layer activation'
+        )
+
+        self.parser.add_argument(
             '--proj_neuron_emb', 
             default=False, 
             type=self.parse_bool_arg,
@@ -466,6 +473,27 @@ class ArgParser:
             default=10000, 
             type=int,
             help='The number of maximum iteration for image embedding'
+        )
+
+        self.parser.add_argument(
+            '--lr_img_emb_layer_act', 
+            default=10, 
+            type=float,
+            help='Learning rate for image embedding with layer activation'
+        )
+
+        self.parser.add_argument(
+            '--num_emb_epochs_layer_act', 
+            default=100, 
+            type=int,
+            help='Number of epochs for image embedding with layer activation'
+        )
+
+        self.parser.add_argument(
+            '--num_emb_negs_layer_act', 
+            default=3, 
+            type=int,
+            help='The number of negative examples for each upate'
         )
 
         self.parser.add_argument(

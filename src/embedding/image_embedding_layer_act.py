@@ -44,7 +44,6 @@ class ImageEmbLayerAct:
         self.find_top_neurons_by_img()
         self.find_co_activating_imgs_by_neuron()
         self.sample_img_pairs()
-        self.init_img_emb()
         self.compute_img_emb()
         self.save_img_emb()
         self.save_added_vocab()
@@ -106,7 +105,7 @@ class ImageEmbLayerAct:
         print(log)
         tic = time()
         total = len(self.layers) * self.num_imgs
-        with tqdm(toal=total) as pbar:
+        with tqdm(total=total) as pbar:
             for layer in self.layers:
                 for i in self.top_neurons_by_img[layer]:
                     for neuron_id in self.top_neurons_by_img[layer][i]:
@@ -157,6 +156,7 @@ class ImageEmbLayerAct:
     def compute_img_emb(self):
         tic = time()
         total = self.args.num_emb_epochs_layer_act * len(self.img_pairs)
+        lr = self.args.lr_img_emb_layer_act
         with tqdm(total=total) as pbar:
             for epoch in range(self.args.num_emb_epochs_layer_act):
                 for pair in self.img_pairs:
@@ -171,7 +171,7 @@ class ImageEmbLayerAct:
                     # Get image vectors
                     v_i = self.img_emb[img_i]
                     v_j = self.img_emb[img_j]
-                    coeff = 1 - sigmoid(v_i.dot(v_j))
+                    coeff = 1 - self.sigmoid(v_i.dot(v_j))
 
                     # Update gradients for v_i
                     if img_i not in self.vocab:
@@ -198,8 +198,9 @@ class ImageEmbLayerAct:
                         if img_j not in self.added_vocab:
                             self.added_vocab[img_j] = 0
                         self.added_vocab[img_j] += 1
-                    break
-                break
+    
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
 
     def save_img_emb(self):
         file_path = self.data_path.get_path('img_emb_layer_act')

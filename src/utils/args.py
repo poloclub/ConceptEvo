@@ -236,6 +236,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--img_emb_mat_fac', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute image embedding with matrix factorization'
+        )
+
+        self.parser.add_argument(
             '--proj_neuron_emb', 
             default=False, 
             type=self.parse_bool_arg,
@@ -494,6 +501,20 @@ class ArgParser:
             default=3, 
             type=int,
             help='The number of negative examples for each upate'
+        )
+
+        self.parser.add_argument(
+            '--num_epochs_mat_fac', 
+            default=100, 
+            type=int,
+            help='Number of epochs for image embedding with matrix factorization'
+        )
+
+        self.parser.add_argument(
+            '--lr_mat_fac', 
+            default=0.1, 
+            type=float,
+            help='Learning rate for image embedding with matrix factorization'
         )
 
         self.parser.add_argument(

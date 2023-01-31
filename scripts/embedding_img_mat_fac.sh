@@ -1,7 +1,7 @@
 ###############################################################################
-# embedding_img_layer_act.sh
+# embedding_img_mat_fac.sh
 # 
-# Create image embeddings with layer activation.
+# Create image embeddings with matrix factorization.
 # Run this script at `../src` where `main.py` exists.
 ###############################################################################
 
@@ -14,7 +14,7 @@
 #                   ├── data
 #                   │     ├── emb
 #                   │     │    └── emb.json 
-#                   │     └── emb-set-<apdx2>-<apdx3>
+#                   │     └── emb-set-mat_fac-<apdx2>-<apdx3>
 #                   │          ├── emb_nd
 #                   │          │      ├── img_emb.txt
 #                   │          │      └── proj_emb-<model_nickname>.json
@@ -51,9 +51,9 @@
 # ```
 # '-'.join([
 #     dim=<dim>,
-#     lr_img_emb_layer_act=<lr_img_emb_layer_act>,
-#     num_emb_epochs_layer_act=<num_emb_epochs_layer_act>,
-#     num_emb_negs_layer_act=<num_emb_negs_layer_act>,
+#     layer=<layer>,
+#     num_epochs_mat_fac=<num_epochs_mat_fac>,
+#     lr_mat_fac=<lr_mat_fac>,
 #     k=<k>
 # ])
 # ```
@@ -84,9 +84,9 @@
 # from_iter_img_emb=?
 # max_iter_img_emb=?
 # k=?
-# lr_img_emb_layer_act=?
-# num_emb_epochs_layer_act=?
-# num_emb_negs_layer_act=?
+# layer=?
+# num_epochs_mat_fac=?
+# lr_mat_fac=?
 # 
 # For example:
 gpu=0
@@ -105,9 +105,9 @@ thr_img_emb=0.001
 from_iter_img_emb=-1
 max_iter_img_emb=10000
 
-lr_img_emb_layer_act=0.5
-num_emb_epochs_layer_act=2
-num_emb_negs_layer_act=2
+layer='Sequential_0_Conv2d_34'
+num_epochs_mat_fac=100
+lr_mat_fac=0.1
 
 k=10
 ###############################################################################
@@ -115,7 +115,7 @@ k=10
 ###############################################################################
 python main.py \
     --gpu $gpu \
-    --img_emb_layer_act T \
+    --img_emb_mat_fac T \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --dim $dim \
@@ -127,8 +127,8 @@ python main.py \
     --thr_img_emb $thr_img_emb \
     --from_iter_img_emb $from_iter_img_emb \
     --max_iter_img_emb $max_iter_img_emb \
-    --lr_img_emb_layer_act $lr_img_emb_layer_act \
-    --num_emb_epochs_layer_act $num_emb_epochs_layer_act \
-    --num_emb_negs_layer_act $num_emb_negs_layer_act \
+    --layer $layer \
+    --num_epochs_mat_fac $num_epochs_mat_fac \
+    --lr_mat_fac $lr_mat_fac \
     --k $k
 ###############################################################################

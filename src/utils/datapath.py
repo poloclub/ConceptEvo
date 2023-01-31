@@ -20,7 +20,7 @@ class DataPath:
         self.path_keys = [
             'train-data', 'test-data', 
             'stimulus', 'co_act', 'neuron_emb', 
-            'img_emb', 'layer_act',
+            'img_emb', 'layer_act', 'img_emb_layer_act', 'img_emb_mat_fac',
             'proj_neuron_emb', 'dim_reduction', 
             'neuron_feature', 'act_map',
             'find_important_evo', 'eval_important_evo'
@@ -45,6 +45,7 @@ class DataPath:
         self.set_neuron_emb_path()
         self.set_img_emb_path()
         self.set_img_emb_layer_act_path()
+        self.set_img_emb_layer_mat_fac()
         self.set_layer_act_path()
         self.set_proj_emb_path()
         self.set_emb2d_path()
@@ -108,6 +109,7 @@ class DataPath:
             self.args.neuron_emb,
             self.args.img_emb,
             self.args.img_emb_layer_act,
+            self.args.img_emb_mat_fac,
             self.args.proj_neuron_emb,
             self.args.neuron_feature,
             self.args.act_map
@@ -128,6 +130,7 @@ class DataPath:
         self.path_key_to_actions['img_emb'] = [
             self.args.img_emb,
             self.args.img_emb_layer_act,
+            self.args.img_emb_mat_fac,
             self.args.proj_neuron_emb
         ]
 
@@ -138,6 +141,11 @@ class DataPath:
 
         self.path_key_to_actions['img_emb_layer_act'] = [
             self.args.img_emb_layer_act,
+            self.args.proj_neuron_emb
+        ]
+
+        self.path_key_to_actions['img_emb_mat_fac'] = [
+            self.args.img_emb_mat_fac,
             self.args.proj_neuron_emb
         ]
 
@@ -244,6 +252,14 @@ class DataPath:
             ['lr_img_emb_layer_act', self.args.lr_img_emb_layer_act],
             ['num_emb_epochs_layer_act', self.args.num_emb_epochs],
             ['num_emb_negs_layer_act', self.args.num_emb_negs_layer_act],
+            ['k', self.args.k]
+        ]
+
+        self.action_to_args['img_emb_mat_fac'] = [
+            ['dim', self.args.dim],
+            ['layer', self.args.layer],
+            ['num_epochs_mat_fac', self.args.num_epochs_mat_fac],
+            ['lr_mat_fac', self.args.lr_mat_fac],
             ['k', self.args.k]
         ]
 
@@ -781,6 +797,57 @@ class DataPath:
         self.path['img_emb_layer_act'] = file_path
         self.path['img_emb_layer_act-log'] = log_path
         self.path['added_vocab_layer_act'] = added_vocab_path
+
+    """
+    Setting paths for image embedding with layer activation
+    """
+    def set_img_emb_layer_mat_fac(self):
+        if not self.need_to_gen_path('img_emb_mat_fac'):
+            return
+
+        # Basemodel nickname
+        if self.is_given_arg(self.args.basemodel_nickname):
+            basemodel_nickname = self.args.basemodel_nickname
+        else:
+            basemodel_nickname = self.args.model_nickname
+
+        # Layer activation path
+        d_path, l_path = self.gen_data_log_sub_dir('layer_act')
+        p = os.path.join(d_path, self.args.layer)
+        p = os.path.join(p, 'img_emb.txt')
+        self.path['layer_act'] = p
+
+        # Directory for neuron embedding
+        neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
+        root_data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+            'embedding', 
+            inner_dirname='emb-{}-{}'.format(
+                basemodel_nickname, neuron_emb_apdx
+            )
+        )
+
+        # Parent directory for image embedding
+        apdx2 = self.gen_act_setting_str('img_emb')
+        apdx3 = self.gen_act_setting_str('img_emb_mat_fac')
+        data_dir_path = os.path.join(
+            root_data_dir_path, 
+            f'emb-set-mat_fac-{apdx2}-{apdx3}'
+        )
+        self.make_dir(data_dir_path)
+
+        # Directory for image embedding
+        data_dir_path = os.path.join(data_dir_path, 'emb_nd')
+        self.make_dir(data_dir_path)
+
+        # Files
+        file_path = os.path.join(data_dir_path, 'img_emb.txt')
+        weight_mat_fac_path = os.path.join(data_dir_path, 'weight.txt')
+        log_path = os.path.join(
+            log_dir_path, 'img_emb_mat_fac-log-{}.txt'.format(apdx3)
+        )
+        self.path['img_emb_mat_fac'] = file_path
+        self.path['img_emb_mat_fac-log'] = log_path
+        self.path['weight_mat_fac'] = weight_mat_fac_path
 
 
     """

@@ -22,6 +22,10 @@ yarn.lock
 src/*.sh
 
 # Ignore big data
+src/utils/notebook/img-emb-from-layer-act.ipynb
+src/utils/notebook/img-emb-from-layer-act.ipynb
+data/fig/emb-post/
+src/utils/notebook/data/
 data/layer_act/
 data/important_neuron/
 data/important_neuron_act_map/

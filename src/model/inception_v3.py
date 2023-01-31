@@ -238,7 +238,7 @@ class InceptionV3:
                 num_out_channels += num_in_channel
 
     def save_layer_info(self):
-        if self.args.train:
+        if self.args.train or self.args.test:
             # Save model information
             s = str(self.model)
             p = self.data_path.get_path('model-info')

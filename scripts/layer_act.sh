@@ -1,49 +1,46 @@
 ###############################################################################
-# example_patch.sh
+# layer_act.sh
 # 
-# Create example patches for each neuron in a model.
+# Compute layer activation.
 # Run this script at `../src` where `main.py` exists.
 # 
-# The result will be saved at
-# `../data/neuron_feature/<model_nickname>/data/DIR_NAME*/`, where
-# DIR_NAME* is
-# '-'.join(
-#   'topk_s=<topk_s>',
-#   'ex_patch_size_ratio=<ex_patch_size_ratio>',
-# )
+# The result will be saved at `../data/layer_act/<model_nickname>`.
 ###############################################################################
 
 ###############################################################################
 # Provide a correct value for each "?" below:
 # 
 # gpu=?
+# training_data=?
 # model_name=?
 # model_nickname=?
 # model_path=?
-# topk_s=?
-# ex_patch_size_ratio=?
 # batch_size=?
+# layer=?
 # 
 # For example:
 gpu=0
-model_name=convnext
-lr=0.004
-epoch=96
-model_nickname="$model_name"_"$lr"_"$epoch"
+training_data=../../Broden/dataset/broden1_227/parsed_images
+
+model_name=vgg16
+lr=0.01
+epoch=207
+model_nickname="$model_name"_"$lr"_"$epoch"_broden
 model_path=../data/model/"$model_name"_"$lr"/data/model-"$epoch".pth
-topk_s=20
-ex_patch_size_ratio=0.3
+
 batch_size=512
+layer=Sequential_2_Linear_6
+
 ###############################################################################
 
 ###############################################################################
 python main.py \
     --gpu $gpu \
-    --neuron_feature example_patch \
+    --layer_act T \
+    --training_data $training_data \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --model_path $model_path \
-    --topk_s $topk_s \
-    --ex_patch_size_ratio $ex_patch_size_ratio \
-    --batch_size $batch_size 
+    --batch_size $batch_size \
+    --layer $layer 
 ###############################################################################

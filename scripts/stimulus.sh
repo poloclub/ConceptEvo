@@ -21,8 +21,8 @@
 # For example:
 gpu=0
 model_name=vgg16
-model_nickname=$model_name-0.01-207
-model_path=../data/model/$model_name-512-0.01-0.9/data/model-207.pth
+model_nickname="$model_name"_0.01-207
+model_path=../data/model/"$model_name"_0.01/data/model-207.pth
 batch_size=512
 topk_s=20
 ###############################################################################

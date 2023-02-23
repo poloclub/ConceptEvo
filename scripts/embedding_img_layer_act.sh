@@ -14,7 +14,7 @@
 #                   ├── data
 #                   │     ├── emb
 #                   │     │    └── emb.json 
-#                   │     └── emb-set-<apdx2>-<apdx3>
+#                   │     └── emb_with_layer_act-<apdx2>-<apdx3>
 #                   │          ├── emb_nd
 #                   │          │      ├── img_emb.txt
 #                   │          │      └── proj_emb-<model_nickname>.json
@@ -50,11 +50,13 @@
 # <apdx3>:
 # ```
 # '-'.join([
-#     dim=<dim>,
-#     lr_img_emb_layer_act=<lr_img_emb_layer_act>,
-#     num_emb_epochs_layer_act=<num_emb_epochs_layer_act>,
+#     layer=<layer>,
+#     lr_img_emb=<lr_img_emb>,
+#     max_iter_img_emb=<max_iter_img_emb>,
 #     num_emb_negs_layer_act=<num_emb_negs_layer_act>,
-#     k=<k>
+#     thr_img_emb=<thr_img_emb>,
+#     k=<k>,
+#     dim=<dim>
 # ])
 # ```
 ###############################################################################
@@ -73,20 +75,17 @@
 # gpu=?
 # model_name=?
 # model_nickname=?
-# model_path=?
 # topk_s=?
 # dim=?
 # lr_emb=?
 # num_emb_epochs=?
 # num_emb_negs=?
+# layer=?
 # lr_img_emb=?
-# thr_img_emb=?
-# from_iter_img_emb=?
 # max_iter_img_emb=?
-# k=?
-# lr_img_emb_layer_act=?
-# num_emb_epochs_layer_act=?
 # num_emb_negs_layer_act=?
+# thr_img_emb=?
+# k=?
 # 
 # For example:
 gpu=0
@@ -100,35 +99,30 @@ lr_emb=0.05
 num_emb_epochs=10000
 num_emb_negs=3
 
-lr_img_emb=10.0
+layer=Sequential_0_Conv2d_34
+lr_img_emb=0.01
+max_iter_img_emb=100
+num_emb_negs_layer_act=0
 thr_img_emb=0.001
-from_iter_img_emb=-1
-max_iter_img_emb=10000
-
-lr_img_emb_layer_act=0.5
-num_emb_epochs_layer_act=2
-num_emb_negs_layer_act=2
-
 k=10
+
+
 ###############################################################################
 
 ###############################################################################
 python main.py \
     --gpu $gpu \
-    --img_emb_layer_act T \
-    --model_name $model_name \
+    --img_emb_with_layer_act T \
     --model_nickname $model_nickname \
     --dim $dim \
     --lr_emb $lr_emb \
     --num_emb_epochs $num_emb_epochs \
     --num_emb_negs $num_emb_negs \
     --topk_s $topk_s \
+    --layer $layer \
     --lr_img_emb $lr_img_emb \
     --thr_img_emb $thr_img_emb \
-    --from_iter_img_emb $from_iter_img_emb \
     --max_iter_img_emb $max_iter_img_emb \
-    --lr_img_emb_layer_act $lr_img_emb_layer_act \
-    --num_emb_epochs_layer_act $num_emb_epochs_layer_act \
     --num_emb_negs_layer_act $num_emb_negs_layer_act \
     --k $k
 ###############################################################################

@@ -208,6 +208,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--layer_act', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute image embedding from layer activation'
+        )
+
+        self.parser.add_argument(
             '--neuron_emb', 
             default=False, 
             type=self.parse_bool_arg,
@@ -222,17 +229,17 @@ class ArgParser:
         )
 
         self.parser.add_argument(
-            '--layer_act', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to compute image embedding from layer activation'
-        )
-
-        self.parser.add_argument(
             '--img_emb_layer_act', 
             default=False, 
             type=self.parse_bool_arg,
-            help='Whether to compute image embedding with layer activation'
+            help='Whether to compute image embedding with layer activation (post)'
+        )
+
+        self.parser.add_argument(
+            '--img_emb_with_layer_act', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute image embedding with layer activation (altogether)'
         )
 
         self.parser.add_argument(

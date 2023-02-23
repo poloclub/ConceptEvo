@@ -215,6 +215,8 @@ class Vgg16:
             if i == 0:
                 f_map = dummy_input
             f_map = layer['layer'](f_map)
+            if type(layer['layer']) == nn.AdaptiveAvgPool2d:
+                f_map = torch.flatten(f_map, 1)
             self.num_neurons[layer_name] = f_map.shape[1]
 
     def init_criterion(self):
@@ -517,6 +519,23 @@ class Vgg16:
                 })
 
         return f_maps, layer_info
+
+    def forward_until_the_end(self, layer_idx, prev_f_map):
+        num_layers = len(self.layers)
+        f_map = prev_f_map.clone().detach()
+        for i in range(layer_idx, num_layers):
+            f_map = self.forward_one_layer(i, f_map)
+        return f_map
+
+    def forward_until_given_layer(self, layer_name, imgs):
+        f_map = imgs.clone().detach()
+        for i, layer in enumerate(self.layers):
+            f_map = self.forward_one_layer(i, f_map)
+            if layer['name'] == layer_name:
+                break
+            if type(layer['layer']) == nn.AdaptiveAvgPool2d:
+                f_map = torch.flatten(f_map, 1)
+        return f_map
 
     """
     Log for training the model

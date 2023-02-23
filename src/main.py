@@ -8,8 +8,9 @@ argumensts. An instruction for setting arguments can be found in
 # Embedding
 from embedding.image_embedding import *
 from embedding.image_embedding_layer_act import *
+from embedding.image_embedding_with_layer_act import *
 from embedding.image_embedding_mat_fac import *
-from embedding.layer_act_embedding import *
+from embedding.layer_act import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
 from embedding.reduce_dim import *
@@ -59,6 +60,10 @@ def main():
     if args.test:
         test_model(model)
 
+    # Compute layer activation
+    if args.layer_act:
+        compute_layer_act(args, data_path, model)
+
     # Find stimulus
     if args.stimulus:
         compute_stimulus(args, data_path, model)
@@ -74,12 +79,11 @@ def main():
     if args.img_emb_layer_act:
         compute_image_embedding_layer_act(args, data_path, model)
 
+    if args.img_emb_with_layer_act:
+        compute_image_embedding_with_layer_act(args, data_path, model)
+
     if args.img_emb_mat_fac:
         compute_image_embedding_mat_fac(args, data_path, model)
-
-    # Cpmpute image embedding from max activation
-    if args.layer_act:
-        compute_img_embedding_from_activation(args, data_path, model)
 
     # Compute projected neuron embedding
     if args.proj_neuron_emb:
@@ -117,7 +121,7 @@ def load_model(args, data_path):
     when_to_skip_loading_model = [
         args.dim_reduction != 'None',
         args.find_important_evo,
-        args.eval_important_evo
+        args.eval_important_evo,
     ]
 
     if True in when_to_skip_loading_model:
@@ -183,6 +187,10 @@ def test_model(model):
     model.test_model(write_log=True, test_on='training')
     model.test_model(write_log=True, test_on='test')
 
+def compute_layer_act(args, data_path, model):
+    layer_act = LayerAct(args, data_path, model)
+    layer_act.compute_layer_act()
+
 def compute_stimulus(args, data_path, model):
     stimulus = Stimulus(args, data_path, model)
     stimulus.compute_stimulus()
@@ -195,6 +203,10 @@ def compute_image_embedding(args, data_path, model):
     img_emb = ImageEmb(args, data_path, model)
     img_emb.compute_img_embedding()
 
+def compute_image_embedding_with_layer_act(args, data_path, model):
+    img_emb_layer_act = ImageEmbWithLayerAct(args, data_path, model)
+    img_emb_layer_act.compute_img_embedding_with_layer_act()
+
 def compute_image_embedding_layer_act(args, data_path, model):
     img_emb_layer_act = ImageEmbLayerAct(args, data_path, model)
     img_emb_layer_act.compute_img_embedding_with_layer_act()
@@ -202,10 +214,6 @@ def compute_image_embedding_layer_act(args, data_path, model):
 def compute_image_embedding_mat_fac(args, data_path, model):
     img_emb_mat_fac = ImageEmbMatFac(args, data_path, model)
     img_emb_mat_fac.compute_img_embedding_mat_fac()
-
-def compute_img_embedding_from_layer_activation(args, data_path, model):
-    img_emb = LayerActEmb(args, data_path, model)
-    img_emb.compute_img_embedding_from_layer_activation()
 
 def compute_proj_neuron_emb(args, data_path, model):
     proj_neuron_emb = ProjNeuronEmb(args, data_path, model)

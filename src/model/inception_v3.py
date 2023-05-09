@@ -439,6 +439,44 @@ class InceptionV3:
 
         return total, top1_corrects, topk_corrects
 
+    def test_model_by_class(self, write_log=True, test_on='test'):
+        # Make the first log
+        if write_log:
+            self.write_test_by_class_first_log()
+
+        # Test model
+        if test_on == 'training':
+            total_dict, top1_corrects_dict, topk_corrects_dict = \
+                self.measure_acc_by_class(self.training_data_loader)
+        elif test_on == 'test':
+            total_dict, top1_corrects_dict, topk_corrects_dict = \
+                self.measure_acc_by_class(self.test_data_loader)
+        else:
+            err = 'Unknown option for test_on={} in test_model'.format(test_on)
+            raise ValueError(err) 
+
+        # Save log
+        if write_log:
+            log = ('-' * 10) + test_on + '\n'
+            log += 'label, top1, topk, total\n'
+            max_label = max(list(total_dict.keys()))
+            for label in range(max_label):
+                total, t1, tk = 0, 0, 0
+                if label in total_dict:
+                    total = total_dict[label]
+                if label in top1_corrects_dict:
+                    t1 = top1_corrects_dict[label]
+                if label in topk_corrects_dict:
+                    tk = topk_corrects_dict[label]
+                
+                if total > 0:
+                    log += f'{label}, {t1 / total:.2f}, {tk / total:.2f}, {total}\n'
+                else:
+                    log += f'{label}, {0:.2f}, {0:.2f}, {total}\n'
+            self.write_test_by_class_log(log)
+
+        return total_dict, top1_corrects_dict, topk_corrects_dict
+
     def measure_acc(self, data_loader):
         total = len(data_loader.dataset)
         final_top1_corrects, final_topk_corrects = 0, 0
@@ -447,6 +485,33 @@ class InceptionV3:
             final_top1_corrects += top1_corrects
             final_topk_corrects += topk_corrects
         return total, final_top1_corrects, final_topk_corrects
+
+    def measure_acc_by_class(self, data_loader):
+        final_top1_corrects_dict, final_topk_corrects_dict = {}, {}
+        total_dict = {}
+        for imgs, labels in data_loader:
+            top1_test_corrects_dict, topk_test_corrects_dict, total_num_dict = \
+                self.test_by_class_one_batch(imgs, labels)
+
+            for label in total_num_dict:
+                n = total_num_dict[label]
+                if label not in total_dict:
+                    total_dict[label] = 0
+                total_dict[label] += n    
+            
+            for label in top1_test_corrects_dict:
+                n = top1_test_corrects_dict[label]
+                if label not in final_top1_corrects_dict:
+                    final_top1_corrects_dict[label] = 0
+                final_top1_corrects_dict[label] += n
+
+            for label in topk_test_corrects_dict:
+                n = topk_test_corrects_dict[label]
+                if label not in final_topk_corrects_dict:
+                    final_topk_corrects_dict[label] = 0
+                final_topk_corrects_dict[label] += n
+            
+        return total_dict, final_top1_corrects_dict, final_topk_corrects_dict
 
     def gen_acc_log(self, stats):
         total, top1_corrects, topk_corrects = stats
@@ -488,6 +553,45 @@ class InceptionV3:
         top1_test_corrects = top1_test_corrects.double()
 
         return top1_test_corrects, topk_test_corrects
+
+    def test_by_class_one_batch(self, test_imgs, test_labels):
+        # Get test images and labels
+        test_imgs = test_imgs.to(self.device)
+        test_labels = test_labels.to(self.device)
+
+        # Prediction
+        outputs = self.model(test_imgs).logits
+        _, topk_test_preds = outputs.topk(
+            k=self.args.topk, dim=1
+        )
+        top1_test_preds = topk_test_preds[:, 0]
+        topk_test_preds = topk_test_preds.t()
+
+        # Number of correct prediction in the test set
+        topk_test_corrects_dict = {}
+        top1_test_corrects_dict = {}
+        total_num_dict = {}
+        for k in range(self.args.topk):
+            test_results = topk_test_preds[k] == test_labels.data
+            correct_labels = test_labels[test_results].cpu().numpy()
+            for label in correct_labels:
+                # Total number of data for each class
+                if label not in total_num_dict:
+                    total_num_dict[label] = 0
+                total_num_dict[label] += 1
+
+                # top-1 prediction
+                if k == 0:
+                    if label not in top1_test_corrects_dict:
+                        top1_test_corrects_dict[label] = 0
+                    top1_test_corrects_dict[label] += 1
+
+                # top-k prediction
+                if label not in topk_test_corrects_dict:
+                    topk_test_corrects_dict[label] = 0
+                topk_test_corrects_dict[label] += 1
+    
+        return top1_test_corrects_dict, topk_test_corrects_dict, total_num_dict
 
     """
     Save model
@@ -597,8 +701,24 @@ class InceptionV3:
         )
         self.write_test_log(first_log)
 
+    def write_test_by_class_first_log(self):
+        log_param_sets = {
+            'model_nickname': self.args.model_nickname,
+            'model_path': self.args.model_path,
+            'k': self.args.topk
+        }
+        first_log = 'Test by class'
+        first_log += '\n'.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        self.write_test_by_class_log(first_log)
+
     def write_test_log(self, log):
         path = self.data_path.get_path('test-log')
         with open(path, 'a') as f:
             f.write(log + '\n')
     
+    def write_test_by_class_log(self, log):
+        path = self.data_path.get_path('test-by-class-log')
+        with open(path, 'a') as f:
+            f.write(log + '\n')

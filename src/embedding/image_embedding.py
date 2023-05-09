@@ -67,13 +67,6 @@ class ImageEmb:
         neuron_idx = int(neuron_idx)
         return self.stimulus[layer][neuron_idx]
 
-    def random_sample_imgs(self):
-        if len(self.imgs) == 0:
-            self.imgs = list(self.stimuluated_neurons_by.keys())
-        num_sample = int(self.args.sample_rate_img_emb * self.num_imgs)
-        sampled_imgs = np.random.choice(self.imgs, num_sample, replace=False)
-        return sampled_imgs
-
     """
     Compute image embedding
     """

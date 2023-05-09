@@ -22,7 +22,8 @@ yarn.lock
 src/*.sh
 
 # Ignore big data
-src/utils/notebook/img-emb-from-layer-act.ipynb
+src/utils/notebook/sort-important-evolutions-by-class.ipynb
+data/img_pairs/
 src/utils/notebook/img-emb-from-layer-act.ipynb
 data/fig/emb-post/
 src/utils/notebook/data/

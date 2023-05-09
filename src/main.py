@@ -7,9 +7,9 @@ argumensts. An instruction for setting arguments can be found in
 
 # Embedding
 from embedding.image_embedding import *
-from embedding.image_embedding_layer_act import *
-from embedding.image_embedding_with_layer_act import *
-from embedding.image_embedding_mat_fac import *
+from embedding.image_embedding_co_act import *
+from embedding.image_pairs import *
+# from embedding.image_embedding_further import *
 from embedding.layer_act import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
@@ -60,6 +60,10 @@ def main():
     if args.test:
         test_model(model)
 
+    # Test model by class
+    if args.test_by_class:
+        test_model_by_class(model)
+
     # Compute layer activation
     if args.layer_act:
         compute_layer_act(args, data_path, model)
@@ -76,14 +80,11 @@ def main():
     if args.img_emb:
         compute_image_embedding(args, data_path, model)
 
-    if args.img_emb_layer_act:
-        compute_image_embedding_layer_act(args, data_path, model)
+    if args.img_pairs:
+        compute_img_pairs(args, data_path, model)
 
-    if args.img_emb_with_layer_act:
-        compute_image_embedding_with_layer_act(args, data_path, model)
-
-    if args.img_emb_mat_fac:
-        compute_image_embedding_mat_fac(args, data_path, model)
+    if args.img_emb_co_act:
+        compute_image_embedding_co_act(args, data_path, model)
 
     # Compute projected neuron embedding
     if args.proj_neuron_emb:
@@ -187,6 +188,10 @@ def test_model(model):
     model.test_model(write_log=True, test_on='training')
     model.test_model(write_log=True, test_on='test')
 
+def test_model_by_class(model):
+    model.test_model_by_class(write_log=True, test_on='training')
+    model.test_model_by_class(write_log=True, test_on='test')
+
 def compute_layer_act(args, data_path, model):
     layer_act = LayerAct(args, data_path, model)
     layer_act.compute_layer_act()
@@ -203,17 +208,13 @@ def compute_image_embedding(args, data_path, model):
     img_emb = ImageEmb(args, data_path, model)
     img_emb.compute_img_embedding()
 
-def compute_image_embedding_with_layer_act(args, data_path, model):
-    img_emb_layer_act = ImageEmbWithLayerAct(args, data_path, model)
-    img_emb_layer_act.compute_img_embedding_with_layer_act()
+def compute_img_pairs(args, data_path, model):
+    img_pairs = ImagePairs(args, data_path, model)
+    img_pairs.compute_img_pairs()
 
-def compute_image_embedding_layer_act(args, data_path, model):
-    img_emb_layer_act = ImageEmbLayerAct(args, data_path, model)
-    img_emb_layer_act.compute_img_embedding_with_layer_act()
-
-def compute_image_embedding_mat_fac(args, data_path, model):
-    img_emb_mat_fac = ImageEmbMatFac(args, data_path, model)
-    img_emb_mat_fac.compute_img_embedding_mat_fac()
+def compute_image_embedding_co_act(args, data_path, model):
+    img_emb_layer_act = ImageEmbCoAct(args, data_path, model)
+    img_emb_layer_act.compute_img_embedding()
 
 def compute_proj_neuron_emb(args, data_path, model):
     proj_neuron_emb = ProjNeuronEmb(args, data_path, model)

@@ -194,6 +194,13 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--test_by_class', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to test a model by class'
+        )
+
+        self.parser.add_argument(
             '--stimulus', 
             default=False, 
             type=self.parse_bool_arg,
@@ -229,24 +236,17 @@ class ArgParser:
         )
 
         self.parser.add_argument(
-            '--img_emb_layer_act', 
+            '--img_pairs', 
             default=False, 
             type=self.parse_bool_arg,
-            help='Whether to compute image embedding with layer activation (post)'
+            help='Whether to compute image pairs'
         )
 
         self.parser.add_argument(
-            '--img_emb_with_layer_act', 
+            '--img_emb_co_act', 
             default=False, 
             type=self.parse_bool_arg,
-            help='Whether to compute image embedding with layer activation (altogether)'
-        )
-
-        self.parser.add_argument(
-            '--img_emb_mat_fac', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to compute image embedding with matrix factorization'
+            help='Whether to compute image embedding with image co-activation'
         )
 
         self.parser.add_argument(
@@ -511,17 +511,10 @@ class ArgParser:
         )
 
         self.parser.add_argument(
-            '--num_epochs_mat_fac', 
+            '--num_epochs_co_act', 
             default=100, 
             type=int,
-            help='Number of epochs for image embedding with matrix factorization'
-        )
-
-        self.parser.add_argument(
-            '--lr_mat_fac', 
-            default=0.1, 
-            type=float,
-            help='Learning rate for image embedding with matrix factorization'
+            help='Number of epochs for image embedding with image co-activation'
         )
 
         self.parser.add_argument(

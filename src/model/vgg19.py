@@ -197,8 +197,9 @@ class Vgg19:
     Initialize training settings
     """
     def init_training_setting(self):
-        self.init_training_datasets_and_loader()
-        self.init_optimizer()
+        if self.data_path is not None:
+            self.init_training_datasets_and_loader()
+            self.init_optimizer()
 
     def init_training_datasets_and_loader(self):
         data_transform = transforms.Compose([
@@ -626,8 +627,23 @@ class Vgg19:
         f_map = self.layers[layer_idx]['layer'](prev_f_map)
         return f_map
 
-    """
-    """
+    def forward_until_the_end(self, layer_idx, prev_f_map):
+        num_layers = len(self.layers)
+        f_map = prev_f_map.clone().detach()
+        for i in range(layer_idx, num_layers):
+            f_map = self.forward_one_layer(i, f_map)
+        return f_map
+
+    def forward_until_given_layer(self, layer_name, imgs):
+        f_map = imgs.clone().detach()
+        for i, layer in enumerate(self.layers):
+            f_map = self.forward_one_layer(i, f_map)
+            if layer['name'] == layer_name:
+                break
+            if type(layer['layer']) == nn.AdaptiveAvgPool2d:
+                f_map = torch.flatten(f_map, 1)
+        return f_map
+        
     def forward(self, imgs):
         # Initialize feature maps
         imgs = imgs.to(self.device)

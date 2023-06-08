@@ -18,7 +18,7 @@ class Vgg16:
 
     def __init__(self, args, data_path, pretrained=False, from_to=None):
         self.args = args
-        self.data_path = data_path 
+        self.data_path = data_path
 
         self.input_size = 224
         self.num_classes = 1000
@@ -229,8 +229,9 @@ class Vgg16:
     Initialize training settings
     """
     def init_training_setting(self):
-        self.init_training_datasets_and_loader()
-        self.init_optimizer()
+        if self.data_path is not None:
+            self.init_training_datasets_and_loader()
+            self.init_optimizer()
 
     def init_training_datasets_and_loader(self):
         data_transform = transforms.Compose([

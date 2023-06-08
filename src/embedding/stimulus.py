@@ -132,23 +132,19 @@ class Stimulus:
         if layer_name not in self.layers_for_stimulus:
             return
         
-        # Iterate through all neurons to update stimulus for each neuron
+        # Get maximum activation values
         N = self.num_neurons[layer_name]
         max_act = self.compute_max_act_of_feature_map(feature_map)
-        for neuron in range(N):
-            # torch.sort -> torch.topk
-            act_vals, img_indices = torch.sort(
-                max_act[:, neuron], descending=True
-            )
-            
-            act_vals = act_vals.cpu().data.numpy()
-            img_indices = img_indices.cpu().data.numpy()
+        top_k = min(max_act.shape[0], self.args.topk_s)
+        act_vals, img_indices = torch.topk(max_act, k=top_k, dim=0)
+        act_vals = act_vals.cpu().data.numpy()
+        img_indices = img_indices.cpu().data.numpy()
 
-            for k in range(self.args.topk_s):
-                img_idx = batch_idx * self.args.batch_size + img_indices[k]
-                act_val = act_vals[k]
+        for k in range(top_k):
+            for neuron in range(N):
+                img_idx = batch_idx * self.args.batch_size + img_indices[k, neuron]
+                act_val = act_vals[k, neuron]
                 self.stimulus[layer_name][neuron].insert(act_val, key=img_idx)
-
 
     def save_stimulus(self):
         for layer in self.stimulus:

@@ -30,7 +30,7 @@ class InceptionV3:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.layers_for_stimulus = []
+        self.layers_for_ex_patch = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -100,47 +100,33 @@ class InceptionV3:
 
     def check_if_need_to_load_model(self):
         if self.from_to is None:
-            check1 = len(self.args.model_path) > 0
-            check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('model_path') is not None
         elif self.from_to == 'from':
-            check1 = len(self.args.from_model_path) > 0
-            check2 = self.args.from_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('from_model_path') is not None
         elif self.from_to == 'to':
-            check1 = len(self.args.to_model_path) > 0
-            check2 = self.args.to_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('to_model_path') is not None
         else:
             raise ValueError(f'Unknown from_to is given: "{self.from_to}"')
 
-        if self.need_loading_a_saved_model and self.args.train:
+        if self.args.train and self.need_loading_a_saved_model:
             last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])
             self.training_start_epoch = last_epoch + 1
 
     def load_checkpoint(self):
         if self.need_loading_a_saved_model:
             if self.from_to == 'from':
-                self.ckpt = torch.load(
-                    self.args.from_model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('from_model_path')
             elif self.from_to == 'to':
-                self.ckpt = torch.load(
-                    self.args.to_model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('to_model_path')
             else:
-                self.ckpt = torch.load(
-                    self.args.model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('model_path')
+            self.ckpt = torch.load(
+                model_path,
+                map_location=self.device
+            )
 
     def load_saved_model(self):
         if self.need_loading_a_saved_model:
@@ -154,102 +140,35 @@ class InceptionV3:
             param.requires_grad = True
 
     def get_layer_info(self):
-        model_children = list(self.model.children())
-        for i, child in enumerate(model_children):
-            child_name = type(child).__name__
-            if self.is_inceptionV3_aux(child_name):
+        for module_name, module in self.model.named_children():
+            if module_name == 'AuxLogits':
                 continue
-            layer_name = '{}_{}'.format(child_name, i)
-            self.update_layer_info(layer_name, child)
+            elif module_name == 'dropout':
+                self.update_layer_info(module_name, module)
+                self.update_layer_info('flatten', nn.Flatten(start_dim=1, end_dim=-1))
+            else:
+                self.update_layer_info(module_name, module)
 
-    def is_inceptionV3_aux(self, blk_name):
-        return 'Aux' in blk_name
-
-    def update_layer_info(self, layer_name, layer, next_layer=None):
+    def update_layer_info(self, layer_name, layer):
         self.layers.append({
             'name': layer_name,
             'layer': layer
         })
-        if 'Conv2d' in layer_name:
-            conv_layer = layer.__dict__['_modules']['conv']
-            self.layers_for_stimulus.append(layer_name)
-        elif 'Inception' in layer_name:
-
-            self.layers_for_stimulus.append(layer_name)
-
-            # Count the number of neurons in blocks to be concatenated
-            children = layer.__dict__['_modules']
-            children_names = list(children.keys())
-            num_neurons_concat_blk = {}
-            for child_name in children_names:
-                
-                # The number of neurons of the child
-                child = children[child_name]
-                child_conv = child.__dict__['_modules']['conv']
-                num_neurons = child_conv.out_channels
-
-                # The number of neurons of all branches
-                name_tokens = child_name.split('_')
-                if len(name_tokens) == 1:
-                    num_neurons_concat_blk[child_name] = {
-                        'apdx': None,
-                        'num': num_neurons
-                    }
-                else:
-                    apdx = child_name.split('_')[-1]
-                    apdx = ''.join(filter(str.isdigit, apdx))
-
-                    if len(apdx) == 0:
-                        num_neurons_concat_blk[child_name] = {
-                            'apdx': None,
-                            'num': num_neurons
-                        }
-                    else:
-                        apdx = int(apdx)
-                        blk = '_'.join(child_name.split('_')[:-1])
-                        if blk not in num_neurons_concat_blk:
-                            num_neurons_concat_blk[blk] = {
-                                'apdx': apdx,
-                                'num': num_neurons
-                            }
-                        else:
-                            prev_apdx = num_neurons_concat_blk[blk]['apdx']
-                            if prev_apdx < apdx:
-                                num_neurons_concat_blk[blk] = {
-                                    'apdx': apdx,
-                                    'num': num_neurons
-                                }
-                            elif prev_apdx == apdx:
-                                prev_sum = num_neurons_concat_blk[blk]['num']
-                                num_neurons_concat_blk[blk] = {
-                                    'apdx': apdx,
-                                    'num': prev_sum + num_neurons
-                                }
-
-            # The total number of neurons in the concatenated layer
-            num_out_channels = 0
-            for child in num_neurons_concat_blk:
-                num_out_channels += num_neurons_concat_blk[child]['num']
-
-            if ('InceptionB' in layer_name) or ('InceptionD' in layer_name):
-                fst_child = list(children.values())[0]
-                fst_child_conv_layer = fst_child.__dict__['_modules']['conv']
-                num_in_channel = fst_child_conv_layer.in_channels
-                num_out_channels += num_in_channel
+        if layer_name not in ['avgpool', 'dropout', 'fc']:
+            self.layers_for_ex_patch.append(layer_name)
 
     def save_layer_info(self):
-        if self.args.train or self.args.test:
-            # Save model information
-            s = str(self.model)
-            p = self.data_path.get_path('model-info')
-            with open(p, 'a') as f:
-                f.write(s + '\n')
+        # Save model information
+        s = str(self.model)
+        p = self.data_path.get_path('model_info')
+        with open(p, 'w') as f:
+            f.write(s + '\n')
 
-            # Save layer names
-            p = self.data_path.get_path('layer-info')
-            for layer in self.layers:
-                with open(p, 'a') as f:
-                    f.write(layer['name'] + '\n')
+        # Save layer names
+        p = self.data_path.get_path('layer_info')
+        log = '\n'.join([layer['name'] for layer in self.layers])
+        with open(p, 'w') as f:
+            f.write(log + '\n')
 
     def get_num_neurons(self):
         dummy_input = torch.zeros(1, 3, self.input_size, self.input_size)
@@ -612,13 +531,16 @@ class InceptionV3:
     Forward pass
     """
     def forward_one_layer(self, layer_idx, prev_f_map):
+        # Compute a forward pass for a single layer, 
+        # given the layer index and previous feature map
         if layer_idx == len(self.layers) - 1:
             prev_f_map = torch.flatten(prev_f_map, 1)
         f_map = self.layers[layer_idx]['layer'](prev_f_map)
         return f_map
 
     def forward(self, imgs):
-        # Forward pass through the whole layer and save all layers' activation
+        # Perform a forward pass through the entire layer,
+        # obtaining feature map for each layer
 
         # Initialize feature maps
         imgs = imgs.to(self.device)
@@ -637,6 +559,14 @@ class InceptionV3:
             f_map = self.forward_one_layer(i, f_map)
         return f_map
 
+    def forward_until_given_layer(self, layer_name, imgs):
+        f_map = imgs.clone().detach()
+        for i, layer in enumerate(self.layers):
+            f_map = self.forward_one_layer(i, f_map)
+            if layer['name'] == layer_name:
+                break
+        return f_map
+
     """
     Log for training the model
     """
@@ -647,7 +577,7 @@ class InceptionV3:
             'weight_decay': self.args.weight_decay,
             'eps': self.args.learning_eps,
             'k': self.args.topk,
-            'start_model_path': self.args.model_path
+            'start_model_path': self.data_path.get_path('model_path')
         }
         first_log = ', '.join(
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]
@@ -683,7 +613,7 @@ class InceptionV3:
         return log
 
     def write_training_log(self, log):
-        path = self.data_path.get_path('train-log')
+        path = self.data_path.get_path('train_log')
         with open(path, 'a') as f:
             f.write(log + '\n')
 
@@ -693,7 +623,7 @@ class InceptionV3:
     def write_test_first_log(self):
         log_param_sets = {
             'model_nickname': self.args.model_nickname,
-            'model_path': self.args.model_path,
+            'model_path': self.data_path.get_path('model_path'),
             'k': self.args.topk
         }
         first_log = '\n'.join(
@@ -704,7 +634,7 @@ class InceptionV3:
     def write_test_by_class_first_log(self):
         log_param_sets = {
             'model_nickname': self.args.model_nickname,
-            'model_path': self.args.model_path,
+            'model_path': self.data_path.get_path('model_path'),
             'k': self.args.topk
         }
         first_log = 'Test by class'
@@ -714,11 +644,11 @@ class InceptionV3:
         self.write_test_by_class_log(first_log)
 
     def write_test_log(self, log):
-        path = self.data_path.get_path('test-log')
+        path = self.data_path.get_path('test_log')
         with open(path, 'a') as f:
             f.write(log + '\n')
     
     def write_test_by_class_log(self, log):
-        path = self.data_path.get_path('test-by-class-log')
+        path = self.data_path.get_path('test_by_class_log')
         with open(path, 'a') as f:
             f.write(log + '\n')

@@ -29,7 +29,7 @@ class Vgg19:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.layers_for_stimulus = []
+        self.layers_for_ex_patch = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -91,52 +91,41 @@ class Vgg19:
         self.get_layer_info()
         self.save_layer_info()
 
+        # Update the number of neurons for each layer
+        self.get_num_neurons()
+
         # Set criterion
         self.init_criterion()
 
     def check_if_need_to_load_model(self):
         if self.from_to is None:
-            check1 = len(self.args.model_path) > 0
-            check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('model_path') is not None
         elif self.from_to == 'from':
-            check1 = len(self.args.from_model_path) > 0
-            check2 = self.args.from_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('from_model_path') is not None
         elif self.from_to == 'to':
-            check1 = len(self.args.to_model_path) > 0
-            check2 = self.args.to_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('to_model_path') is not None
         else:
             raise ValueError(f'Unknown from_to is given: "{self.from_to}"')
 
-        if self.need_loading_a_saved_model and self.args.train:
+        if self.args.train and self.need_loading_a_saved_model:
             last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])
             self.training_start_epoch = last_epoch + 1
     
     def load_checkpoint(self):
         if self.need_loading_a_saved_model:
             if self.from_to == 'from':
-                self.ckpt = torch.load(
-                    self.args.from_model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('from_model_path')
             elif self.from_to == 'to':
-                self.ckpt = torch.load(
-                    self.args.to_model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('to_model_path')
             else:
-                self.ckpt = torch.load(
-                    self.args.model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('model_path')
+            self.ckpt = torch.load(
+                model_path,
+                map_location=self.device
+            )
 
     def load_saved_model(self):
         if self.need_loading_a_saved_model:
@@ -150,19 +139,17 @@ class Vgg19:
             param.requires_grad = True
 
     def get_layer_info(self):
-        model_children = list(self.model.children())
-        for i, child in enumerate(model_children):
-            if type(child) == nn.Sequential:
-                for j, layer in enumerate(child.children()):
-                    layer_name = '{}_{}_{}_{}'.format(
-                        type(child).__name__, i,
-                        type(layer).__name__, j
-                    )
+        for module_name, module in self.model.named_children():
+            if module_name == 'features':
+                for i, layer in enumerate(module.children()):
+                    layer_type = type(layer).__name__
+                    layer_name = f'{module_name}_{layer_type}_{i}'
                     self.update_layer_info(layer_name, layer)
+            elif module_name == 'avgpool':
+                self.update_layer_info(module_name, module)
+                self.update_layer_info('flatten', nn.Flatten(start_dim=1, end_dim=-1))
             else:
-                child_name = type(child).__name__
-                layer_name = '{}_{}'.format(child_name, i)
-                self.update_layer_info(layer_name, child)
+                self.update_layer_info(module_name, module)
 
     def update_layer_info(self, layer_name, layer):
         self.layers.append({
@@ -170,22 +157,28 @@ class Vgg19:
             'layer': layer
         })
         if type(layer) == nn.Conv2d:
-            self.layers_for_stimulus.append(layer_name)
-            self.num_neurons[layer_name] = layer.out_channels
+            self.layers_for_ex_patch.append(layer_name)
 
     def save_layer_info(self):
-        if self.args.train:
-            # Save model information
-            s = str(self.model)
-            p = self.data_path.get_path('model-info')
-            with open(p, 'a') as f:
-                f.write(s + '\n')
+        # Save model information
+        s = str(self.model)
+        p = self.data_path.get_path('model_info')
+        with open(p, 'w') as f:
+            f.write(s + '\n')
 
-            # Save layer names
-            p = self.data_path.get_path('layer-info')
-            for layer in self.layers:
-                with open(p, 'a') as f:
-                    f.write(layer['name'] + '\n')
+        # Save layer names
+        p = self.data_path.get_path('layer_info')
+        log = '\n'.join([layer['name'] for layer in self.layers])
+        with open(p, 'w') as f:
+            f.write(log + '\n')
+
+    def get_num_neurons(self):
+        dummy_input = torch.zeros(1, 3, self.input_size, self.input_size)
+        f_map = dummy_input.to(self.device)
+        for i, layer in enumerate(self.layers):
+            layer_name = layer['name']
+            f_map = layer['layer'](f_map)
+            self.num_neurons[layer_name] = f_map.shape[1]
 
     def init_criterion(self):
         if self.need_loading_a_saved_model and ('loss' in self.ckpt):
@@ -519,8 +512,56 @@ class Vgg19:
         return top1_test_corrects_dict, topk_test_corrects_dict, total_num_dict
 
     """
-    Save model
+    Forward
     """
+    def forward_one_layer(self, layer_idx, prev_f_map):
+        # Compute a forward pass for a single layer, 
+        # given the layer index and previous feature map
+        f_map = self.layers[layer_idx]['layer'](prev_f_map)
+        return f_map
+
+    def forward(self, imgs):
+        # Perform a forward pass through the entire layer,
+        # obtaining feature map for each layer
+
+        # Initialize feature maps
+        imgs = imgs.to(self.device)
+        f_map, f_maps = imgs, []
+
+        # Forward
+        for i, layer in enumerate(self.layers):
+            f_map = self.forward_one_layer(i, f_map)
+            f_maps.append(f_map)
+        return f_maps
+
+    def forward_until_the_end(self, layer_idx, prev_f_map):
+        num_layers = len(self.layers)
+        f_map = prev_f_map.clone().detach()
+        for i in range(layer_idx, num_layers):
+            f_map = self.forward_one_layer(i, f_map)
+        return f_map
+
+    def forward_until_given_layer(self, layer_name, imgs):
+        f_map = imgs.clone().detach()
+        for i, layer in enumerate(self.layers):
+            f_map = self.forward_one_layer(i, f_map)
+            if layer['name'] == layer_name:
+                break
+        return f_map
+        
+    """
+    Load and save model
+    """
+    def load_model(self, epoch):
+        path = self.data_path.get_model_path_during_training(epoch)
+        self.load_model_from_path(path)
+
+    def load_model_from_path(self, path):
+        self.init_model()
+        self.model.load_state_dict(torch.load(path))
+        self.model.to(self.device)
+        self.set_all_parameter_requires_grad()
+
     def save_model(self, epoch):
         path = self.data_path.get_model_path_during_training(epoch)
         torch.save(
@@ -542,7 +583,7 @@ class Vgg19:
             'lr': self.args.lr,
             'momentum': self.args.momentum,
             'k': self.args.topk,
-            'model_path': self.args.model_path
+            'model_path': self.data_path.get_path('model_path'),
         }
         first_log = ', '.join(
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]
@@ -580,7 +621,7 @@ class Vgg19:
         return log
 
     def write_training_log(self, log):
-        path = self.data_path.get_path('train-log')
+        path = self.data_path.get_path('train_log')
         with open(path, 'a') as f:
             f.write(log + '\n')
 
@@ -588,116 +629,30 @@ class Vgg19:
     Log for testing the model
     """
     def write_test_first_log(self):
-        log_param_sets = {
-            'model_nickname': self.args.model_nickname,
-            'model_path': self.args.model_path,
-            'k': self.args.topk
-        }
-        first_log = '\n'.join(
-            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
-        )
+        first_log = self.param_str_for_log()
         self.write_test_log(first_log)
 
     def write_test_by_class_first_log(self):
-        log_param_sets = {
-            'model_nickname': self.args.model_nickname,
-            'model_path': self.args.model_path,
-            'k': self.args.topk
-        }
-        first_log = 'Test by class'
-        first_log += '\n'.join(
-            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
-        )
+        first_log = self.param_str_for_log()
         self.write_test_by_class_log(first_log)
 
+    def param_str_for_log(self):
+        log_param_sets = {
+            'model_nickname': self.args.model_nickname,
+            'model_path': self.data_path.get_path('model_path'),
+            'k': self.args.topk
+        }
+        log = '\n'.join(
+            [f'{p}={log_param_sets[p]}' for p in log_param_sets]
+        )
+        return log
+
     def write_test_log(self, log):
-        path = self.data_path.get_path('test-log')
+        path = self.data_path.get_path('test_log')
         with open(path, 'a') as f:
             f.write(log + '\n')
 
     def write_test_by_class_log(self, log):
-        path = self.data_path.get_path('test-by-class-log')
+        path = self.data_path.get_path('test_by_class_log')
         with open(path, 'a') as f:
             f.write(log + '\n')
-
-    """
-    Forward
-    """
-    def forward_one_layer(self, layer_idx, prev_f_map):
-        f_map = self.layers[layer_idx]['layer'](prev_f_map)
-        return f_map
-
-    def forward_until_the_end(self, layer_idx, prev_f_map):
-        num_layers = len(self.layers)
-        f_map = prev_f_map.clone().detach()
-        for i in range(layer_idx, num_layers):
-            f_map = self.forward_one_layer(i, f_map)
-        return f_map
-
-    def forward_until_given_layer(self, layer_name, imgs):
-        f_map = imgs.clone().detach()
-        for i, layer in enumerate(self.layers):
-            f_map = self.forward_one_layer(i, f_map)
-            if layer['name'] == layer_name:
-                break
-            if type(layer['layer']) == nn.AdaptiveAvgPool2d:
-                f_map = torch.flatten(f_map, 1)
-        return f_map
-        
-    def forward(self, imgs):
-        # Initialize feature maps
-        imgs = imgs.to(self.device)
-        f_map, f_maps = imgs, []
-
-        # Layer information
-        layers = list(self.model.children())
-        layer_info = []
-
-        # Forward and save feature map for each layer
-        for i, child in enumerate(layers):
-            if type(child) == nn.Sequential:
-                for j, layer in enumerate(child.children()):
-                    # Compute and save f_map
-                    f_map = layer(f_map)
-                    f_maps.append(f_map)
-
-                    # Save layer info
-                    layer_name = '{}_{}_{}_{}'.format(
-                        type(child).__name__, i,
-                        type(layer).__name__, j
-                    )
-                    layer_info.append({
-                        'name': layer_name,
-                        'num_neurons': f_map.shape[1],
-                    })
-            else:
-                # Compute f_map
-                layer = layers[i]
-                f_map = layer(f_map)
-
-                # Flatten before fully connected layer
-                if type(child) == nn.AdaptiveAvgPool2d:
-                    f_map = torch.flatten(f_map, 1)
-
-                # Save f_map
-                f_maps.append(f_map)
-
-                # Save layer info
-                child_name = type(child).__name__
-                layer_name = '{}_{}'.format(child_name, i)
-                layer_info.append({
-                    'name': layer_name,
-                    'num_neurons': f_map.shape[1],
-                })
-
-        return f_maps, layer_info
-
-    def load_model(self, epoch):
-        path = self.data_path.get_model_path_during_training(epoch)
-        self.load_model_from_path(path)
-
-    def load_model_from_path(self, path):
-        self.init_model()
-        self.model.load_state_dict(torch.load(path))
-        self.model.to(self.device)
-        self.set_all_parameter_requires_grad()

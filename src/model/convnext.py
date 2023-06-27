@@ -31,7 +31,7 @@ class ConvNeXt:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.layers_for_stimulus = []
+        self.layers_for_ex_patch = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -184,25 +184,21 @@ class ConvNeXt:
             'name': layer_name,
             'layer': layer
         })
-
-        if 'blk' in layer_name:
-            self.layers_for_stimulus.append(layer_name)
+        if 'features' in layer_name:
+            self.layers_for_ex_patch.append(layer_name)
 
     def save_layer_info(self):
-        if self.args.train or self.args.test:
-            # Save model information
-            s = str(self.model)
-            p = self.data_path.get_path('model-info')
-            with open(p, 'a') as f:
-                f.write(s + '\n')
+        # Save model information
+        s = str(self.model)
+        p = self.data_path.get_path('model_info')
+        with open(p, 'w') as f:
+            f.write(s + '\n')
 
-            # Save layer names
-            p = self.data_path.get_path('layer-info')
-            layer_info = ''
-            for layer in self.layers:
-                layer_info += layer['name'] + '\n'
-            with open(p, 'w') as f:
-                f.write(layer_info)
+        # Save layer names
+        p = self.data_path.get_path('layer_info')
+        log = '\n'.join([layer['name'] for layer in self.layers])
+        with open(p, 'w') as f:
+            f.write(log + '\n')
     
     def get_num_neurons(self):
         dummy_input = torch.zeros(1, 3, self.input_size, self.input_size)

@@ -28,7 +28,7 @@ class ResNet18:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.layers_for_stimulus = []
+        self.layers_for_ex_patch = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -179,7 +179,7 @@ class ResNet18:
             'layer': layer
         })
         if type(layer) == nn.Conv2d:
-            self.layers_for_stimulus.append(layer_name)
+            self.layers_for_ex_patch.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
 
     def save_layer_info(self):

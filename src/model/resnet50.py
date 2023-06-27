@@ -28,7 +28,7 @@ class ResNet50:
         self.pretrained = pretrained
         self.from_to = from_to
         self.layers = []
-        self.layers_for_stimulus = []
+        self.layers_for_ex_patch = []
         self.num_neurons = {}
 
         self.need_loading_a_saved_model = None
@@ -92,32 +92,26 @@ class ResNet50:
         self.get_layer_info()
         self.save_layer_info()
 
+        # Update the number of neurons for each layer
+        self.get_num_neurons()
+
         # Set criterion
         self.init_criterion()
 
     def check_if_need_to_load_model(self):
         if self.from_to is None:
-            check1 = len(self.args.model_path) > 0
-            check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('model_path') is not None
         elif self.from_to == 'from':
-            check1 = len(self.args.from_model_path) > 0
-            check2 = self.args.from_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('from_model_path') is not None
         elif self.from_to == 'to':
-            check1 = len(self.args.to_model_path) > 0
-            check2 = self.args.to_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('to_model_path') is not None
         else:
             raise ValueError(f'Unknown from_to is given: "{self.from_to}"')
 
-        if self.need_loading_a_saved_model and self.args.train:
+        if self.args.train and self.need_loading_a_saved_model:
             last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])
             self.training_start_epoch = last_epoch + 1
 
@@ -178,7 +172,7 @@ class ResNet50:
             'layer': layer
         })
         if type(layer) == nn.Conv2d:
-            self.layers_for_stimulus.append(layer_name)
+            self.layers_for_ex_patch.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
 
     def save_layer_info(self):
@@ -201,7 +195,7 @@ class ResNet50:
             'layer': layer
         })
         if type(layer) == nn.Conv2d:
-            self.layers_for_stimulus.append(layer_name)
+            self.layers_for_ex_patch.append(layer_name)
             self.num_neurons[layer_name] = layer.out_channels
 
     def init_criterion(self):

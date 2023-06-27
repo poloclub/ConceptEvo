@@ -4,13 +4,37 @@
 # Create example patches for each neuron in a model.
 # Run this script at `../src` where `main.py` exists.
 # 
-# The result will be saved at
-# `../data/neuron_feature/<model_nickname>/data/DIR_NAME*/`, where
-# DIR_NAME* is
-# '-'.join(
-#   'topk_s=<topk_s>',
-#   'ex_patch_size_ratio=<ex_patch_size_ratio>',
-# )
+# For a pretrained model, the result will be saved at
+# ../data
+#     └── example_patch
+#           └── <model_nickname>
+#                 ├── data
+#                 │     └── topk_s=<topk_s>-ex_patch_ratio=<ex_patch_ratio>
+#                 │          ├── crop/
+#                 │          ├── mask/
+#                 │          ├── inverse_mask/
+#                 │          └── example_patch_info.json
+#                 └── log
+#
+# Otherwise, the result will be saved at
+# ../data
+#     └── example_patch
+#           └── <model_nickname>
+#                 └── epoch_<epoch>
+#                     ├── data
+#                     │     └── topk_s=<topk_s>-ex_patch_ratio=<ex_patch_ratio>
+#                     │          ├── crop/
+#                     │          ├── mask/
+#                     │          ├── inverse_mask/
+#                     │          └── example_patch_info.json
+#                     └── log
+#
+#
+# In `.../crop`, it saves cropped example patches.
+# In `.../mask`, it saves images with example patches being masked.
+# In `.../inverse_mask`, it saves images with highlighted example patches 
+#     and masked background.
+# In `.../example_patch_info.json`, it saves the coordinate of example patches.
 ###############################################################################
 
 ###############################################################################
@@ -19,7 +43,7 @@
 # gpu=?
 # model_name=?
 # model_nickname=?
-# model_path=?
+# epoch=? (if it is not a pretrained model)
 # topk_s=?
 # ex_patch_size_ratio=?
 # batch_size=?
@@ -29,21 +53,20 @@ gpu=0
 model_name=convnext
 lr=0.004
 epoch=96
-model_nickname="$model_name"_"$lr"_"$epoch"
-model_path=../data/model/"$model_name"_"$lr"/data/model-"$epoch".pth
+model_nickname="$model_name"_"$lr"
 topk_s=20
 ex_patch_size_ratio=0.3
-batch_size=512
-###############################################################################
+batch_size=128
 
-###############################################################################
+############################################################################### 
 python main.py \
     --gpu $gpu \
-    --neuron_feature example_patch \
+    --example_patch True \
     --model_name $model_name \
     --model_nickname $model_nickname \
-    --model_path $model_path \
+    --epoch $epoch \
     --topk_s $topk_s \
     --ex_patch_size_ratio $ex_patch_size_ratio \
     --batch_size $batch_size 
 ###############################################################################
+

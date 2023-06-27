@@ -1,13 +1,15 @@
 import os
 from datetime import datetime
 
+from utils.datapath_model import DataPathModel
+from utils.datapath_example_patch import DataPathExamplePatch
+
 class DataPath:
     """
     Manage data paths
 
-    This class manages path of input and output data. Some paths are 
-    auto-generated. Details of the generated data paths are documented in 
-    `../../docs`.
+    This class manages path of input and output data. 
+    Some paths are auto-generated.
     """
     
     """
@@ -17,56 +19,82 @@ class DataPath:
         self.args = args
         self.path = {}
 
-        self.path_keys = [
-            'train-data', 'test-data', 
-            'stimulus', 'co_act', 'neuron_emb', 
-            'layer_act', 'img_emb', 'img_emb_co_act',
-            'proj_neuron_emb', 'dim_reduction', 
-            'neuron_feature', 'act_map',
-            'find_important_evo', 'eval_important_evo'
-        ]
+        self.gen_data_dirs()
 
-        self.path_key_to_actions = {}
-        self.action_to_args = {}
+        # self.path_keys = [
+        #     'train-data', 'test-data', 
+        #     'stimulus', 'co_act', 'neuron_emb', 
+        #     'layer_act', 'img_emb', 'img_emb_co_act',
+        #     'proj_neuron_emb', 'dim_reduction', 
+        #     'neuron_feature', 'act_map',
+        #     'find_important_evo', 'eval_important_evo'
+        # ]
+
+        # self.path_key_to_actions = {}
+        # self.action_to_args = {}
 
 
     """
     A wrapper function called in main.py
     """
     def gen_data_dirs(self):
-        """Generate data directories"""
+        # Generate the output root directory
         self.make_dir(self.args.output_dir)
-        self.find_actions_and_necessary_paths()
-        self.map_action_to_args()
-        self.set_input_data_path()
-        self.set_model_path()
-        self.set_layer_act_path()
-        self.set_stimulus_path()
-        self.set_co_act_neurons_path()
-        self.set_neuron_emb_path()
-        self.set_img_emb_path()
-        self.set_img_emb_co_act_path()
-        self.set_img_pairs_path()
-        self.set_img_emb_layer_co_act()
-        self.set_proj_emb_path()
-        self.set_emb2d_path()
-        self.set_neuron_feature_path()
-        self.set_act_map_path()
-        self.set_important_evolution_path()
-        self.set_eval_important_evolution_path()
-        self.set_important_neuron_path()
-        self.set_important_neuron_act_map_path()
+
+        # Generate input image path
+        self.set_input_image_path()
+
+        # Generate paths for model data
+        self.data_path_model = DataPathModel(self.args)
+        self.path = {**self.path, **self.data_path_model.path}
+
+        # Generate paths for neuron feature
+        self.data_path_example_patch = DataPathExamplePatch(self.args)
+        self.path = {**self.path, **self.data_path_example_patch.path}
+
+        # self.find_actions_and_necessary_paths()
+        # self.map_action_to_args()
+        # self.set_model_path()
+        # self.set_layer_act_path()
+        # self.set_stimulus_path()
+        # self.set_co_act_neurons_path()
+        # self.set_neuron_emb_path()
+        # self.set_img_emb_path()
+        # self.set_img_emb_co_act_path()
+        # self.set_img_pairs_path()
+        # self.set_img_emb_layer_co_act()
+        # self.set_proj_emb_path()
+        # self.set_emb2d_path()
+        # self.set_neuron_feature_path()
+        # self.set_act_map_path()
+        # self.set_important_evolution_path()
+        # self.set_eval_important_evolution_path()
+        # self.set_important_neuron_path()
+        # self.set_important_neuron_act_map_path()
 
     
-    """
-    Utils
-    """
     def get_path(self, path_key):
         """Return path for given path_key"""
         if path_key in self.path:
             return self.path[path_key]
         else:
             return None
+
+    def set_input_image_path(self):
+        """Set paths for image input data."""
+        self.path['train_data'] = self.args.training_data
+        self.path['test_data'] = self.args.test_data
+
+
+
+
+
+
+
+
+
+
+
 
 
     def find_actions_and_necessary_paths(self):
@@ -501,13 +529,7 @@ class DataPath:
         return arg_s
 
 
-    """
-    Setting paths for input data
-    """
-    def set_input_data_path(self):
-        """Set paths for image input data."""
-        self.path['train_data'] = self.args.training_data
-        self.path['test_data'] = self.args.test_data
+    
 
 
     """
@@ -532,30 +554,26 @@ class DataPath:
 
         self.check_model_nickname_and_path()
 
+        data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
+        model_info_path = os.path.join(log_dir_path, 'model-info.txt')
+        layer_info_path = os.path.join(log_dir_path, 'layer-info.txt')
+        self.path['model-info'] = model_info_path
+        self.path['layer-info'] = layer_info_path
+
         if self.args.train:
-            data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
             train_log_path = os.path.join(log_dir_path, 'training-log.txt')
-            model_info_path = os.path.join(log_dir_path, 'model-info.txt')
-            layer_info_path = os.path.join(log_dir_path, 'layer-info.txt')
             self.path['model-dir'] = data_dir_path
             self.path['train-log'] = train_log_path
-            self.path['model-info'] = model_info_path
-            self.path['layer-info'] = layer_info_path
         elif self.args.test:
             filename = 'test.txt'
             if 'pretrained' not in self.args.model_nickname:
                 self.raise_err_for_ungiven_arg(self.args.epoch, 'epoch')
                 filename = 'test-epoch={}.txt'.format(self.args.epoch)
                 
-            data_dir_path, log_dir_path = self.gen_data_log_sub_dir('model')
             test_log_path = os.path.join(log_dir_path, filename)
             train_log_path = os.path.join(log_dir_path, 'training-test-log.txt')
-            model_info_path = os.path.join(log_dir_path, 'model-info.txt')
-            layer_info_path = os.path.join(log_dir_path, 'layer-info.txt')
             self.path['test-log'] = test_log_path
             self.path['train-log'] = train_log_path
-            self.path['model-info'] = model_info_path
-            self.path['layer-info'] = layer_info_path
         elif self.args.test_by_class:
             filename = 'test_by_class.txt'
             if 'pretrained' not in self.args.model_nickname:
@@ -845,49 +863,6 @@ class DataPath:
         self.path['img_emb_co_act'] = file_path
         self.path['img_emb_co_act-log'] = log_path
 
-    # """
-    # Setting paths for image embedding with layer activation (altogether)
-    # """
-    # def set_img_emb_with_layer_act_path(self):
-    #     if not self.need_to_gen_path('img_emb_with_layer_act'):
-    #         return
-
-    #     # Basemodel nickname
-    #     if self.is_given_arg(self.args.basemodel_nickname):
-    #         basemodel_nickname = self.args.basemodel_nickname
-    #     else:
-    #         basemodel_nickname = self.args.model_nickname
-
-    #     # Directory for neuron embedding
-    #     neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
-    #     root_data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
-    #         'embedding', 
-    #         inner_dirname='emb-{}-{}'.format(
-    #             basemodel_nickname, neuron_emb_apdx
-    #         )
-    #     )
-
-    #     # Parent directory for image embedding
-    #     apdx2 = self.gen_act_setting_str('img_emb')
-    #     apdx3 = self.gen_act_setting_str('img_emb_with_layer_act')
-    #     data_dir_path = os.path.join(
-    #         root_data_dir_path, 
-    #         f'emb_with_layer_act-{apdx2}-{apdx3}'
-    #     )
-    #     self.make_dir(data_dir_path)
-
-    #     # Directory for image embedding
-    #     data_dir_path = os.path.join(data_dir_path, 'emb_nd')
-    #     self.make_dir(data_dir_path)
-
-    #     # Files
-    #     file_path = os.path.join(data_dir_path, 'img_emb.txt')
-    #     log_path = os.path.join(
-    #         log_dir_path, 'img_emb_with_layer_act-log-{}.txt'.format(apdx3)
-    #     )
-    #     self.path['img_emb_with_layer_act'] = file_path
-    #     self.path['img_emb_with_layer_act-log'] = log_path
-
     """
     Setting paths for image embedding with image co-activation
     """
@@ -1039,12 +1014,18 @@ class DataPath:
         apdx = self.gen_act_setting_str('neuron_feature')
         d_dir_path = os.path.join(d_dir_path, apdx)
         self.make_dir(d_dir_path)
+        img_d_dir_path = os.path.join(d_dir_path, 'img')
+        self.make_dir(img_d_dir_path)
 
+        data_path = os.path.join(
+            d_dir_path, 'neuron_feature-{}.json'.format(apdx)
+        )
         log_path = os.path.join(
             l_dir_path, 'neuron_feature-log-{}.txt'.format(apdx)
         )
 
-        self.path['neuron_feature'] = d_dir_path
+        self.path['neuron_feature-info'] = data_path
+        self.path['neuron_feature'] = img_d_dir_path
         self.path['neuron_feature-log'] = log_path
 
     """

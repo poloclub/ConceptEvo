@@ -47,10 +47,10 @@ def main():
 
     # Generate data directories
     data_path = DataPath(args)
-    data_path.gen_data_dirs()
 
     # Load model
     model = load_model(args, data_path)
+    model.save_layer_info()
 
     # Train model
     if args.train:
@@ -64,6 +64,14 @@ def main():
     if args.test_by_class:
         test_model_by_class(model)
 
+    # Generate example patches of neurons
+    if args.example_patch:
+        generate_example_patch(args, data_path, model)
+
+
+
+
+
     # Compute layer activation
     if args.layer_act:
         compute_layer_act(args, data_path, model)
@@ -73,7 +81,7 @@ def main():
         compute_stimulus(args, data_path, model)
 
     # Compute neuron embedding
-    if args.neuron_emb:
+    if args.neuron_embedding:
         compute_neuron_embedding(args, data_path, model)
 
     # Compute image embedding
@@ -94,9 +102,7 @@ def main():
     if args.dim_reduction != 'None':
         reduce_embedding_dim(args, data_path)
 
-    # Compute visualized features for neurons
-    if args.neuron_feature != 'None':
-        compute_neuron_feature(args, data_path, model)
+    
     
     if args.act_map:
         compute_act_maps(args, data_path, model)
@@ -192,6 +198,12 @@ def test_model_by_class(model):
     model.test_model_by_class(write_log=True, test_on='training')
     model.test_model_by_class(write_log=True, test_on='test')
 
+def generate_example_patch(args, data_path, model):
+    ex_patch = ExamplePatch(args, data_path, model)
+    ex_patch.generate_example_patch()
+
+
+
 def compute_layer_act(args, data_path, model):
     layer_act = LayerAct(args, data_path, model)
     layer_act.compute_layer_act()
@@ -224,10 +236,7 @@ def reduce_embedding_dim(args, data_path):
     reducer = Reducer(args, data_path)
     reducer.reduce_dim()
 
-def compute_neuron_feature(args, data_path, model):
-    if args.neuron_feature == 'example_patch':
-        ex_patch = ExamplePatch(args, data_path, model)
-        ex_patch.compute_neuron_feature()
+
 
 def compute_act_maps(args, data_path, model):
     act_map = StimulusActMap(args, data_path, model)

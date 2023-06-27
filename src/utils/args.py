@@ -13,7 +13,7 @@ class ArgParser:
     """
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='ConceptEvo')
-        self.parse_basic_setting()
+        self.parse_general_setting()
         self.parse_model_setting()
         self.parse_action_setting()
         self.parse_data_path_setting()
@@ -109,8 +109,8 @@ class ArgParser:
     """
     Basic settings
     """
-    def parse_basic_setting(self):
-        """Parse arguments for basic settings."""
+    def parse_general_setting(self):
+        """Parse arguments for settings across multiple actions."""
 
         self.parser.add_argument(
             '--gpu', 
@@ -151,18 +151,10 @@ class ArgParser:
                 'resnet18_pretrained',
                 'resnet18_dropout',
                 'resnet50',
-                'resnext50_32x4d',
-                'vgg16_cifar10' # remove the harcode later
+                'resnext50_32x4d'
             ],
             type=str,                
-            help='Neural network model name'
-        )
-
-        self.parser.add_argument(
-            '--model_path', 
-            default='', 
-            type=str,                
-            help=f'Path of the neural network model'
+            help='Name of the neural network model'
         )
 
         self.parser.add_argument(
@@ -170,6 +162,20 @@ class ArgParser:
             default='', 
             type=str,                
             help=f'Nickname of the neural network model'
+        )
+
+        self.parser.add_argument(
+            '--epoch', 
+            default=-1, 
+            type=int,
+            help='Specific epoch of the neural network model'
+        )
+
+        self.parser.add_argument(
+            '--model_path', 
+            default='', 
+            type=str,                
+            help=f'Path of the neural network model'
         )
 
     
@@ -201,6 +207,27 @@ class ArgParser:
         )
 
         self.parser.add_argument(
+            '--example_patch', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Method to compute example patches of neurons'
+        )
+
+        self.parser.add_argument(
+            '--neuron_embedding', 
+            default=False, 
+            type=self.parse_bool_arg,
+            help='Whether to compute neuron embedding'
+        )
+
+
+
+
+
+
+
+
+        self.parser.add_argument(
             '--stimulus', 
             default=False, 
             type=self.parse_bool_arg,
@@ -221,12 +248,7 @@ class ArgParser:
             help='Whether to compute image embedding from layer activation'
         )
 
-        self.parser.add_argument(
-            '--neuron_emb', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to compute neuron embedding'
-        )
+        
 
         self.parser.add_argument(
             '--img_emb', 
@@ -262,14 +284,6 @@ class ArgParser:
             choices=['None', 'UMAP'],
             type=str,
             help='Dimensionality reduction method'
-        )
-
-        self.parser.add_argument(
-            '--neuron_feature', 
-            default='None', 
-            choices=['None', 'example_patch'],
-            type=str,
-            help='Method to compute visualized features for neurons'
         )
 
         self.parser.add_argument(
@@ -391,12 +405,7 @@ class ArgParser:
             help='k for evaluating top-k accuracy'
         )
 
-        self.parser.add_argument(
-            '--epoch', 
-            default=0, 
-            type=int,
-            help='Epoch of a model to test'
-        )
+        
 
 
     """

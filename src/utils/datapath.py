@@ -48,7 +48,7 @@ class DataPath:
         self.data_path_model = DataPathModel(self.args)
         self.path = {**self.path, **self.data_path_model.path}
 
-        # Generate paths for neuron feature
+        # Generate paths for example patch
         self.data_path_example_patch = DataPathExamplePatch(self.args)
         self.path = {**self.path, **self.data_path_example_patch.path}
 

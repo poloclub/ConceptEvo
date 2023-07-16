@@ -1,11 +1,16 @@
 import argparse
 
+from utils.args_train import TrainArgs
+from utils.args_test import TestArgs
+from utils.args_embedding import EmbeddingArgs
+from utils.args_example_patch import ExamplePatchArgs
+
 class ArgParser:
     """Parse input arguments.
 
-    This class parses input arguments for user-given settings, such as setting
-    hyperparameters or input data paths. Details of setting arguments are
-    documented in `../../docs`.
+    This class efficiently handles the parsing of input arguments 
+    provided by the user, enabling them to specify various settings, 
+    such as hyperparameters or input data paths.
     """
 
     """
@@ -13,105 +18,38 @@ class ArgParser:
     """
     def __init__(self):
         self.parser = argparse.ArgumentParser(description='ConceptEvo')
+        
+        self.train_args = TrainArgs(self.parser)
+        self.test_args = TestArgs(self.parser)
+        self.embedding_args = EmbeddingArgs(self.parser)
+        self.example_patch_args = ExamplePatchArgs(self.parser)
+
+
+
+
         self.parse_general_setting()
         self.parse_model_setting()
         self.parse_action_setting()
         self.parse_data_path_setting()
-        self.parse_model_training_setting()
-        self.parse_stimulus_setting()
         self.parse_embedding_setting()
         self.parse_neuron_embedding_setting()
         self.parse_image_embedding_setting()
         self.parse_proj_neuron_embedding_setting()
         self.parse_dim_reduction_setting()
-        self.parse_neuron_feature_setting()
         self.parse_important_neuron_and_evolution_setting()
         self.parse_important_evolution_setting()
         self.parse_important_neuron_setting()
 
-
     """
-    A wrapper function called in main.py
+    A wrapper function called in main.py, which returns the parsed arguments.
     """
     def get_args(self):
-        """Returns parsed arguments"""
         return self.parser.parse_args()
 
-
-    """
-    Utils
-    """
-    def parse_bool_arg(self, arg):
-        """Parse boolean argument
-        
-        Args:
-            - arg: argument
-
-        Returns:
-            - bool_arg: booleanized arg, either True or False
-
-        Raises:
-            - ArgumentTypeError when an invalid input is given.
-        """
-
-        true_vals = ['yes', 'true', 't', 'y', '1']
-        false_vals = ['no', 'false', 'f', 'n', '0']
-        valid_true_vals = self.gen_valid_bool_options(true_vals)
-        valid_false_vals = self.gen_valid_bool_options(false_vals)
-        
-        if isinstance(arg, bool):
-            bool_arg = arg
-        if arg in valid_true_vals:
-            bool_arg = True
-        elif arg in valid_false_vals:
-            bool_arg = False
-        else:
-            log = f'Boolean value expected for {arg}. '
-            log += f'Available options for {arg}=True: {valid_true_vals}. '
-            log += f'Available options for {arg}=False: {valid_false_vals}. '
-            raise argparse.ArgumentTypeError(log)
-        return bool_arg
-
-
-    def gen_valid_bool_options(self, opts):
-        """Generate a list of the whole valid options for a boolean argument.
-
-        A boolean argument can have two options, either True or False. Each 
-        option can be given by either (i) lower-case letters, (ii) upper-case
-        letters, or (iii) letters starting with an upper-case letter and 
-        continuing with lower-case letters. For example, an argument A can have 
-        value True for options `true`, `TRUE`, or `True`.
-
-        Args: 
-            - opts: a list of options for an argument.
-
-        Returns:
-            - all_valid_opts: a list of all valid options for given opts.
-
-        Example:
-            >>> opts = ['true', 'FALSE']
-            >>> all_valid_opts = gen_valid_bool_options(opts)
-            >>> all_valid_opts
-            ['true', 'True', 'TRUE', 'false', 'False', 'FALSE']
-        """
-
-        all_valid_opts = []
-        for opt in opts:
-            opt_lower = opt.lower()
-            opt_upper = opt.upper()
-            opt_lower_with_fst_upper = opt_upper[0] + opt_lower[1:]
-            all_valid_opts += [
-                opt_lower, opt_upper, opt_lower_with_fst_upper
-            ]
-        return all_valid_opts
-
-    
     """
     Basic settings
     """
     def parse_general_setting(self):
-        """Parse arguments for settings across multiple actions."""
-
         self.parser.add_argument(
             '--gpu', 
             default='0', 
@@ -124,6 +62,13 @@ class ArgParser:
             default=512, 
             type=int,
             help='batch size'
+        )
+
+        self.parser.add_argument(
+            '--output_dir', 
+            default='../data',
+            type=str,                
+            help='Where to save output (trained models, log, ...)'
         )
 
 
@@ -181,33 +126,33 @@ class ArgParser:
     def parse_action_setting(self):
         """Parse arguments for setting which actions to do."""
 
-        self.parser.add_argument(
-            '--train', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to train a model'
-        )
+        # self.parser.add_argument(
+        #     '--train', 
+        #     default=False, 
+        #     type=self.parse_bool_arg,
+        #     help='Whether to train a model'
+        # )
 
-        self.parser.add_argument(
-            '--test', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to test a model'
-        )
+        # self.parser.add_argument(
+        #     '--test', 
+        #     default=False, 
+        #     type=self.parse_bool_arg,
+        #     help='Whether to test a model'
+        # )
 
-        self.parser.add_argument(
-            '--test_by_class', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to test a model by class'
-        )
+        # self.parser.add_argument(
+        #     '--test_by_class', 
+        #     default=False, 
+        #     type=self.parse_bool_arg,
+        #     help='Whether to test a model by class'
+        # )
 
-        self.parser.add_argument(
-            '--example_patch', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Method to compute example patches of neurons'
-        )
+        # self.parser.add_argument(
+        #     '--example_patch', 
+        #     default=False, 
+        #     type=self.parse_bool_arg,
+        #     help='Method to compute example patches of neurons'
+        # )
 
         self.parser.add_argument(
             '--neuron_embedding', 
@@ -223,12 +168,12 @@ class ArgParser:
 
 
 
-        self.parser.add_argument(
-            '--stimulus', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to find stimulus'
-        )
+        # self.parser.add_argument(
+        #     '--stimulus', 
+        #     default=False, 
+        #     type=self.parse_bool_arg,
+        #     help='Whether to find stimulus'
+        # )
 
         self.parser.add_argument(
             '--act_map', 
@@ -317,26 +262,26 @@ class ArgParser:
     def parse_data_path_setting(self):
         """Parse arguments for path of data (both input and output)."""
 
-        self.parser.add_argument(
-            '--training_data', 
-            default='../../ILSVRC2012/train', 
-            type=str,                
-            help='Training data path'
-        )
+        # self.parser.add_argument(
+        #     '--training_data', 
+        #     default='../../ILSVRC2012/train', 
+        #     type=str,                
+        #     help='Training data path'
+        # )
 
-        self.parser.add_argument(
-            '--data_label_path', 
-            default='../../ILSVRC2012/imagenet-labels.txt', 
-            type=str,                
-            help='Label data path'
-        )
+        # self.parser.add_argument(
+        #     '--data_label_path', 
+        #     default='../../ILSVRC2012/imagenet-labels.txt', 
+        #     type=str,                
+        #     help='Label data path'
+        # )
 
-        self.parser.add_argument(
-            '--test_data', 
-            default='../../ILSVRC2012/val-by-class', 
-            type=str,
-            help='Test data path'
-        )
+        # self.parser.add_argument(
+        #     '--test_data', 
+        #     default='../../ILSVRC2012/val-by-class', 
+        #     type=str,
+        #     help='Test data path'
+        # )
 
         self.parser.add_argument(
             '--label_img_idx_path', 
@@ -345,77 +290,6 @@ class ArgParser:
             help='The path of image index range for each label'
         )
 
-        self.parser.add_argument(
-            '--output_dir', 
-            default='../data',
-            type=str,                
-            help='Where to save output (trained models, log, ...)'
-        )
-
-
-    """
-    Settings for training or testing models
-    """
-    def parse_model_training_setting(self):
-        """Parse arguments for training models."""
-
-        self.parser.add_argument(
-            '--lr',
-            default=0.01, 
-            type=float,
-            help='Learning rate for training'
-        )
-
-        self.parser.add_argument(
-            '--momentum',
-            default=0.9, 
-            type=float,
-            help='Momentum for training'
-        )
-
-        self.parser.add_argument(
-            '--weight_decay',
-            default=0.05, 
-            type=float,
-            help='weight_decay for training'
-        )
-
-        self.parser.add_argument(
-            '--learning_eps',
-            default=0.05, 
-            type=float,
-            help='eps (can be used in RMSProp)'
-        )
-
-        self.parser.add_argument(
-            '--num_epochs', 
-            default=300, 
-            type=int,
-            help='Number of epochs'
-        )
-
-        self.parser.add_argument(
-            '--topk', 
-            default=5, 
-            type=int,
-            help='k for evaluating top-k accuracy'
-        )
-
-        
-
-
-    """
-    Settings for finding stimulus
-    """
-    def parse_stimulus_setting(self):
-        """Parse arguments for finding stimulus."""
-
-        self.parser.add_argument(
-            '--topk_s', 
-            default=10, 
-            type=int,
-            help='k for top-k most stimulating inputs for a neuron'
-        )
 
 
     """
@@ -571,21 +445,6 @@ class ArgParser:
             help='Name of directory for a set of embeddings of multiple models'
         )
 
-
-    """
-    Settings for neurons' feature visualization
-    """
-    def parse_neuron_feature_setting(self):
-        """Parse arguments for neurons' feature visualization."""
-
-        self.parser.add_argument(
-            '--ex_patch_size_ratio', 
-            default=0.3, 
-            type=float,
-            help='Ratio of the size of example patches to input size'
-        )
-
-
     """
     Settings for finding important concept evolution
     """
@@ -666,3 +525,70 @@ class ArgParser:
             type=int,
             help='The number of most activating neurons to consider'
         )
+
+    """
+    Utils
+    """
+    def parse_bool_arg(self, arg):
+        """Parse boolean argument
+        
+        Args:
+            - arg: argument
+
+        Returns:
+            - bool_arg: booleanized arg, either True or False
+
+        Raises:
+            - ArgumentTypeError when an invalid input is given.
+        """
+
+        true_vals = ['yes', 'true', 't', 'y', '1']
+        false_vals = ['no', 'false', 'f', 'n', '0']
+        valid_true_vals = self.gen_valid_bool_options(true_vals)
+        valid_false_vals = self.gen_valid_bool_options(false_vals)
+        
+        if isinstance(arg, bool):
+            bool_arg = arg
+        if arg in valid_true_vals:
+            bool_arg = True
+        elif arg in valid_false_vals:
+            bool_arg = False
+        else:
+            log = f'Boolean value expected for {arg}. '
+            log += f'Available options for {arg}=True: {valid_true_vals}. '
+            log += f'Available options for {arg}=False: {valid_false_vals}. '
+            raise argparse.ArgumentTypeError(log)
+        return bool_arg
+
+
+    def gen_valid_bool_options(self, opts):
+        """Generate a list of the whole valid options for a boolean argument.
+
+        A boolean argument can have two options, either True or False. Each 
+        option can be given by either (i) lower-case letters, (ii) upper-case
+        letters, or (iii) letters starting with an upper-case letter and 
+        continuing with lower-case letters. For example, an argument A can have 
+        value True for options `true`, `TRUE`, or `True`.
+
+        Args: 
+            - opts: a list of options for an argument.
+
+        Returns:
+            - all_valid_opts: a list of all valid options for given opts.
+
+        Example:
+            >>> opts = ['true', 'FALSE']
+            >>> all_valid_opts = gen_valid_bool_options(opts)
+            >>> all_valid_opts
+            ['true', 'True', 'TRUE', 'false', 'False', 'FALSE']
+        """
+
+        all_valid_opts = []
+        for opt in opts:
+            opt_lower = opt.lower()
+            opt_upper = opt.upper()
+            opt_lower_with_fst_upper = opt_upper[0] + opt_lower[1:]
+            all_valid_opts += [
+                opt_lower, opt_upper, opt_lower_with_fst_upper
+            ]
+        return all_valid_opts

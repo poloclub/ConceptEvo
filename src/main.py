@@ -1,6 +1,7 @@
 """A main module to run codes"""
 
 # Embedding
+from embedding.sample_images import *
 from embedding.image_embedding import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
@@ -41,7 +42,8 @@ def main():
 
     # Load model
     model = load_model(args, data_path)
-    model.save_layer_info()
+    if model is not None:
+        model.save_layer_info()
 
     # Train model
     if args.train:
@@ -59,17 +61,16 @@ def main():
     if args.example_patch:
         generate_example_patch(args, data_path, model)
 
-
-
-
-
-    # Compute layer activation
-    if args.layer_act:
-        compute_layer_act(args, data_path, model)
+    # Sample images
+    if args.sample_images:
+        sample_images(args)
 
     # Find stimulus
     if args.stimulus:
         compute_stimulus(args, data_path, model)
+
+
+
 
     # Compute neuron embedding
     if args.neuron_embedding:
@@ -117,6 +118,7 @@ def main():
 def load_model(args, data_path):
 
     when_to_skip_loading_model = [
+        args.sample_images,
         args.dim_reduction != 'None',
         args.find_important_evo,
         args.eval_important_evo,
@@ -182,6 +184,10 @@ def test_model_by_class(model):
 def generate_example_patch(args, data_path, model):
     ex_patch = ExamplePatch(args, data_path, model)
     ex_patch.generate_example_patch()
+
+def sample_images(args):
+    img_sample = SampleImages(args)
+    img_sample.sample_images()
 
 
 

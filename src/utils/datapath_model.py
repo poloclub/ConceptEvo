@@ -13,6 +13,10 @@ class DataPathModel:
         self.args = args
         self.path = {}
 
+        self.not_need_model_path = [
+            self.args.sample_images
+        ]
+
         self.actions_requiring_from_to_paths = [
             self.args.find_important_evo,
             self.args.eval_important_evo
@@ -22,6 +26,9 @@ class DataPathModel:
         self.gen_data_paths()
 
     def gen_data_paths(self):
+        if True in self.not_need_model_path:
+            return
+        
         if True in self.actions_requiring_from_to_paths:
             # Data paths for a from_model (keys: ['from_model_path'])
             self.gen_model_path(

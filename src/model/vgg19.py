@@ -74,6 +74,7 @@ class Vgg19:
 
         # Create an empty model
         if self.pretrained:
+            print("Load a pretrained model")
             self.model = models.vgg19(weights=models.VGG19_Weights.DEFAULT)
         else:
             self.model = models.vgg19()
@@ -140,7 +141,7 @@ class Vgg19:
 
     def get_layer_info(self):
         for module_name, module in self.model.named_children():
-            if module_name == 'features':
+            if module_name in ['features', 'classifier']:
                 for i, layer in enumerate(module.children()):
                     layer_type = type(layer).__name__
                     layer_name = f'{module_name}_{layer_type}_{i}'

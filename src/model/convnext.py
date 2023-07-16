@@ -103,47 +103,33 @@ class ConvNeXt:
 
     def check_if_need_to_load_model(self):
         if self.from_to is None:
-            check1 = len(self.args.model_path) > 0
-            check2 = self.args.model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('model_path') is not None
         elif self.from_to == 'from':
-            check1 = len(self.args.from_model_path) > 0
-            check2 = self.args.from_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('from_model_path') is not None
         elif self.from_to == 'to':
-            check1 = len(self.args.to_model_path) > 0
-            check2 = self.args.to_model_path != 'DO_NOT_NEED_CURRENTLY'
-            check3 = not self.pretrained
-            check = check1 and check2 and check3
-            self.need_loading_a_saved_model = check
+            self.need_loading_a_saved_model = \
+                self.data_path.get_path('to_model_path') is not None
         else:
             raise ValueError(f'Unknown from_to is given: "{self.from_to}"')
 
-        if self.need_loading_a_saved_model and self.args.train:
+        if self.args.train and self.need_loading_a_saved_model:
             last_epoch = int(self.args.model_path.split('-')[-1].split('.')[0])
             self.training_start_epoch = last_epoch + 1
 
     def load_checkpoint(self):
         if self.need_loading_a_saved_model:
             if self.from_to == 'from':
-                self.ckpt = torch.load(
-                    self.args.from_model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('from_model_path')
             elif self.from_to == 'to':
-                self.ckpt = torch.load(
-                    self.args.to_model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('to_model_path')
             else:
-                self.ckpt = torch.load(
-                    self.args.model_path,
-                    map_location=self.device
-                )
+                model_path = self.data_path.get_path('model_path')
+            self.ckpt = torch.load(
+                model_path,
+                map_location=self.device
+            )
 
     def load_saved_model(self):
         if self.need_loading_a_saved_model:

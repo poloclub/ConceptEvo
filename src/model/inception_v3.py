@@ -154,7 +154,7 @@ class InceptionV3:
             'name': layer_name,
             'layer': layer
         })
-        if layer_name not in ['avgpool', 'dropout', 'fc']:
+        if layer_name not in ['avgpool', 'dropout', 'flatten', 'fc']:
             self.layers_for_ex_patch.append(layer_name)
 
     def save_layer_info(self):

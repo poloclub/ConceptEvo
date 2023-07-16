@@ -180,7 +180,7 @@ class Vgg16NoDropout:
     def save_layer_info(self):
         # Save model information
         s = str(self.model)
-        p = self.data_path.get_path('model-info')
+        p = self.data_path.get_path('model_info')
         with open(p, 'a') as f:
             f.write(s + '\n')
 

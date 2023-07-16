@@ -139,16 +139,10 @@ class ArgParser:
             choices=[
                 'vgg16', 
                 'vgg19',
-                'inception_v3', 
                 'vgg16_no_dropout',
-                'vgg16_pretrained', 
-                'vgg19_pretrained',
-                'inception_v1_pretrained',
-                'inception_v3_pretrained',
+                'inception_v3', 
                 'convnext',
-                'convnext_pretrained',
                 'resnet18',
-                'resnet18_pretrained',
                 'resnet18_dropout',
                 'resnet50',
                 'resnext50_32x4d'
@@ -161,7 +155,9 @@ class ArgParser:
             '--model_nickname', 
             default='', 
             type=str,                
-            help=f'Nickname of the neural network model'
+            help='Nickname of the neural network model. \
+                Include "pretrained" in the model_nickname \
+                to load a pretrained model.'
         )
 
         self.parser.add_argument(

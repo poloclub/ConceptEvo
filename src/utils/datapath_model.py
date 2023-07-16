@@ -26,17 +26,23 @@ class DataPathModel:
             # Data paths for a from_model (keys: ['from_model_path'])
             self.gen_model_path(
                 'from_model_path', 
-                self.args.from_model_path, 
-                self.args.from_model_nickname, 
-                self.args.from_epoch
+                self.args.from_model_path \
+                    if hasattr(self.args, 'from_model_path') else None, 
+                self.args.from_model_nickname \
+                    if hasattr(self.args, 'from_model_nickname') else None, 
+                self.args.from_epoch \
+                    if hasattr(self.args, 'from_epoch') else None
             )
 
             # Data paths for a to_model (keys: ['to_model_path'])
             self.gen_model_path(
                 'to_model_path', 
-                self.args.to_model_path, 
-                self.args.to_model_nickname, 
-                self.args.to_epoch
+                self.args.to_model_path \
+                    if hasattr(self.args, 'to_model_path') else None, 
+                self.args.to_model_nickname \
+                    if hasattr(self.args, 'to_model_nickname') else None,  
+                self.args.to_epoch \
+                    if hasattr(self.args, 'to_epoch') else None
             )
         else:
             # Check if model_nickname is given
@@ -46,15 +52,20 @@ class DataPathModel:
 
             # Generate data and log directory
             data_dir_path, log_dir_path = self.util.gen_sub_directories([
-                'model', self.args.model_nickname
+                'model', 
+                self.args.model_nickname \
+                    if hasattr(self.args, 'model_nickname') else None,
             ])
 
             # Data paths for a model (keys: ['model_path'])
             self.gen_model_path(
                 'model_path', 
-                self.args.model_path, 
-                self.args.model_nickname, 
-                self.args.epoch
+                self.args.model_path \
+                    if hasattr(self.args, 'model_path') else None,
+                self.args.model_nickname \
+                    if hasattr(self.args, 'model_nickname') else None,
+                self.args.epoch \
+                    if hasattr(self.args, 'epoch') else None,
             )
 
             # Model and layer information (keys: ['layer_info', 'model_info'])

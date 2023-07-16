@@ -1,16 +1,7 @@
-"""A main module to run python codes.
-
-It parses arguments given by the users and run the codes based on the 
-argumensts. An instruction for setting arguments can be found in 
-<TODO: Add a link to an instruction for setting args>.
-"""
+"""A main module to run codes"""
 
 # Embedding
 from embedding.image_embedding import *
-from embedding.image_embedding_co_act import *
-from embedding.image_pairs import *
-# from embedding.image_embedding_further import *
-from embedding.layer_act import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
 from embedding.reduce_dim import *
@@ -134,32 +125,22 @@ def load_model(args, data_path):
     if True in when_to_skip_loading_model:
         return None
 
+    pretrained = 'pretrained' in args.model_nickname
+
     if args.model_name == 'vgg16':
-        model = Vgg16(args, data_path)
+        model = Vgg16(args, data_path, pretrained=pretrained)
     elif args.model_name == 'vgg19':
-        model = Vgg19(args, data_path)
+        model = Vgg16(args, data_path, pretrained=pretrained)
     elif args.model_name == 'inception_v3':
-        model = InceptionV3(args, data_path)
-    elif args.model_name == 'vgg16_pretrained':
-        model = Vgg16(args, data_path, pretrained=True)
-    elif args.model_name == 'vgg19_pretrained':
-        model = Vgg19(args, data_path, pretrained=True)
+        model = InceptionV3(args, data_path, pretrained=pretrained)
     elif args.model_name == 'vgg16_no_dropout':
-        model = Vgg16NoDropout(args, data_path)
-    elif args.model_name == 'inception_v3_pretrained':
-        model = InceptionV3(args, data_path, pretrained=True)
-    elif args.model_name == 'inception_v1_pretrained':
-        model = InceptionV1(args, data_path, pretrained=True)
+        model = Vgg16NoDropout(args, data_path, pretrained=pretrained)
     elif args.model_name == 'convnext':
-        model = ConvNeXt(args, data_path)
-    elif args.model_name == 'convnext_pretrained':
-        model = ConvNeXt(args, data_path, pretrained=True)
+        model = ConvNeXt(args, data_path, pretrained=pretrained)
     elif args.model_name == 'resnet18':
-        model = ResNet18(args, data_path)
-    elif args.model_name == 'resnet18_pretrained':
-        model = ResNet18(args, data_path, pretrained=True)
+        model = ResNet18(args, data_path, pretrained=pretrained)
     elif args.model_name == 'resnet50':
-        model = ResNet50(args, data_path)
+        model = ResNet50(args, data_path, pretrained=pretrained)
     else:
         raise ValueError(f'Error: unknown model given "{args.model_name}"')
 

@@ -22,6 +22,9 @@ yarn.lock
 src/*.sh
 
 # Ignore big data
+src/utils/notebook/*
+image_embedding/
+neuron_embedding/
 src/utils/notebook/sort-important-evolutions-by-class.ipynb
 data/img_pairs/
 data/example_patch/

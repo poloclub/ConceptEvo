@@ -1,9 +1,12 @@
 import json
 import umap
+import random
 import numpy as np
 from tqdm import tqdm
 from time import time
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.patches as mpatches
 
 class Emb:
     """Generate neuron embeddings"""
@@ -11,9 +14,11 @@ class Emb:
     """
     Constructor
     """
-    def __init__(self, args, data_path, model):
+    def __init__(self, args, data_path):
         self.args = args
         self.data_path = data_path
+
+        self.model_nickname = f'{self.args.model_nickname}_{self.args.epoch}'
 
         self.stimulus = {}
         self.co_act_neurons = {}
@@ -182,9 +187,6 @@ class Emb:
 
     def save_embedding(self, epoch=None):
         path = self.data_path.get_path('neuron_emb')
-        if epoch != None:
-            path = path.replace('.json', '-epoch={}.json'.format(epoch))
-
         emb_to_save = {}
         for neuron in self.emb:
             emb_to_save[neuron] = self.emb[neuron].tolist()
@@ -192,32 +194,77 @@ class Emb:
 
     def get_emb_arr(self):
         X = np.zeros((len(self.emb), self.args.dim))
+        id2idx = {}
         for i, neuron in enumerate(self.emb):
             X[i] = self.emb[neuron]
-        return X
+            id2idx[neuron] = i
+        return X, id2idx
 
     def save_embedding_vis(self):
-        X = self.get_emb_arr()
+        # Get 2d embedding
+        X, id2idx = self.get_emb_arr()
         reducer = umap.UMAP(n_components=2)
-        fitted_emb2d = reducer.fit_transform(X)
-        emb2d = reducer.transform(X)
-        plt.scatter(emb2d[:, 0], emb2d[:, 1], s=2, alpha=0.5)
-        plt.savefig(self.data_path.get_path('neuron_emb-vis'))
+        reducer = reducer.fit(X)
+        X_2d = reducer.transform(X)
+
+        # Show scatter plot
+        plt.scatter(X_2d[:, 0], X_2d[:, 1], s=1, color='lightgray')
+
+        # Load color mapping for sample neurons
+        p = self.data_path.get_path('color_map')
+        color_map = {}
+        if p is not None:
+            color_map = self.load_json(p)
+
+        # Show example neurons
+        p = self.data_path.get_path('sample_neuron')
+        if p is not None:
+            sample_neuron = self.load_json(p)
+            if self.model_nickname in sample_neuron:
+                # Highlight sample neurons
+                sample_neuron_data = sample_neuron[self.model_nickname]
+                for key in sample_neuron_data:
+                    neurons = sample_neuron_data[key]
+                    X_2d_sample = np.zeros((len(neurons), 2))
+                    for i, neuron in enumerate(neurons):
+                        X_2d_sample[i] = X_2d[id2idx[neuron]]
+
+                    if key in color_map:
+                        color = color_map[key]
+                    else:
+                        color = self.generate_random_color_hex()
+                        color_map[key] = color
+                    plt.scatter(X_2d_sample[:, 0], X_2d_sample[:, 1], s=10, color=color)
+
+                # Legend
+                handles = [mpatches.Patch(color=color_map[key]) for key in color_map]
+                labels = list(color_map.keys())
+                plt.legend(handles, labels)
+
+
+        plt.savefig(self.data_path.get_path('neuron_emb_vis'))
+
+    def generate_random_color_hex(self):
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        hex_code = '#{:02x}{:02x}{:02x}'.format(r, g, b)
+        return hex_code
 
     """
     Handle external files (e.g., output, log, ...)
     """
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('neuron_emb-log'), log_opt) as f:
+        with open(self.data_path.get_path('neuron_emb_log'), log_opt) as f:
             f.write(log + '\n')
 
     def write_first_log(self):
-        hypara_setting = self.data_path.gen_act_setting_str('neuron_emb', '\n')
-        log = 'Neuron Embedding\n'
-        log += 'model_nickname: {}\n'.format(self.args.model_nickname)
-        log += 'model_path: {}\n\n'.format(self.args.model_path)
-        log += hypara_setting + '\n\n'
+        log = 'Compute neuron Embedding\n\n'
+        log += f'model_nickname: {self.model_nickname}\n'
+        log += f'model_path: {self.data_path.get_path("model_path")}\n'
+        log += self.data_path.data_path_neuron_embedding.para_info
+        log += '\n'
         self.write_log(log, False)
             
     def load_json(self, file_path):

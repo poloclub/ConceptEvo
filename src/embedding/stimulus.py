@@ -13,7 +13,9 @@ from utils.utils import *
 
 
 class Stimulus:
-    """Find stimulus for each neuron"""
+    """
+    Compute stimulus for each neuron
+    """
 
     """
     Constructor
@@ -53,7 +55,7 @@ class Stimulus:
         ])
 
         self.training_dataset = datasets.ImageFolder(
-            self.data_path.get_path('train_data'),
+            self.args.stimulus_image_path,
             data_transform
         )
 
@@ -66,7 +68,7 @@ class Stimulus:
 
     def get_layer_info(self):
         self.layers = self.model.layers[:]
-        self.layers_for_stimulus = self.model.layers_for_stimulus[:]
+        self.layers_for_stimulus = self.model.layers_for_ex_patch[:]
         self.num_neurons = self.model.num_neurons
 
     """
@@ -154,39 +156,29 @@ class Stimulus:
                 self.stimulus[layer][neuron] = imgs
         file_path = self.data_path.get_path('stimulus')
         self.save_json(self.stimulus, file_path)
-        
-
-    def save_json(self, data, file_path):
-        with open(file_path, 'w') as f:
-            json.dump(data, f)
-
 
     """
     Handle external files (e.g., output, log, ...)
     """
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('stimulus-log'), log_opt) as f:
+        with open(self.data_path.get_path('stimulus_log'), log_opt) as f:
             f.write(log + '\n')
-
         
     def write_first_log(self):
-        hypara_setting = self.data_path.gen_act_setting_str('stimulus', '\n')
-        log = 'Find Stimulus\n'
-        log += 'model_nickname: {}\n'.format(self.args.model_nickname)
-        log += 'model_path: {}\n\n'.format(self.args.model_path)
-        log += hypara_setting + '\n\n'
+        log = 'Compute stimulus\n\n'
+        log += f'model_nickname: {self.args.model_nickname}\n'
+        log += f'model_path: {self.data_path.get_path("model_path")}\n'
+        log += f'stimulus_image_path: {self.args.stimulus_image_path}\n'
+        log += f'topk_s: {self.data_path.get_path("topk_s")}\n'
         self.write_log(log, False)
-
 
     def load_json(self, file_path):
         with open(file_path, 'r') as f:
             data = json.load(f)
         return data
 
-
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
             json.dump(data, f)
-
         

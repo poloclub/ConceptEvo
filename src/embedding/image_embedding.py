@@ -1,3 +1,4 @@
+import os
 import json
 from time import time
 
@@ -11,13 +12,11 @@ class ImageEmb:
     """
     Constructor
     """
-    def __init__(self, args, data_path, model):
+    def __init__(self, args, data_path):
         self.args = args
         self.data_path = data_path
 
-        self.start_from_pre_computed = self.args.from_iter_img_emb >= 0
-        self.num_imgs = model.num_training_imgs
-        self.imgs = []
+        self.num_imgs = self.get_total_number_of_images()
 
         self.stimulus = {}
         self.neuron_emb = {}
@@ -43,10 +42,7 @@ class ImageEmb:
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
-        for layer in self.stimulus:
-            for neuron, neuron_imgs in enumerate(self.stimulus[layer]):
-                self.stimulus[layer][neuron] = neuron_imgs[:self.args.k]
-
+        
     def load_neuron_emb(self):
         self.neuron_emb = self.load_json(self.data_path.get_path('neuron_emb'))
         for neuron in self.neuron_emb:
@@ -67,16 +63,22 @@ class ImageEmb:
         neuron_idx = int(neuron_idx)
         return self.stimulus[layer][neuron_idx]
 
+    def get_total_number_of_images(self):
+        root_directory = self.args.stimulus_image_path
+        total_images = 0
+        for dirpath, dirnames, filenames in os.walk(root_directory):
+            for filename in filenames:
+                if filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    total_images += 1
+        
+        return total_images
+
     """
     Compute image embedding
     """
     def init_img_emb(self):
-        if self.start_from_pre_computed:
-            file_path = self.data_path.get_path('img_emb_from')
-            self.img_emb = np.loadtxt(file_path)
-        else:
-            self.img_emb \
-                = np.random.random((self.num_imgs, self.args.dim)) - 0.5
+        self.img_emb \
+            = np.random.random((self.num_imgs, self.args.dim)) - 0.5
         
     def compute_approx_neuron_vec(self, X_n):
         vec_sum = np.zeros(self.args.dim)
@@ -101,7 +103,6 @@ class ImageEmb:
             v_n = self.neuron_emb[neuron]
             v_n_p = self.compute_approx_neuron_vec(X_n)
             grad += (v_n_p - v_n) / len(X_n)
-        # grad = grad / self.num_neurons
         return grad
 
     def compute_rmse(self):
@@ -117,7 +118,7 @@ class ImageEmb:
     def compute_img_emb_from_neuron_emb(self):
         self.write_first_log()
 
-        tic, total = time(), self.args.max_iter_img_emb
+        tic, total = time(), self.args.num_img_emb_epochs
         with tqdm(total=total) as pbar:
             for i in range(total):
                 # Update image embedding
@@ -128,13 +129,10 @@ class ImageEmb:
                 err = self.compute_rmse()
                 if err < self.args.thr_img_emb:
                     break
-                if i % 200 == 0:
+                if i % 10 == 0:
                     toc = time()
-                    iter_num = i
-                    if self.start_from_pre_computed:
-                        iter_num += self.args.from_iter_img_emb
                     self.write_log(
-                        f'iter={iter_num}, rmse={err}, cum_time={toc - tic}sec'
+                        f'iter={i}, rmse={err}, cum_time={toc - tic} sec'
                     )
 
     def save_img_emb(self):
@@ -154,15 +152,13 @@ class ImageEmb:
             json.dump(data, f)
 
     def write_first_log(self):
-        hyperpara_setting = self.data_path.gen_act_setting_str('img_emb', '\n')
         log = 'Image Embedding\n'
-        log += 'model_nickname: {}\n'.format(self.args.model_nickname)
-        log += 'from_iter_img_emb: {}\n'.format(self.args.from_iter_img_emb)
-        log += 'model_path: {}\n\n'.format(self.args.model_path)
-        log += hyperpara_setting + '\n\n'
+        log += f'model_nickname: {self.args.model_nickname}\n'
+        log += f'model_path: {self.data_path.get_path("model_path")}\n'
+        log += self.data_path.data_path_image_embedding.para_info
         self.write_log(log, False)
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('img_emb-log'), log_opt) as f:
+        with open(self.data_path.get_path('img_emb_log'), log_opt) as f:
             f.write(log + '\n')

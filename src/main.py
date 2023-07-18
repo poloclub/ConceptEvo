@@ -21,17 +21,15 @@ from importantneuron.important_neuron import *
 from importantneuron.important_neuron_act_map import *
 
 # CNN Models
-from model.convnext import *
-from model.inception_v3 import *
 from model.vgg16 import *
 from model.vgg16_no_dropout import *
 from model.vgg19 import *
-from model.resnet18 import *
-from model.resnet50 import *
+from model.inception_v3 import *
+from model.convnext import *
 
 # Utils
-from utils.args import *
-from utils.datapath import *
+from utils.args.args import *
+from utils.datapath.datapath import *
 
 def main():
     # Parse input arguments
@@ -47,7 +45,12 @@ def main():
 
     # Train model
     if args.train:
+        model.model.train()
         train_model(model)
+    
+    # Set evaluation mode
+    model.model.eval()
+    print(f'training mode: {model.model.training}')
 
     # Test model
     if args.test:
@@ -69,16 +72,13 @@ def main():
     if args.stimulus:
         compute_stimulus(args, data_path, model)
 
-
-
-
     # Compute neuron embedding
     if args.neuron_embedding:
-        compute_neuron_embedding(args, data_path, model)
+        compute_neuron_embedding(args, data_path)
 
     # Compute image embedding
-    if args.img_emb:
-        compute_image_embedding(args, data_path, model)
+    if args.image_embedding:
+        compute_image_embedding(args, data_path)
 
     if args.img_pairs:
         compute_img_pairs(args, data_path, model)
@@ -119,6 +119,8 @@ def load_model(args, data_path):
 
     when_to_skip_loading_model = [
         args.sample_images,
+        args.neuron_embedding,
+        args.image_embedding,
         args.dim_reduction != 'None',
         args.find_important_evo,
         args.eval_important_evo,
@@ -132,7 +134,7 @@ def load_model(args, data_path):
     if args.model_name == 'vgg16':
         model = Vgg16(args, data_path, pretrained=pretrained)
     elif args.model_name == 'vgg19':
-        model = Vgg16(args, data_path, pretrained=pretrained)
+        model = Vgg19(args, data_path, pretrained=pretrained)
     elif args.model_name == 'inception_v3':
         model = InceptionV3(args, data_path, pretrained=pretrained)
     elif args.model_name == 'vgg16_no_dropout':
@@ -174,12 +176,12 @@ def train_model(model):
     model.train_model()
 
 def test_model(model):
-    model.test_model(write_log=True, test_on='training')
-    model.test_model(write_log=True, test_on='test')
+    # model.test_model(write_log=True, train_or_test='train')
+    model.test_model(write_log=True, train_or_test='test')
 
 def test_model_by_class(model):
-    model.test_model_by_class(write_log=True, test_on='training')
-    model.test_model_by_class(write_log=True, test_on='test')
+    model.test_model_by_class(write_log=True, train_or_test='train')
+    model.test_model_by_class(write_log=True, train_or_test='test')
 
 def generate_example_patch(args, data_path, model):
     ex_patch = ExamplePatch(args, data_path, model)
@@ -189,23 +191,34 @@ def sample_images(args):
     img_sample = SampleImages(args)
     img_sample.sample_images()
 
+def compute_stimulus(args, data_path, model):
+    stimulus = Stimulus(args, data_path, model)
+    stimulus.compute_stimulus()
+
+def compute_neuron_embedding(args, data_path):
+    neuron_emb = Emb(args, data_path)
+    neuron_emb.compute_neuron_embedding()
+
+def compute_image_embedding(args, data_path):
+    img_emb = ImageEmb(args, data_path)
+    img_emb.compute_img_embedding()
+
+
+
+
+
+
+
+
 
 
 def compute_layer_act(args, data_path, model):
     layer_act = LayerAct(args, data_path, model)
     layer_act.compute_layer_act()
 
-def compute_stimulus(args, data_path, model):
-    stimulus = Stimulus(args, data_path, model)
-    stimulus.compute_stimulus()
 
-def compute_neuron_embedding(args, data_path, model):
-    neuron_emb = Emb(args, data_path, model)
-    neuron_emb.compute_neuron_embedding()
 
-def compute_image_embedding(args, data_path, model):
-    img_emb = ImageEmb(args, data_path, model)
-    img_emb.compute_img_embedding()
+
 
 def compute_img_pairs(args, data_path, model):
     img_pairs = ImagePairs(args, data_path, model)

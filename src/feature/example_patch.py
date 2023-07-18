@@ -23,7 +23,7 @@ class ExamplePatch:
         self.data_path_example_patch = data_path.data_path_example_patch
 
         self.model = model
-        self.S = model.input_size
+        self.S = model.get_input_size()
         self.R = self.args.ex_patch_size_ratio
         
         self.layers = []
@@ -114,7 +114,7 @@ class ExamplePatch:
     def init_example_patches(self):
         for layer_name in self.layers_for_ex_patch:
             self.ex_patch[layer_name] = [
-                TopKKeeper(self.args.topk_s)
+                TopKKeeper(self.args.topk_e)
                 for neuron_i in range(self.num_neurons[layer_name])
             ]
 
@@ -136,7 +136,7 @@ class ExamplePatch:
 
         # Get top-k images that induce the higest maximum activation
         B, N, H, W = feature_map.shape
-        top_k, H, W = min(B, self.args.topk_s), int(H), int(W)
+        top_k, H, W = min(B, self.args.topk_e), int(H), int(W)
         linearized_feature_map = feature_map.view(B, N, -1)
         max_pixel_vals, max_pixel_indices = torch.max(linearized_feature_map, dim=-1)
         topk_pixel_vals, topk_img_indices = torch.topk(max_pixel_vals, k=top_k, dim=0)

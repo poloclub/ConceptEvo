@@ -48,8 +48,9 @@ class Stimulus:
     Initial setting
     """
     def init_setting(self):
+        S = self.model.get_input_size()
         data_transform = transforms.Compose([
-            transforms.Resize((self.model.input_size, self.model.input_size)),
+            transforms.Resize((S, S)),
             transforms.ToTensor(),
             transforms.Normalize(*self.model.input_normalization)
         ])

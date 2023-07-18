@@ -9,7 +9,7 @@
 #     └── example_patch
 #           └── <model_nickname>
 #                 ├── data
-#                 │     └── topk_s=<topk_s>-ex_patch_ratio=<ex_patch_ratio>
+#                 │     └── topk_e=<topk_e>-ex_patch_ratio=<ex_patch_ratio>
 #                 │          ├── crop/
 #                 │          ├── mask/
 #                 │          ├── inverse_mask/
@@ -22,7 +22,7 @@
 #           └── <model_nickname>
 #                 └── epoch_<epoch>
 #                     ├── data
-#                     │     └── topk_s=<topk_s>-ex_patch_ratio=<ex_patch_ratio>
+#                     │     └── topk_e=<topk_e>-ex_patch_ratio=<ex_patch_ratio>
 #                     │          ├── crop/
 #                     │          ├── mask/
 #                     │          ├── inverse_mask/
@@ -44,7 +44,7 @@
 # model_name=?
 # model_nickname=?
 # epoch=? (if it is not a pretrained model)
-# topk_s=?
+# topk_e=?
 # ex_patch_size_ratio=?
 # batch_size=?
 # 
@@ -54,7 +54,7 @@ model_name=convnext
 lr=0.004
 epoch=96
 model_nickname="$model_name"_"$lr"
-topk_s=20
+topk_e=20
 ex_patch_size_ratio=0.3
 batch_size=128
 
@@ -65,7 +65,7 @@ python main.py \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --epoch $epoch \
-    --topk_s $topk_s \
+    --topk_e $topk_e \
     --ex_patch_size_ratio $ex_patch_size_ratio \
     --batch_size $batch_size 
 ###############################################################################

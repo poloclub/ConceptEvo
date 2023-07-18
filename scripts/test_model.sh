@@ -17,7 +17,7 @@
 # model_name=?
 # model_nickname=?
 # epoch=?
-# model_path=?
+# model_path=? (optional)
 # batch_size=?
 # topk=?
 # 

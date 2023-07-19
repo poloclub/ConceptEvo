@@ -8,6 +8,7 @@ class EmbeddingArgs:
         self.create_stimulus_parser()
         self.create_neuron_embedding_parser()
         self.create_image_embedding_parser()
+        self.create_proj_embedding_parser()
 
     def create_image_sampling_parser(self):
         # Whether to do
@@ -163,6 +164,30 @@ class EmbeddingArgs:
         # Data path
         self.parser.add_argument(
             '--image_embedding_sub_dir_name', 
+            default='', 
+            type=str,
+            help='Sub-directory name for output'
+        )
+
+    def create_proj_embedding_parser(self):
+        # Whether to do
+        self.parser.add_argument(
+            '--proj_embedding', 
+            default=False, 
+            type=parse_bool_arg,
+            help='Whether to project embedding'
+        )
+
+        # Data path
+        self.parser.add_argument(
+            '--img_embedding_path', 
+            default='', 
+            type=str,
+            help='Path of image embedding'
+        )
+
+        self.parser.add_argument(
+            '--proj_embedding_sub_dir_name', 
             default='', 
             type=str,
             help='Sub-directory name for output'

@@ -18,7 +18,10 @@ class Emb:
         self.args = args
         self.data_path = data_path
 
-        self.model_nickname = f'{self.args.model_nickname}_{self.args.epoch}'
+        if 'pretrained' in self.args.model_nickname:
+            self.model_nickname = self.args.model_nickname
+        else:
+            self.model_nickname = f'{self.args.model_nickname}_{self.args.epoch}'
 
         self.stimulus = {}
         self.co_act_neurons = {}
@@ -240,7 +243,6 @@ class Emb:
                 handles = [mpatches.Patch(color=color_map[key]) for key in color_map]
                 labels = list(color_map.keys())
                 plt.legend(handles, labels)
-
 
         plt.savefig(self.data_path.get_path('neuron_emb_vis'))
 

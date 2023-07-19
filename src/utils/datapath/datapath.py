@@ -5,6 +5,7 @@ from utils.datapath.datapath_model import DataPathModel
 from utils.datapath.datapath_stimulus import DataPathStimulus
 from utils.datapath.datapath_neuron_embedding import DataPathNeuronEmbedding
 from utils.datapath.datapath_image_embedding import DataPathImageEmbedding
+from utils.datapath.datapath_proj_embedding import DataPathProjEmbedding
 from utils.datapath.datapath_example_patch import DataPathExamplePatch
 
 class DataPath:
@@ -66,6 +67,10 @@ class DataPath:
         # Generate paths for image embedding
         self.data_path_image_embedding = DataPathImageEmbedding(self.args)
         self.path = {**self.path, **self.data_path_image_embedding.path}
+
+        # Generate paths for projected embedding
+        self.data_path_proj_embedding = DataPathProjEmbedding(self.args)
+        self.path = {**self.path, **self.data_path_proj_embedding.path}
 
         # self.find_actions_and_necessary_paths()
         # self.map_action_to_args()

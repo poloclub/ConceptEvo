@@ -1,9 +1,9 @@
 import os
 from utils.datapath.datapath_util import DataPathUtil
 
-class DataPathNeuronEmbedding:
+class DataPathProjEmbedding:
     """
-    Manage paths for neuron embedding
+    Manage paths for projected embedding
     """
 
     """
@@ -15,12 +15,9 @@ class DataPathNeuronEmbedding:
 
         self.para = [
             ['dim', self.args.dim],
-            ['lr_emb', self.args.lr_emb],
-            ['topk_n', self.args.topk_n],
-            ['num_emb_epochs', self.args.num_emb_epochs],
-            ['num_emb_negs', self.args.num_emb_negs],
             ['stimulus_sub_dir_name', self.args.stimulus_sub_dir_name],
-            ['neuron_embedding_sub_dir_name', self.args.neuron_embedding_sub_dir_name]
+            ['proj_embedding_sub_dir_name', self.args.proj_embedding_sub_dir_name],
+            ['img_embedding_path', self.args.img_embedding_path]
         ]
 
         self.para_info = '\n'.join([
@@ -29,8 +26,7 @@ class DataPathNeuronEmbedding:
         ])
 
         self.actions_requiring_paths = [
-            self.args.neuron_embedding,
-            self.args.image_embedding
+            self.args.proj_embedding
         ]
 
         self.util = DataPathUtil(args.output_dir)
@@ -45,7 +41,7 @@ class DataPathNeuronEmbedding:
         if not self.util.is_arg_given(self.args.model_nickname):
             log = 'Model nickname is not given.'
             raise ValueError(log)
-
+        
         # Check if epoch is given
         if 'pretrained' not in self.args.model_nickname:
             if not self.util.is_arg_given(self.args.epoch):
@@ -62,36 +58,43 @@ class DataPathNeuronEmbedding:
 
         # Generate data and log directory
         data_dir_path, log_dir_path = self.util.gen_sub_directories([
-            'neuron_embedding', 
-            self.args.neuron_embedding_sub_dir_name
+            'proj_embedding', 
+            self.args.proj_embedding_sub_dir_name
         ])
 
-        # Log path (key: ['neuron_emb_log'])
+        # Log path (key: ['img_emb_log'])
         if 'pretrained' in self.args.model_nickname:
             model_nickname_epoch = self.args.model_nickname
         else:
             model_nickname_epoch = f'{self.args.model_nickname}_{self.args.epoch}'
-        self.path['neuron_emb_log'] = os.path.join(
-            log_dir_path, f'neuron_emb_log_{model_nickname_epoch}.txt'
+        self.path['proj_emb_log'] = os.path.join(
+            log_dir_path, f'proj_emb_log_{model_nickname_epoch}.txt'
         )
 
         # Data path 
         # keys: [
-        #    'neuron_emb', 
-        #    'co_act', 
-        #    'neuron_emb_vis',
-        #    'sample_neuron',
+        #    'proj_emb', 
+        #    'proj_emb_vis', 
+        #    'img_emb',
+        #    'stimulus',
+        #    'sample_neuron'
         #    'color_map'
         # ]
-        self.path['neuron_emb'] = os.path.join(
-            data_dir_path, f'neuron_emb_{model_nickname_epoch}.json'
+        self.path['proj_emb'] = os.path.join(
+            data_dir_path, f'proj_emb_{model_nickname_epoch}.txt'
         )
-        self.path['co_act'] = os.path.join(
-            data_dir_path, f'co_act_{model_nickname_epoch}.json'
+        self.path['proj_emb_vis'] = os.path.join(
+            data_dir_path, f'proj_emb_vis_{model_nickname_epoch}.pdf'
         )
-        self.path['neuron_emb_vis'] = os.path.join(
-            data_dir_path, f'neuron_emb_vis_{model_nickname_epoch}.pdf'
+        self.path['img_emb'] = self.args.img_embedding_path
+        self.path['stimulus'] = os.path.join(
+            self.args.output_dir, 
+            'stimulus',
+            self.args.stimulus_sub_dir_name,
+            'data',
+            f'stimulus_{model_nickname_epoch}.json'
         )
+
         self.path['sample_neuron'] = None
         p = os.path.join(
             self.args.output_dir, 'neuron_embedding', 'sample_neuron.json'
@@ -105,9 +108,8 @@ class DataPathNeuronEmbedding:
         )
         if os.path.exists(p):
             self.path['color_map'] = p
-
+        
         # Save setting information
         setting_info_path = os.path.join(log_dir_path, 'setting.txt')
         with open(setting_info_path, 'w') as f:
             f.write(self.para_info)
-

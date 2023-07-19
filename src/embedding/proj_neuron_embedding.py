@@ -1,7 +1,12 @@
 import json
+import umap
+import random
 import numpy as np
 from tqdm import tqdm
 from time import time
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.patches as mpatches
 
 class ProjNeuronEmb:
     """
@@ -11,9 +16,14 @@ class ProjNeuronEmb:
     """
     Constructor
     """
-    def __init__(self, args, data_path, model):
+    def __init__(self, args, data_path):
         self.args = args
         self.data_path = data_path
+
+        if 'pretrained' in self.args.model_nickname:
+            self.model_nickname = self.args.model_nickname
+        else:
+            self.model_nickname = f'{self.args.model_nickname}_{self.args.epoch}'
 
         self.stimulus = {}
         self.img_emb = None
@@ -28,10 +38,11 @@ class ProjNeuronEmb:
         self.load_stimulus()
         self.init_neuron_embedding()
         self.project_neuron_embedding()
-        self.save_projected_neuron_embedding()
+        self.save_embedding()
+        self.save_embedding_vis()
 
     """
-    Utils
+    Load data
     """
     def load_img_emb(self):
         self.img_emb = np.loadtxt(self.img_emb_path)
@@ -39,23 +50,6 @@ class ProjNeuronEmb:
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
-        for layer in self.stimulus:
-            for neuron, neuron_imgs in enumerate(self.stimulus[layer]):
-                self.stimulus[layer][neuron] = neuron_imgs[:self.args.k]
-    
-    def save_projected_neuron_embedding(self):
-        for neuron in self.neuron_emb:
-            self.neuron_emb[neuron] = [
-                round(x, 3) for x in self.neuron_emb[neuron].tolist()
-            ]
-
-        self.save_json(
-            self.neuron_emb, self.data_path.get_path('proj_neuron_emb')
-        )
-
-        store_path = self.data_path.get_path('proj_neuron_emb-store')
-        if store_path != None:
-            self.save_json(self.neuron_emb, store_path)
 
     """
     Compute projected neuron embedding
@@ -70,7 +64,7 @@ class ProjNeuronEmb:
     def get_stimulus_of_neuron(self, neuron):
         layer, neuron_idx = neuron.split('-')
         neuron_idx = int(neuron_idx)
-        return self.stimulus[layer][neuron_idx][:self.args.k]
+        return self.stimulus[layer][neuron_idx]
 
     def compute_approx_neuron_vec(self, X_n):
         vec_sum = np.zeros(self.args.dim)
@@ -86,10 +80,78 @@ class ProjNeuronEmb:
             v_neuron = self.compute_approx_neuron_vec(stimulus)
             self.neuron_emb[neuron] = v_neuron
         toc = time()
-        self.write_log('running_time: {}sec'.format(toc - tic))
+        self.write_log('running_time: {} sec'.format(toc - tic))
+
+    def save_embedding(self):
+        for neuron in self.neuron_emb:
+            self.neuron_emb[neuron] = [
+                round(x, 3) for x in self.neuron_emb[neuron].tolist()
+            ]
+
+        self.save_json(
+            self.neuron_emb, self.data_path.get_path('proj_emb')
+        )
+
+    def get_emb_arr(self):
+        X = np.zeros((len(self.neuron_emb), self.args.dim))
+        id2idx = {}
+        for i, neuron in enumerate(self.neuron_emb):
+            X[i] = self.neuron_emb[neuron]
+            id2idx[neuron] = i
+        return X, id2idx
+
+    def save_embedding_vis(self):
+        # Get 2d embedding
+        X, id2idx = self.get_emb_arr()
+        reducer = umap.UMAP(n_components=2)
+        reducer = reducer.fit(X)
+        X_2d = reducer.transform(X)
+
+        # Show scatter plot
+        plt.scatter(X_2d[:, 0], X_2d[:, 1], s=1, color='lightgray')
+
+        # Load color mapping for sample neurons
+        p = self.data_path.get_path('color_map')
+        color_map = {}
+        if p is not None:
+            color_map = self.load_json(p)
+
+        # Show example neurons
+        p = self.data_path.get_path('sample_neuron')
+        if p is not None:
+            sample_neuron = self.load_json(p)
+            if self.model_nickname in sample_neuron:
+                # Highlight sample neurons
+                sample_neuron_data = sample_neuron[self.model_nickname]
+                for key in sample_neuron_data:
+                    neurons = sample_neuron_data[key]
+                    X_2d_sample = np.zeros((len(neurons), 2))
+                    for i, neuron in enumerate(neurons):
+                        X_2d_sample[i] = X_2d[id2idx[neuron]]
+
+                    if key in color_map:
+                        color = color_map[key]
+                    else:
+                        color = self.generate_random_color_hex()
+                        color_map[key] = color
+                    plt.scatter(X_2d_sample[:, 0], X_2d_sample[:, 1], s=10, color=color)
+
+                # Legend
+                handles = [mpatches.Patch(color=color_map[key]) for key in color_map]
+                labels = list(color_map.keys())
+                plt.legend(handles, labels)
+
+        plt.savefig(self.data_path.get_path('proj_emb_vis'))
+
+    def generate_random_color_hex(self):
+        r = random.randint(0, 255)
+        g = random.randint(0, 255)
+        b = random.randint(0, 255)
+        hex_code = '#{:02x}{:02x}{:02x}'.format(r, g, b)
+        return hex_code
 
     """
-    Handle external files (e.g., output, log, ...)
+    Utils
     """
     def load_json(self, file_path):
         with open(file_path, 'r') as f:
@@ -101,18 +163,16 @@ class ProjNeuronEmb:
             json.dump(data, f)
    
     def write_first_log(self):
-        hyperpara_setting = self.data_path.gen_act_setting_str(
-            'proj_neuron_emb', '\n'
-        )
-        
-        log = 'Projected Neuron Embedding\n\n'
-        log += 'model_nickname: {}\n'.format(self.args.model_nickname)
-        log += 'model_path: {}\n'.format(self.args.model_path)
-        log += 'img_emb_path: {}\n\n'.format(self.img_emb_path)
-        log += hyperpara_setting + '\n\n'
+        log = 'Project Embedding\n\n'
+        log += f'model_nickname: {self.args.model_nickname}\n'
+        log += f'epoch: {self.args.epoch}\n'
+        log += f'dim: {self.args.dim}\n'
+        log += f'img_embedding_path: {self.args.img_embedding_path}\n'
+        log += f'stimulus path: {self.data_path.get_path("stimulus")}\n'
+        log += f'proj_embedding_sub_dir_name: {self.args.proj_embedding_sub_dir_name}'
         self.write_log(log, False)
    
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        with open(self.data_path.get_path('proj_neuron_emb-log'), log_opt) as f:
+        with open(self.data_path.get_path('proj_emb_log'), log_opt) as f:
             f.write(log + '\n')

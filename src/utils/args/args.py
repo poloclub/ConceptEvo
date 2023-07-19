@@ -37,7 +37,7 @@ class ArgParser:
         # self.parse_embedding_setting()
         # self.parse_neuron_embedding_setting()
         # self.parse_image_embedding_setting()
-        self.parse_proj_neuron_embedding_setting()
+        # self.parse_proj_neuron_embedding_setting()
         self.parse_dim_reduction_setting()
         self.parse_important_neuron_and_evolution_setting()
         self.parse_important_evolution_setting()

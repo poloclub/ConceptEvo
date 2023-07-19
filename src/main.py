@@ -80,15 +80,20 @@ def main():
     if args.image_embedding:
         compute_image_embedding(args, data_path)
 
+    # Compute projected neuron embedding
+    if args.proj_embedding:
+        compute_proj_neuron_emb(args, data_path)
+
+
+
+
     if args.img_pairs:
         compute_img_pairs(args, data_path, model)
 
     if args.img_emb_co_act:
         compute_image_embedding_co_act(args, data_path, model)
 
-    # Compute projected neuron embedding
-    if args.proj_neuron_emb:
-        compute_proj_neuron_emb(args, data_path, model)
+    
 
     # Project neuron embedding to 2D space
     if args.dim_reduction != 'None':
@@ -203,7 +208,9 @@ def compute_image_embedding(args, data_path):
     img_emb = ImageEmb(args, data_path)
     img_emb.compute_img_embedding()
 
-
+def compute_proj_neuron_emb(args, data_path):
+    proj_neuron_emb = ProjNeuronEmb(args, data_path)
+    proj_neuron_emb.compute_projected_neuron_emb()
 
 
 
@@ -228,9 +235,7 @@ def compute_image_embedding_co_act(args, data_path, model):
     img_emb_layer_act = ImageEmbCoAct(args, data_path, model)
     img_emb_layer_act.compute_img_embedding()
 
-def compute_proj_neuron_emb(args, data_path, model):
-    proj_neuron_emb = ProjNeuronEmb(args, data_path, model)
-    proj_neuron_emb.compute_projected_neuron_emb()
+
 
 def reduce_embedding_dim(args, data_path):
     reducer = Reducer(args, data_path)

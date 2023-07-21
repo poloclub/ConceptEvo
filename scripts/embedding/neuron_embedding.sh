@@ -2,13 +2,13 @@
 # neuron_embedding.sh
 # 
 # Create neuron embeddings of a base model.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 ###############################################################################
 
 ###############################################################################
 # The results will be saved at:
 # 
-# ../data
+# ../../data
 #     └── neuron_embedding
 #             └── <neuron_embedding_sub_dir_name>
 #                   ├── data

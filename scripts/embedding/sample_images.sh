@@ -2,7 +2,7 @@
 # sample_images.sh
 # 
 # Sample images.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 ###############################################################################
 
 ###############################################################################

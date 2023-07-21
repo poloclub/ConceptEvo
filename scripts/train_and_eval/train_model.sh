@@ -1,22 +1,22 @@
 ###############################################################################
 # train_model.sh
 # 
-# Train a model from scratch or a pre-trained one.
-# Run this script at `../src` where `main.py` exists.
-# 
-# The trained model of an epoch will be saved at
-# `../data/model/<model_nickname>/data/model-<epoch>.pth`.
-# 
-# The training logs will be saved at
-# `../data/model/<model_nickname>/log/training-log.pth`.
-# 
-# The description of model will be saved at
-# `../data/model/<model_nickname>/log/model-info.txt`.
-# 
-# The description of the layers will be saved at
-# `../data/model/<model_nickname>/log/layer-info.txt`. 
+# Train a CNN model.
+# Run this script at `../../src` where `main.py` exists.
+#
 ###############################################################################
-
+# The results will be saved at:
+# 
+# ../../data
+#     └── model
+#           └── <model_nickname>
+#                   ├── data
+#                   │     └── model-<epoch>.pth
+#                   └── log
+#                         ├── train_log.txt
+#                         ├── layer_info.txt
+#                         └── model_info.txt
+#
 ###############################################################################
 # Provide a correct value for each "?" below:
 # 
@@ -46,8 +46,7 @@ momentum=0.9
 learning_eps=0.05
 topk=5
 num_epochs=300
-###############################################################################
-
+#
 ###############################################################################
 # To train a model from a pre-trained one,
 # provide the correct path of the pre-trained model:

@@ -2,10 +2,10 @@
 # stimulus.sh
 # 
 # Find the most stimulating images for each neuron in the base model.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 # 
 # The result will be saved at
-# ../data
+# ../../data
 #     └── stimulus
 #           └── <stimulus_sub_dir_name>
 #                 ├── data
@@ -59,7 +59,6 @@ python main.py \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --epoch $epoch \
-    --model_path $model_path \
     --batch_size $batch_size \
     --topk_s $topk_s \
     --stimulus_image_path $stimulus_image_path \

@@ -2,10 +2,16 @@
 # test_model.sh
 # 
 # Measure the training and test accuracy of a model.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 # 
 # The result will be saved at 
-# `../data/model/<model_nickname>/log/test-epoch=<epoch>.txt`.
+# 
+# ../../data
+#     └── model
+#           └── <model_nickname>
+#                   ├── data
+#                   └── log
+#                         └── test_log_<epoch>.txt
 ###############################################################################
 
 ###############################################################################

@@ -2,18 +2,18 @@
 # proj_embedding.sh
 # 
 # Create (approximated) neuron embeddings of a non-base model.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 ###############################################################################
 
 ###############################################################################
 # File structure:
 # 
-# ../data
+# ../../data
 #     └── proj_embedding
 #             └── proj_embedding_sub_dir_name
 #                   ├── data
 #                   │     ├── proj_emb_<model_nickname>_<epoch>.json
-#                   │     └── proj_emb__vis_<model_nickname>_<epoch>.pdf
+#                   │     └── proj_emb_vis_<model_nickname>_<epoch>.pdf
 #                   └── log
 #                         ├── setting.txt
 #                         └── proj_emb_log_<model_nickname>_<epoch>.txt
@@ -30,6 +30,7 @@
 # stimulus_sub_dir_name=?
 # proj_embedding_sub_dir_name=?
 # img_embedding_path=?
+# base_stimulus_path=?
 # 
 # For example:
 gpu=0
@@ -40,6 +41,7 @@ dim=30
 stimulus_sub_dir_name=train_0.1
 proj_embedding_sub_dir_name=train_0.1
 img_embedding_path=../data/image_embedding/train_0.1/data/img_emb_vgg19_pretrained.txt
+base_stimulus_path=../data/stimulus/train_0.1/data/stimulus_vgg19_pretrained.json
 ###############################################################################
 
 ###############################################################################
@@ -52,5 +54,6 @@ python main.py \
     --dim $dim \
     --stimulus_sub_dir_name $stimulus_sub_dir_name \
     --proj_embedding_sub_dir_name $proj_embedding_sub_dir_name \
-    --img_embedding_path $img_embedding_path
+    --img_embedding_path $img_embedding_path \
+    --base_stimulus_path $base_stimulus_path
 ###############################################################################

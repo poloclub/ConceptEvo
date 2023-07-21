@@ -89,7 +89,7 @@ class DataPathModel:
             if 'pretrained' in self.args.model_nickname:
                 for key in ['test_log', 'test_by_class_log']:
                     self.path[key] = os.path.join(log_dir_path, f'{key}.txt')
-            else:
+            elif not self.args.train:
                 if not self.util.is_arg_given(self.args.epoch):
                     log = 'Epoch is not given.'
                     raise ValueError(log)

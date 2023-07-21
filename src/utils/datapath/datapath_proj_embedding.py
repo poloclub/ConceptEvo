@@ -17,7 +17,8 @@ class DataPathProjEmbedding:
             ['dim', self.args.dim],
             ['stimulus_sub_dir_name', self.args.stimulus_sub_dir_name],
             ['proj_embedding_sub_dir_name', self.args.proj_embedding_sub_dir_name],
-            ['img_embedding_path', self.args.img_embedding_path]
+            ['img_embedding_path', self.args.img_embedding_path],
+            ['base_stimulus_path', self.args.base_stimulus_path]
         ]
 
         self.para_info = '\n'.join([
@@ -76,17 +77,19 @@ class DataPathProjEmbedding:
         #    'proj_emb', 
         #    'proj_emb_vis', 
         #    'img_emb',
+        #    'base_stimulus',
         #    'stimulus',
         #    'sample_neuron'
         #    'color_map'
         # ]
         self.path['proj_emb'] = os.path.join(
-            data_dir_path, f'proj_emb_{model_nickname_epoch}.txt'
+            data_dir_path, f'proj_emb_{model_nickname_epoch}.json'
         )
         self.path['proj_emb_vis'] = os.path.join(
             data_dir_path, f'proj_emb_vis_{model_nickname_epoch}.pdf'
         )
         self.path['img_emb'] = self.args.img_embedding_path
+        self.path['base_stimulus'] = self.args.base_stimulus_path
         self.path['stimulus'] = os.path.join(
             self.args.output_dir, 
             'stimulus',

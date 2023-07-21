@@ -10,7 +10,7 @@ import matplotlib.patches as mpatches
 
 class ProjNeuronEmb:
     """
-    Generate neuron embeddings that projected on shared space
+    Generate neuron embeddings projected on the unified semantic space
     """
 
     """
@@ -26,16 +26,19 @@ class ProjNeuronEmb:
             self.model_nickname = f'{self.args.model_nickname}_{self.args.epoch}'
 
         self.stimulus = {}
+        self.base_stimulus = {}
+        self.vocab = {}
         self.img_emb = None
         self.neuron_emb = {}
     
     """
     A wrapper function called by main.py
     """
-    def compute_projected_neuron_emb(self):
+    def compute_projected_neuron_embedding(self):
         self.img_emb_path = self.data_path.get_path('img_emb')
         self.load_img_emb()
         self.load_stimulus()
+        self.gen_vocab()
         self.init_neuron_embedding()
         self.project_neuron_embedding()
         self.save_embedding()
@@ -50,6 +53,16 @@ class ProjNeuronEmb:
     def load_stimulus(self):
         stimulus_path = self.data_path.get_path('stimulus')
         self.stimulus = self.load_json(stimulus_path)
+        base_stimulus_path = self.data_path.get_path('base_stimulus')
+        self.base_stimulus = self.load_json(base_stimulus_path)
+
+    def gen_vocab(self):
+        for layer in self.base_stimulus:
+            for imgs in self.base_stimulus[layer]:
+                for img in imgs:
+                    if img not in self.vocab:
+                        self.vocab[img] = 0
+                    self.vocab[img] += 1
 
     """
     Compute projected neuron embedding
@@ -59,7 +72,8 @@ class ProjNeuronEmb:
             num_neurons = len(self.stimulus[layer])
             for i in range(num_neurons):
                 neuron = f'{layer}-{i}'
-                self.neuron_emb[neuron] = np.random.rand(self.args.dim) - 0.5
+                self.neuron_emb[neuron] = np.zeros(self.args.dim)
+                # self.neuron_emb[neuron] = np.random.rand(self.args.dim) - 0.5
 
     def get_stimulus_of_neuron(self, neuron):
         layer, neuron_idx = neuron.split('-')
@@ -68,19 +82,28 @@ class ProjNeuronEmb:
 
     def compute_approx_neuron_vec(self, X_n):
         vec_sum = np.zeros(self.args.dim)
+        num_imgs_in_vocab = 0
         for x in X_n:
-            vec_sum += self.img_emb[x]
-        return vec_sum / len(X_n)
+            if x in self.vocab:
+                vec_sum += self.img_emb[x]
+                num_imgs_in_vocab += 1
+        if num_imgs_in_vocab > 0:
+            return vec_sum / num_imgs_in_vocab, num_imgs_in_vocab
+        else:
+            return vec_sum, num_imgs_in_vocab
     
     def project_neuron_embedding(self):
         self.write_first_log()
         tic = time()
+        no_vocab_neurons = 0
         for neuron in self.neuron_emb:
             stimulus = self.get_stimulus_of_neuron(neuron)
-            v_neuron = self.compute_approx_neuron_vec(stimulus)
+            v_neuron, num_imgs_in_vocab = self.compute_approx_neuron_vec(stimulus)
             self.neuron_emb[neuron] = v_neuron
         toc = time()
         self.write_log('running_time: {} sec'.format(toc - tic))
+        self.write_log(f'# no_vocab_neurons: {no_vocab_neurons}')
+        self.write_log(f'# total neurons: {len(self.neuron_emb)}')
 
     def save_embedding(self):
         for neuron in self.neuron_emb:

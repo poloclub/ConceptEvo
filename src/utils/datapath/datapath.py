@@ -6,6 +6,7 @@ from utils.datapath.datapath_stimulus import DataPathStimulus
 from utils.datapath.datapath_neuron_embedding import DataPathNeuronEmbedding
 from utils.datapath.datapath_image_embedding import DataPathImageEmbedding
 from utils.datapath.datapath_proj_embedding import DataPathProjEmbedding
+from utils.datapath.datapath_reduced_embedding import DataPathReducedEmbedding
 from utils.datapath.datapath_example_patch import DataPathExamplePatch
 
 class DataPath:
@@ -22,21 +23,7 @@ class DataPath:
     def __init__(self, args):
         self.args = args
         self.path = {}
-
         self.gen_data_dirs()
-
-        # self.path_keys = [
-        #     'train-data', 'test-data', 
-        #     'stimulus', 'co_act', 'neuron_emb', 
-        #     'layer_act', 'img_emb', 'img_emb_co_act',
-        #     'proj_neuron_emb', 'dim_reduction', 
-        #     'neuron_feature', 'act_map',
-        #     'find_important_evo', 'eval_important_evo'
-        # ]
-
-        # self.path_key_to_actions = {}
-        # self.action_to_args = {}
-
 
     """
     A wrapper function called in main.py
@@ -71,6 +58,10 @@ class DataPath:
         # Generate paths for projected embedding
         self.data_path_proj_embedding = DataPathProjEmbedding(self.args)
         self.path = {**self.path, **self.data_path_proj_embedding.path}
+
+        # Generate paths for reduced embedding
+        self.data_path_reduced_embedding = DataPathReducedEmbedding(self.args)
+        self.path = {**self.path, **self.data_path_reduced_embedding.path}
 
         # self.find_actions_and_necessary_paths()
         # self.map_action_to_args()
@@ -933,48 +924,48 @@ class DataPath:
         self.path['img_emb_co_act-log'] = log_path
 
 
-    """
-    Setting paths for approximate projected neuron embedding
-    """
-    def set_proj_emb_path(self):
-        if not self.need_to_gen_path('proj_neuron_emb'):
-            return
+    # """
+    # Setting paths for approximate projected neuron embedding
+    # """
+    # def set_proj_emb_path(self):
+    #     if not self.need_to_gen_path('proj_neuron_emb'):
+    #         return
 
-        # Check if the nicknames of the base model and model are given
-        self.check_model_nickname_and_path()
-        self.raise_err_for_ungiven_arg(
-            self.args.basemodel_nickname, 'basemodel_nickname'
-        )
+    #     # Check if the nicknames of the base model and model are given
+    #     self.check_model_nickname_and_path()
+    #     self.raise_err_for_ungiven_arg(
+    #         self.args.basemodel_nickname, 'basemodel_nickname'
+    #     )
 
-        # Directory
-        neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
-        data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
-            'embedding', 
-            inner_dirname='emb-{}-{}'.format(
-                self.args.basemodel_nickname, neuron_emb_apdx
-            )
-        )
-        img_emb_apdx = self.gen_act_setting_str('img_emb')
-        data_dir_path = os.path.join(
-            data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
-        )
-        self.make_dir(data_dir_path)
+    #     # Directory
+    #     neuron_emb_apdx = self.gen_act_setting_str('neuron_emb')
+    #     data_dir_path, log_dir_path = self.gen_data_log_sub_dir(
+    #         'embedding', 
+    #         inner_dirname='emb-{}-{}'.format(
+    #             self.args.basemodel_nickname, neuron_emb_apdx
+    #         )
+    #     )
+    #     img_emb_apdx = self.gen_act_setting_str('img_emb')
+    #     data_dir_path = os.path.join(
+    #         data_dir_path, 'emb-set-{}'.format(img_emb_apdx)
+    #     )
+    #     self.make_dir(data_dir_path)
 
-        data_dir_path = os.path.join(data_dir_path, 'emb_nd')
-        self.make_dir(data_dir_path)
+    #     data_dir_path = os.path.join(data_dir_path, 'emb_nd')
+    #     self.make_dir(data_dir_path)
 
-        # Files
-        file_name = 'proj_emb-{}.json'.format(self.args.model_nickname)
-        file_path = os.path.join(data_dir_path, file_name)
-        log_path = os.path.join(
-            log_dir_path, 'proj_emb-log-{}-{}.txt'.format(
-                self.args.model_nickname, img_emb_apdx
-            )
-        )
+    #     # Files
+    #     file_name = 'proj_emb-{}.json'.format(self.args.model_nickname)
+    #     file_path = os.path.join(data_dir_path, file_name)
+    #     log_path = os.path.join(
+    #         log_dir_path, 'proj_emb-log-{}-{}.txt'.format(
+    #             self.args.model_nickname, img_emb_apdx
+    #         )
+    #     )
 
-        # Path
-        self.path['proj_neuron_emb'] = file_path
-        self.path['proj_neuron_emb-log'] = log_path
+    #     # Path
+    #     self.path['proj_neuron_emb'] = file_path
+    #     self.path['proj_neuron_emb-log'] = log_path
 
     """
     Setting paths for dimensionality reduction of embeddings

@@ -9,6 +9,7 @@ class EmbeddingArgs:
         self.create_neuron_embedding_parser()
         self.create_image_embedding_parser()
         self.create_proj_embedding_parser()
+        self.create_2d_embedding_parser()
 
     def create_image_sampling_parser(self):
         # Whether to do
@@ -173,7 +174,7 @@ class EmbeddingArgs:
         # Whether to do
         self.parser.add_argument(
             '--proj_embedding', 
-            default=False, 
+            default=False,
             type=parse_bool_arg,
             help='Whether to project embedding'
         )
@@ -192,4 +193,41 @@ class EmbeddingArgs:
             type=str,
             help='Sub-directory name for output'
         )
-        
+
+        self.parser.add_argument(
+            '--base_stimulus_path', 
+            default='', 
+            type=str,
+            help='Path of stimulus of the base model'
+        )
+
+    def create_2d_embedding_parser(self):
+        # Whether to do
+        self.parser.add_argument(
+            '--reduced_embedding', 
+            default=False,
+            type=parse_bool_arg,
+            help='Whether to do dimensionality reduction'
+        )
+
+        # Data path
+        self.parser.add_argument(
+            '--neuron_embedding_path', 
+            default='', 
+            type=str,
+            help='Path of project embeddings'
+        )
+
+        self.parser.add_argument(
+            '--proj_embedding_dir_path', 
+            default='', 
+            type=str,
+            help='Directory path of project embeddings'
+        )
+
+        self.parser.add_argument(
+            '--reduced_embedding_sub_dir_name', 
+            default='', 
+            type=str,
+            help='Sub-directory name for output'
+        )

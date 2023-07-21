@@ -14,7 +14,8 @@ class DataPathModel:
         self.path = {}
 
         self.not_need_model_path = [
-            self.args.sample_images
+            self.args.sample_images,
+            self.args.reduced_embedding
         ]
 
         self.actions_requiring_from_to_paths = [

@@ -542,6 +542,14 @@ class Model:
             f_map = self.forward_one_layer(i, f_map)
         return f_map
 
+    def forward_until_given_layer(self, layer_name, imgs):
+        f_map = imgs.clone().detach()
+        for i, layer in enumerate(self.layers):
+            f_map = self.forward_one_layer(i, f_map)
+            if layer["name"] == layer_name:
+                break
+        return f_map
+
     """
     Log for training the model
     """

@@ -5,7 +5,7 @@ from embedding.sample_images import *
 from embedding.image_embedding import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
-from embedding.reduce_dim import *
+from embedding.reduced_neuron_embedding import *
 from embedding.stimulus import *
 
 # Concept images of neurons
@@ -49,8 +49,9 @@ def main():
         train_model(model)
     
     # Set evaluation mode
-    model.model.eval()
-    print(f'training mode: {model.model.training}')
+    if model is not None:
+        model.model.eval()
+        print(f'training mode: {model.model.training}')
 
     # Test model
     if args.test:
@@ -82,7 +83,11 @@ def main():
 
     # Compute projected neuron embedding
     if args.proj_embedding:
-        compute_proj_neuron_emb(args, data_path)
+        compute_proj_neuron_embedding(args, data_path)
+
+    # Project neuron embedding to 2D space
+    if args.reduced_embedding:
+        compute_reduced_embedding(args, data_path)
 
 
 
@@ -95,9 +100,7 @@ def main():
 
     
 
-    # Project neuron embedding to 2D space
-    if args.dim_reduction != 'None':
-        reduce_embedding_dim(args, data_path)
+    
 
     
     
@@ -126,7 +129,8 @@ def load_model(args, data_path):
         args.sample_images,
         args.neuron_embedding,
         args.image_embedding,
-        args.dim_reduction != 'None',
+        args.proj_embedding,
+        args.reduced_embedding,
         args.find_important_evo,
         args.eval_important_evo,
     ]
@@ -208,9 +212,13 @@ def compute_image_embedding(args, data_path):
     img_emb = ImageEmb(args, data_path)
     img_emb.compute_img_embedding()
 
-def compute_proj_neuron_emb(args, data_path):
+def compute_proj_neuron_embedding(args, data_path):
     proj_neuron_emb = ProjNeuronEmb(args, data_path)
-    proj_neuron_emb.compute_projected_neuron_emb()
+    proj_neuron_emb.compute_projected_neuron_embedding()
+
+def compute_reduced_embedding(args, data_path):
+    reducer = ReducedNeuronEmb(args, data_path)
+    reducer.compute_reduced_embedding()
 
 
 
@@ -237,9 +245,7 @@ def compute_image_embedding_co_act(args, data_path, model):
 
 
 
-def reduce_embedding_dim(args, data_path):
-    reducer = Reducer(args, data_path)
-    reducer.reduce_dim()
+
 
 
 

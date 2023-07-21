@@ -215,20 +215,20 @@ class ArgParser:
             help='Whether to compute image embedding with image co-activation'
         )
 
-        self.parser.add_argument(
-            '--proj_neuron_emb', 
-            default=False, 
-            type=self.parse_bool_arg,
-            help='Whether to compute projected neuron embedding'
-        )
+        # self.parser.add_argument(
+        #     '--proj_neuron_emb', 
+        #     default=False, 
+        #     type=self.parse_bool_arg,
+        #     help='Whether to compute projected neuron embedding'
+        # )
 
-        self.parser.add_argument(
-            '--dim_reduction', 
-            default='None', 
-            choices=['None', 'UMAP'],
-            type=str,
-            help='Dimensionality reduction method'
-        )
+        # self.parser.add_argument(
+        #     '--dim_reduction', 
+        #     default='None', 
+        #     choices=['None', 'UMAP'],
+        #     type=str,
+        #     help='Dimensionality reduction method'
+        # )
 
         self.parser.add_argument(
             '--find_important_evo', 

@@ -94,4 +94,4 @@ class InceptionV3(Model):
         first_log = ', '.join(
             [f'{p}={log_param_sets[p]}' for p in log_param_sets]
         )
-        self.write_training_log(first_log)
+        self.write_training_log(first_log, append=False)

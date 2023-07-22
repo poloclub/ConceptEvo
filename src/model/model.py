@@ -504,7 +504,10 @@ class Model:
     Save model
     """
     def save_model(self, epoch):
-        path = self.data_path.get_model_path_during_training(epoch)
+        path = os.path.join(
+            self.data_path.get_path('model_dir'),
+            f'model-{epoch}.pth'
+        )
         torch.save(
             {
                 "model_state_dict": self.model.state_dict(),
@@ -512,7 +515,7 @@ class Model:
                 "loss": self.criterion,
                 "epoch": epoch,
             },
-            path,
+            path
         )
 
     """
@@ -553,7 +556,6 @@ class Model:
     """
     Log for training the model
     """
-
     def write_training_epoch_log(self, tic, epoch, stats):
         num_training_data = len(self.training_data_loader.dataset)
         (
@@ -589,10 +591,14 @@ class Model:
         log = ", ".join([f"{key}={log_info[key]}" for key in log_info])
         return log
 
-    def write_training_log(self, log):
+    def write_training_log(self, log, append=True):
         path = self.data_path.get_path("train_log")
-        with open(path, "a") as f:
-            f.write(log + "\n")
+        if append:
+            with open(path, "a") as f:
+                f.write(log + "\n")
+        else:
+            with open(path, "w") as f:
+                f.write(log + "\n")
 
     """
     Log for testing the model

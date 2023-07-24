@@ -2,13 +2,13 @@
 # image_embedding.sh
 # 
 # Create image embeddings from base model's neuron embeddings.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 ###############################################################################
 
 ###############################################################################
 # File structure:
 # 
-# ../data
+# ../../data
 #     └── image_embedding
 #             └── <image_embedding_sub_dir_name>
 #                   ├── data

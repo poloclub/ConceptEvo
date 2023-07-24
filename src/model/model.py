@@ -1,3 +1,4 @@
+import os
 from time import time
 from tqdm import tqdm
 
@@ -230,66 +231,63 @@ class Model:
         # Train the model
         with tqdm(total=total) as pbar:
             for epoch in range(self.args.num_epochs):
-                # Set model to training mode
-                self.model.train()
-
-                # Update parameters with one epoch's data
-                running_loss, top1_train_corrects, topk_train_corrects \
+                # Train the model for one epoch
+                running_time, running_loss, top1_train_corrects, topk_train_corrects \
                     = self.train_one_epoch(pbar)
-
-                # Set model to eval mode
-                self.model.eval()
-
-                # Measure test accuracy
-                test_total, top1_test_corrects, topk_test_corrects \
-                    = self.test_model(write_log=False, train_or_test="test")
-
-                # Set model to back to training mode
-                self.model.train()
 
                 # Save the model
                 self.save_model(self.training_start_epoch + epoch)
 
                 # Save log
                 self.write_training_epoch_log(
-                    tic,
+                    running_time,
                     self.training_start_epoch + epoch,
                     [
                         running_loss,
                         top1_train_corrects,
                         topk_train_corrects,
-                        test_total,
-                        top1_test_corrects,
-                        topk_test_corrects,
+                        0,
+                        0,
+                        0
+                        # test_total,
+                        # top1_test_corrects,
+                        # topk_test_corrects,
                     ],
                 )
 
     def train_one_epoch(self, pbar):
+        # Set model to training mode
+        self.model.train()
+
         # Variables to evaluate the training performance
-        running_loss = 0.0
+        running_loss, running_time = 0.0, 0.0
         top1_train_corrects, topk_train_corrects = 0, 0
 
         # Update parameters with one epoch's data
         for imgs, labels in self.training_data_loader:
+            # Measure running time
+            tic = time()
+
             # Get input image and its label
             imgs = imgs.to(self.device)
             labels = labels.to(self.device)
 
-            # Forward and backward
+            # Train the model
             self.optimizer.zero_grad()
-            with torch.set_grad_enabled(True):
-                # Forward
-                outputs = self.get_output(imgs)
-                loss = self.criterion(outputs, labels)
+            outputs = self.get_output(imgs)
+            loss = self.criterion(outputs, labels)
+            loss.backward()
+            self.optimizer.step()
 
-                # Prediction
-                _, topk_train_preds = outputs.topk(k=self.args.topk, dim=1)
-                top1_train_preds = topk_train_preds[:, 0]
-                topk_train_preds = topk_train_preds.t()
+            # Prediction
+            _, topk_train_preds = outputs.topk(k=self.args.topk, dim=1)
+            top1_train_preds = topk_train_preds[:, 0]
+            topk_train_preds = topk_train_preds.t()
 
-                # Backward
-                loss.backward()
-                self.optimizer.step()
+            # Measure running time
+            toc = time()
+            running_time += toc - tic
+            tic = toc
 
             # Number of correct top-k prediction in training set
             for k in range(self.args.topk):
@@ -303,11 +301,12 @@ class Model:
 
             # Update pbar
             pbar.update(self.args.batch_size)
+            # print(self.model.training)
 
         top1_train_corrects = top1_train_corrects.double()
         topk_train_corrects = topk_train_corrects.double()
 
-        return running_loss, top1_train_corrects, topk_train_corrects
+        return running_time, running_loss, top1_train_corrects, topk_train_corrects
 
     """
     Test model
@@ -465,11 +464,7 @@ class Model:
         test_labels = test_labels.to(self.device)
 
         # Prediction
-        if (self.args.train) and (train_or_test == "test"):
-            self.model.eval()
         outputs = self.model(test_imgs)
-        if (self.args.train) and (train_or_test == "test"):
-            self.model.train()
         _, topk_test_preds = outputs.topk(k=self.args.topk, dim=1)
         top1_test_preds = topk_test_preds[:, 0]
         topk_test_preds = topk_test_preds.t()
@@ -556,7 +551,7 @@ class Model:
     """
     Log for training the model
     """
-    def write_training_epoch_log(self, tic, epoch, stats):
+    def write_training_epoch_log(self, running_time, epoch, stats):
         num_training_data = len(self.training_data_loader.dataset)
         (
             running_loss,
@@ -570,13 +565,17 @@ class Model:
         epoch_loss = running_loss / num_training_data
         epoch_top1_train_acc = top1_train_corrects / num_training_data
         epoch_topk_train_acc = topk_train_corrects / num_training_data
-        epoch_top1_test_acc = top1_test_corrects / test_total
-        epoch_topk_test_acc = topk_test_corrects / test_total
+        if test_total > 0:
+            epoch_top1_test_acc = top1_test_corrects / test_total
+            epoch_topk_test_acc = topk_test_corrects / test_total
+        else:
+            epoch_top1_test_acc = -1
+            epoch_topk_test_acc = -1
 
         log = self.gen_training_epoch_log(
             {
                 "epoch": epoch,
-                "cumulative_time_sec": "{:.2f}".format(time() - tic),
+                "running time": "{:.2f} sec".format(running_time),
                 "loss": "{:.4f}".format(epoch_loss),
                 "top1_train_acc": "{:.4f}".format(epoch_top1_train_acc),
                 "topk_train_acc": "{:.4f}".format(epoch_topk_train_acc),

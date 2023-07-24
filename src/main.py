@@ -45,7 +45,7 @@ def main():
 
     # Train model
     if args.train:
-        model.model.train()
+        # model.model.train()
         train_model(model)
     
     # Set evaluation mode
@@ -185,7 +185,7 @@ def train_model(model):
     model.train_model()
 
 def test_model(model):
-    # model.test_model(write_log=True, train_or_test='train')
+    model.test_model(write_log=True, train_or_test='train')
     model.test_model(write_log=True, train_or_test='test')
 
 def test_model_by_class(model):

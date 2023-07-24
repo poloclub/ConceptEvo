@@ -57,13 +57,18 @@ class InceptionV3(Model):
         return 299
 
     def init_optimizer(self):
-        self.optimizer = optim.RMSprop(
+        self.optimizer = optim.SGD(
             self.model.parameters(), 
             lr=self.args.lr, 
-            eps=self.args.learning_eps,
-            momentum=self.args.momentum,
-            weight_decay=self.args.weight_decay
+            momentum=self.args.momentum
         )
+        # self.optimizer = optim.RMSprop(
+        #     self.model.parameters(), 
+        #     lr=self.args.lr, 
+        #     eps=self.args.learning_eps,
+        #     momentum=self.args.momentum,
+        #     weight_decay=self.args.weight_decay
+        # )
         if not self.pretrained and self.need_loading_a_saved_model:
             if 'optimizer_state_dict' in self.ckpt:
                 self.optimizer.load_state_dict(self.ckpt['optimizer_state_dict'])
@@ -84,10 +89,12 @@ class InceptionV3(Model):
 
     def write_training_first_log(self):
         log_param_sets = {
+            'model_nickname': self.args.model_nickname,
             'batch_size': self.args.batch_size,
             'lr': self.args.lr,
-            'weight_decay': self.args.weight_decay,
-            'eps': self.args.learning_eps,
+            'momentum': self.args.momentum,
+            # 'weight_decay': self.args.weight_decay,
+            # 'eps': self.args.learning_eps,
             'k': self.args.topk,
             'model_path': self.data_path.get_path('model_path')
         }

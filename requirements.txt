@@ -8,7 +8,7 @@ backcall @ file:///home/ktietz/src/ci/backcall_1611930011877/work
 bleach @ file:///tmp/build/80754af9/bleach_1628110601003/work
 Bottleneck @ file:///tmp/build/80754af9/bottleneck_1607575130224/work
 brotlipy==0.7.0
-certifi==2021.10.8
+certifi==2023.7.22
 cffi @ file:///tmp/build/80754af9/cffi_1625814692085/work
 charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
 click==8.0.3

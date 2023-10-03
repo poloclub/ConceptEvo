@@ -106,7 +106,7 @@ tqdm @ file:///tmp/build/80754af9/tqdm_1635330843403/work
 traitlets @ file:///tmp/build/80754af9/traitlets_1636710298902/work
 typing-extensions @ file:///tmp/build/80754af9/typing_extensions_1631814937681/work
 umap-learn==0.5.2
-urllib3==1.26.7
+urllib3==1.26.17
 wcwidth @ file:///Users/ktietz/demo/mc3/conda-bld/wcwidth_1629357192024/work
 webencodings==0.5.1
 Werkzeug @ file:///tmp/build/80754af9/werkzeug_1635505089296/work

@@ -1,6 +1,11 @@
-## 0. Note
-Move the script files at `../src` where `main.py` exists. 
-Run the script files at `../src`.
+## 0. Preliminary Note: Script Setup and Execution
+Before diving into the usage of these scripts, please ensure they are properly placed and executed:
+
+- **Move Script Files**: Relocate all script files to the `../src` directory, where `main.py` is located. This ensures that the scripts can interact correctly with the main application.
+
+- **Execute Scripts in `../src`**: Run a script file within the `../src` directory for it to function as intended.
+
+- **Recommended Order**: Below is a suggested sequence for using these scripts. Feel free to skip any that are not applicable to your requirements.
 
 ## 1. Train and test a model
 - Train a model

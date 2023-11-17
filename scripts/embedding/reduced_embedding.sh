@@ -32,8 +32,10 @@
 # For example:
 gpu=0
 neuron_embedding_path=../data/neuron_embedding/train_0.1/data/neuron_emb_vgg19_pretrained.json
-proj_embedding_dir_path=../data/proj_embedding/train_0.1/data/
-reduced_embedding_sub_dir_name=train_0.1
+# proj_embedding_dir_path=../data/proj_embedding/train_0.1/data/
+# reduced_embedding_sub_dir_name=train_0.1
+proj_embedding_dir_path=../data/proj_embedding/train_0.1_indirect/data/
+reduced_embedding_sub_dir_name=train_0.1_indirect
 ###############################################################################
 
 ###############################################################################

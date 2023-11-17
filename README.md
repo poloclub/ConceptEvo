@@ -1,14 +1,15 @@
 # ConceptEvo
-ConceptEvo is a unified interpretation framework that reveals the inception and evolution of concepts during DNN training.
+ConceptEvo is a unified interpretation framework that reveals the inception and evolution of concepts during DNN training. For detialed insights behind ConceptEvo, refer to our paper: 📄 [ConceptEvo](https://arxiv.org/abs/2203.16475).
 
-For detialed insights behind ConceptEvo, refer to our paper: 📄 [ConceptEvo](https://arxiv.org/abs/2203.16475).
-
+## About ConceptEvo
 ConceptEvo generates a **unified semantic space** that enables side-by-side comparison of different models during training. This space is a visual and analytic tool that facilitates a deeper understanding of how models evolve and learn.
 
-![Unified Semantic Space in ConceptEvo](./data/fig/fig/neuron_emb_alignment.png)
+### Unified Semantic Space in ConceptEvo
+<img src="./data/fig/fig/neuron_emb_alignment.png" width="500">
 This visualization represents concepts from various models in a single, cohesive space. By embedding and aligning neurons (depicted as dots), ConceptEvo maps similar concepts (such as a dog's face, a circle, or a car wheel) to corresponding locations, allowing for an intuitive comparison of different models.
 
-![ConceptEvo in Action: Identifying Training Issues](./data/fig/fig/discovery-vgg16.png)
+### ConceptEvo in Action: Identifying Training Issues
+<img src="./data/fig/fig/discovery-vgg16.png" width="500">
 ConceptEvo's unified semantic space isn't just a visualization tool; it's also a powerful diagnostic instrument. It allows for the identification of potential issues in the training process by juxtaposing a well-trained model against one that is sub-optimally trained. 
 - (a) **A well-trained VGG16** shows gradual concept formations and refinements. 
 - (b) **A suboptimally trained VGG16** with a large learning rate rapidly loses the ability to detect most concepts. 
@@ -40,7 +41,7 @@ Encountering issues or have queries? We encourage you to:
 
 - **Open an Issue**: For technical problems or feature suggestions, feel free to open an issue on our GitHub repository.
 
-- **Reach Out to the Authors**: For more in-depth questions or discussions, feel free to contact the authors directly. The contact information is available in `./Authors.md`.
+- **Reach Out to the Authors**: For more in-depth questions or discussions, feel free to contact the authors directly. The contact information is available in [Authors.md](./Authors.md).
 
 ## Citation
 If you find ConceptEvo useful in your research, please consider citing our paper! Here is the BibTeX entry for your convenience:

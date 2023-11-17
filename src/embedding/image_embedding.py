@@ -64,7 +64,7 @@ class ImageEmb:
         return self.stimulus[layer][neuron_idx]
 
     def get_total_number_of_images(self):
-        root_directory = self.args.stimulus_image_path
+        root_directory = self.data_path.get_path('stimulus_image_path')
         total_images = 0
         for dirpath, dirnames, filenames in os.walk(root_directory):
             for filename in filenames:

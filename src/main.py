@@ -3,10 +3,12 @@
 # Embedding
 from embedding.sample_images import *
 from embedding.image_embedding import *
+from embedding.indirect_image_embedding import *
 from embedding.neuron_embedding import *
 from embedding.proj_neuron_embedding import *
 from embedding.reduced_neuron_embedding import *
 from embedding.stimulus import *
+from embedding.responsive_neurons import *
 
 # Concept images of neurons
 from feature.example_patch import *
@@ -72,6 +74,10 @@ def main():
     # Find stimulus
     if args.stimulus:
         compute_stimulus(args, data_path, model)
+    
+    # Find most responsive neurons
+    if args.responsive_neurons:
+        compute_responsive_neurons(args, data_path, model)
 
     # Compute neuron embedding
     if args.neuron_embedding:
@@ -80,6 +86,10 @@ def main():
     # Compute image embedding
     if args.image_embedding:
         compute_image_embedding(args, data_path)
+
+    # Compute indirect image embedding
+    if args.indirect_image_embedding:
+        compute_indirect_image_embedding(args, data_path)
 
     # Compute projected neuron embedding
     if args.proj_embedding:
@@ -129,6 +139,7 @@ def load_model(args, data_path):
         args.sample_images,
         args.neuron_embedding,
         args.image_embedding,
+        args.indirect_image_embedding,
         args.proj_embedding,
         args.reduced_embedding,
         args.find_important_evo,
@@ -204,6 +215,10 @@ def compute_stimulus(args, data_path, model):
     stimulus = Stimulus(args, data_path, model)
     stimulus.compute_stimulus()
 
+def compute_responsive_neurons(args, data_path, model):
+    responsive_neurons = ResponsiveNeurons(args, data_path, model)
+    responsive_neurons.compute_responsive_neurons()
+
 def compute_neuron_embedding(args, data_path):
     neuron_emb = Emb(args, data_path)
     neuron_emb.compute_neuron_embedding()
@@ -211,6 +226,10 @@ def compute_neuron_embedding(args, data_path):
 def compute_image_embedding(args, data_path):
     img_emb = ImageEmb(args, data_path)
     img_emb.compute_img_embedding()
+
+def compute_indirect_image_embedding(args, data_path):
+    indirect_img_emb = IndirectImageEmb(args, data_path)
+    indirect_img_emb.compute_indirect_img_embedding()
 
 def compute_proj_neuron_embedding(args, data_path):
     proj_neuron_emb = ProjNeuronEmb(args, data_path)

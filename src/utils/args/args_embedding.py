@@ -6,8 +6,10 @@ class EmbeddingArgs:
         self.parser = parser
         self.create_image_sampling_parser()
         self.create_stimulus_parser()
+        self.create_responsive_neurons_parser()
         self.create_neuron_embedding_parser()
         self.create_image_embedding_parser()
+        self.create_indirect_image_embedding_parser()
         self.create_proj_embedding_parser()
         self.create_2d_embedding_parser()
 
@@ -75,6 +77,40 @@ class EmbeddingArgs:
             type=str,
             help='Directory path of input images \
                 for computing stimulus'
+        )
+
+    def create_responsive_neurons_parser(self):
+        # Whether to do
+        self.parser.add_argument(
+            '--responsive_neurons', 
+            default=False, 
+            type=parse_bool_arg,
+            help='Whether to compute responsive neurons'
+        )
+
+        # Hyperparameter
+        self.parser.add_argument(
+            '--topk_i', 
+            default=20, 
+            type=int,
+            help='The number of most responsive neurons \
+                to consider for an input'
+        )
+        
+        # Data path
+        self.parser.add_argument(
+            '--responsive_neurons_sub_dir_name', 
+            default='', 
+            type=str,
+            help='Sub-directory name for output'
+        )
+
+        self.parser.add_argument(
+            '--responsive_neurons_image_path', 
+            default='', 
+            type=str,
+            help='Directory path of input images \
+                for computing responsive neurons'
         )
 
     def create_neuron_embedding_parser(self):
@@ -145,7 +181,7 @@ class EmbeddingArgs:
             '--lr_img_emb', 
             default=0.05, 
             type=float,
-            help='Learning rate for neuron embedding'
+            help='Learning rate for image embedding'
         )
 
         self.parser.add_argument(
@@ -165,6 +201,59 @@ class EmbeddingArgs:
         # Data path
         self.parser.add_argument(
             '--image_embedding_sub_dir_name', 
+            default='', 
+            type=str,
+            help='Sub-directory name for output'
+        )
+
+    def create_indirect_image_embedding_parser(self):
+        # Whether to do
+        self.parser.add_argument(
+            '--indirect_image_embedding', 
+            default=False, 
+            type=parse_bool_arg,
+            help='Whether to compute indirect image embedding'
+        )
+
+        # Hyperparameter
+        self.parser.add_argument(
+            '--lr_indirect_img_emb', 
+            default=0.05, 
+            type=float,
+            help='Learning rate for indirect image embedding'
+        )
+
+        self.parser.add_argument(
+            '--thr_indirect_img_emb', 
+            default=0.05, 
+            type=float,
+            help='Threshold for convergence in indirect image embedding'
+        )
+
+        self.parser.add_argument(
+            '--num_indirect_img_emb_epochs', 
+            default=10, 
+            type=int,
+            help='Maximum epoch for indirect image embedding'
+        )
+
+        self.parser.add_argument(
+            '--num_indirect_img_emb_negs', 
+            default=2, 
+            type=int,
+            help='Number of negative samplings for indirect image embedding'
+        )
+
+        self.parser.add_argument(
+            '--num_indirect_img_emb_pairs', 
+            default=500, 
+            type=int,
+            help='Number of image pairs per a neuron for indirect embedding'
+        )
+
+        # Data path
+        self.parser.add_argument(
+            '--indirect_image_embedding_sub_dir_name', 
             default='', 
             type=str,
             help='Sub-directory name for output'

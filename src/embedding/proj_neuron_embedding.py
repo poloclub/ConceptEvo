@@ -84,9 +84,11 @@ class ProjNeuronEmb:
         vec_sum = np.zeros(self.args.dim)
         num_imgs_in_vocab = 0
         for x in X_n:
-            if x in self.vocab:
-                vec_sum += self.img_emb[x]
-                num_imgs_in_vocab += 1
+            # if x in self.vocab:
+            #     vec_sum += self.img_emb[x]
+            #     num_imgs_in_vocab += 1
+            vec_sum += self.img_emb[x]
+            num_imgs_in_vocab += 1
         if num_imgs_in_vocab > 0:
             return vec_sum / num_imgs_in_vocab, num_imgs_in_vocab
         else:

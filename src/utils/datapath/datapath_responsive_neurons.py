@@ -1,9 +1,9 @@
 import os
 from utils.datapath.datapath_util import DataPathUtil
 
-class DataPathStimulus:
+class DataPathResponsiveNeurons:
     """
-    Manage paths for stimulus
+    Manage paths for responsive neurons
     """
 
     """
@@ -14,15 +14,22 @@ class DataPathStimulus:
         self.path = {}
 
         self.setting = [
-            ['topk_s', self.args.topk_s],
-            ['stimulus_sub_dir_name', self.args.stimulus_sub_dir_name],
-            ['stimulus_image_path', self.args.stimulus_image_path],
+            [
+                'topk_i', 
+                self.args.topk_i
+            ],
+            [
+                'responsive_neurons_sub_dir_name', 
+                self.args.responsive_neurons_sub_dir_name
+            ],
+            [
+                'responsive_neurons_image_path', 
+                self.args.responsive_neurons_image_path
+            ],
         ]
         
         self.actions_requiring_paths = [
-            self.args.stimulus,
-            self.args.neuron_embedding,
-            self.args.image_embedding,
+            self.args.responsive_neurons,
             self.args.indirect_image_embedding
         ]
 
@@ -35,7 +42,7 @@ class DataPathStimulus:
             return
 
         # Check if model_name is given
-        if self.args.stimulus:
+        if self.args.responsive_neurons:
             if not self.util.is_arg_given(self.args.model_name):
                 log = 'Model name is not given.'
                 raise ValueError(log)
@@ -55,8 +62,8 @@ class DataPathStimulus:
         for arg, val in self.setting:
             log = ''
             if not self.util.is_arg_given(val):
-                if arg == 'stimulus_image_path':
-                    if self.args.stimulus:
+                if arg == 'responsive_neurons_image_path':
+                    if self.args.responsive_neurons:
                         log += f'{arg} is not given or invalid (the value is {val}).\n'
                 else:
                     log += f'{arg} is not given or invalid (the value is {val}).\n'
@@ -65,24 +72,25 @@ class DataPathStimulus:
 
         # Generate data and log directory
         data_dir_path, log_dir_path = self.util.gen_sub_directories([
-            'stimulus', 
-            self.args.stimulus_sub_dir_name
+            'responsive_neurons', 
+            self.args.responsive_neurons_sub_dir_name
         ])
 
-        # Log path (key: ['stimulus_log'])
+        # Log path (key: ['responsive_neurons_log'])
         if 'pretrained' in self.args.model_nickname:
             model_nickname_epoch = self.args.model_nickname
         else:
             model_nickname_epoch = f'{self.args.model_nickname}_{self.args.epoch}'
-        self.path['stimulus_log'] = os.path.join(
-            log_dir_path, f'stimulus_log_{model_nickname_epoch}.txt'
+        self.path['responsive_neurons_log'] = os.path.join(
+            log_dir_path, f'responsive_neurons_log_{model_nickname_epoch}.txt'
         )
 
-        # Data path (key: ['stimulus', 'stimulus_image_path'])
-        self.path['stimulus'] = os.path.join(
-            data_dir_path, f'stimulus_{model_nickname_epoch}.json'
+        # Data path (key: ['responsive_neurons', 'responsive_neurons_image_path'])
+        self.path['responsive_neurons'] = os.path.join(
+            data_dir_path, f'responsive_neurons_{model_nickname_epoch}.json'
         )
-        self.path['stimulus_image_path'] = self.args.stimulus_image_path
+        self.path['responsive_neurons_image_path'] = \
+            self.args.responsive_neurons_image_path
 
         # Save setting information
         setting_info_path = os.path.join(log_dir_path, 'setting.txt')

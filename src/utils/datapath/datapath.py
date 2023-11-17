@@ -3,8 +3,10 @@ from datetime import datetime
 
 from utils.datapath.datapath_model import DataPathModel
 from utils.datapath.datapath_stimulus import DataPathStimulus
+from utils.datapath.datapath_responsive_neurons import DataPathResponsiveNeurons
 from utils.datapath.datapath_neuron_embedding import DataPathNeuronEmbedding
 from utils.datapath.datapath_image_embedding import DataPathImageEmbedding
+from utils.datapath.datapath_indirect_image_embedding import DataPathIndirectImageEmbedding
 from utils.datapath.datapath_proj_embedding import DataPathProjEmbedding
 from utils.datapath.datapath_reduced_embedding import DataPathReducedEmbedding
 from utils.datapath.datapath_example_patch import DataPathExamplePatch
@@ -47,6 +49,10 @@ class DataPath:
         self.data_path_stimulus = DataPathStimulus(self.args)
         self.path = {**self.path, **self.data_path_stimulus.path}
 
+        # Generate paths for responsive neurons
+        self.data_path_responsive_neurons = DataPathResponsiveNeurons(self.args)
+        self.path = {**self.path, **self.data_path_responsive_neurons.path}
+
         # Generate paths for neuron embedding
         self.data_path_neuron_embedding = DataPathNeuronEmbedding(self.args)
         self.path = {**self.path, **self.data_path_neuron_embedding.path}
@@ -54,6 +60,10 @@ class DataPath:
         # Generate paths for image embedding
         self.data_path_image_embedding = DataPathImageEmbedding(self.args)
         self.path = {**self.path, **self.data_path_image_embedding.path}
+
+        # Generate paths for indirect image embedding
+        self.data_path_indirect_image_embedding = DataPathIndirectImageEmbedding(self.args)
+        self.path = {**self.path, **self.data_path_indirect_image_embedding.path}
 
         # Generate paths for projected embedding
         self.data_path_proj_embedding = DataPathProjEmbedding(self.args)

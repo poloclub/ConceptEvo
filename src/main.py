@@ -1,26 +1,25 @@
 """A main module to run codes"""
 
-# Embedding
+# Neuron embedding for the base model
+from embedding.stimulus import *
+from embedding.neuron_embedding import *
+
+# Image embedding
 from embedding.sample_images import *
 from embedding.image_embedding import *
+from embedding.responsive_neurons import *
 from embedding.indirect_image_embedding import *
-from embedding.neuron_embedding import *
+
+# Approximated neuron embedding
 from embedding.proj_neuron_embedding import *
 from embedding.reduced_neuron_embedding import *
-from embedding.stimulus import *
-from embedding.responsive_neurons import *
 
 # Concept images of neurons
 from feature.example_patch import *
-from feature.stimulus_act_map import *
 
 # Find and evaluate concept evolution for class predictions
 from importantevo.eval_important_evo import *
 from importantevo.find_important_evo import *
-
-# Find important neurons for class predictions
-from importantneuron.important_neuron import *
-from importantneuron.important_neuron_act_map import *
 
 # CNN Models
 from model.vgg16 import *
@@ -45,6 +44,9 @@ def main():
     if model is not None:
         model.save_layer_info()
 
+    #######################################################
+    # Train or test a DNN model
+    #######################################################
     # Train model
     if args.train:
         # model.model.train()
@@ -63,10 +65,9 @@ def main():
     if args.test_by_class:
         test_model_by_class(model)
 
-    # Generate example patches of neurons
-    if args.example_patch:
-        generate_example_patch(args, data_path, model)
-
+    #######################################################
+    # Neuron and image embedding
+    #######################################################
     # Sample images
     if args.sample_images:
         sample_images(args)
@@ -99,24 +100,9 @@ def main():
     if args.reduced_embedding:
         compute_reduced_embedding(args, data_path)
 
-
-
-
-    if args.img_pairs:
-        compute_img_pairs(args, data_path, model)
-
-    if args.img_emb_co_act:
-        compute_image_embedding_co_act(args, data_path, model)
-
-    
-
-    
-
-    
-    
-    if args.act_map:
-        compute_act_maps(args, data_path, model)
-
+    #######################################################
+    # Generate example patches
+    #######################################################    
     # Find concept evolution for class predictions
     if args.find_important_evo:
         find_important_evolution(args, data_path)
@@ -124,14 +110,14 @@ def main():
     # Evaluate important concept evolution for class predictions
     if args.eval_important_evo:
         eval_important_evolution(args, data_path)
+        
+    #######################################################
+    # Generate example patches
+    #######################################################
+    # Generate example patches of neurons
+    if args.example_patch:
+        generate_example_patch(args, data_path, model)
 
-    # Find important neurons for class predictions
-    if args.important_neuron:
-        find_important_neuron(args, data_path, model)
-
-    # Compute activation map of important neurons for class predictions
-    if args.important_neuron_act_map:
-        compute_important_neuron_act_map(args, data_path, model)
 
 def load_model(args, data_path):
 
@@ -239,39 +225,6 @@ def compute_reduced_embedding(args, data_path):
     reducer = ReducedNeuronEmb(args, data_path)
     reducer.compute_reduced_embedding()
 
-
-
-
-
-
-
-
-def compute_layer_act(args, data_path, model):
-    layer_act = LayerAct(args, data_path, model)
-    layer_act.compute_layer_act()
-
-
-
-
-
-def compute_img_pairs(args, data_path, model):
-    img_pairs = ImagePairs(args, data_path, model)
-    img_pairs.compute_img_pairs()
-
-def compute_image_embedding_co_act(args, data_path, model):
-    img_emb_layer_act = ImageEmbCoAct(args, data_path, model)
-    img_emb_layer_act.compute_img_embedding()
-
-
-
-
-
-
-
-def compute_act_maps(args, data_path, model):
-    act_map = StimulusActMap(args, data_path, model)
-    act_map.compute_act_map()
-
 def find_important_evolution(args, data_path):
     from_model, to_model = load_models(args, data_path)
     find_evo = FindImportantEvo(args, data_path, from_model, to_model)
@@ -281,14 +234,6 @@ def eval_important_evolution(args, data_path):
     from_model, to_model = load_models(args, data_path)
     eval_evo = EvalImportantEvo(args, data_path, from_model, to_model)
     eval_evo.eval_important_evolution()
-
-def find_important_neuron(args, data_path, model):
-    imp_neuron = ImportantNeuron(args, data_path, model)
-    imp_neuron.compute_important_neuron()
-
-def compute_important_neuron_act_map(args, data_path, model):
-    imp_neuron_act_map = ImportantNeuronActMap(args, data_path, model)
-    imp_neuron_act_map.compute_important_neuron_act_map()
 
 if __name__ == '__main__':
     main()

@@ -12,7 +12,7 @@ class ExamplePatchArgs:
             '--example_patch', 
             default=False, 
             type=parse_bool_arg,
-            help='Method to compute example patches of neurons'
+            help='Whether to compute example patches of neurons'
         )
 
         # Hyperparameter

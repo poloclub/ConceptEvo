@@ -154,12 +154,6 @@ class DataPath:
             self.args.train
         ]
 
-        self.path_key_to_actions['layer_act'] = [
-            self.args.layer_act,
-            self.args.img_pairs,
-            self.args.img_emb_co_act
-        ]
-
         self.path_key_to_actions['stimulus'] = [
             self.args.stimulus,
             self.args.neuron_emb,
@@ -183,16 +177,6 @@ class DataPath:
 
         self.path_key_to_actions['img_emb'] = [
             self.args.img_emb,
-            self.args.img_emb_co_act,
-            self.args.proj_neuron_emb
-        ]
-
-        self.path_key_to_actions['img_pairs'] = [
-            self.args.img_pairs,
-            self.args.img_emb_co_act,
-        ]
-
-        self.path_key_to_actions['img_emb_co_act'] = [
             self.args.img_emb_co_act,
             self.args.proj_neuron_emb
         ]
@@ -292,19 +276,6 @@ class DataPath:
             ['lr_img_emb', self.args.lr_img_emb],
             ['thr_img_emb', self.args.thr_img_emb],
             ['max_iter_img_emb', max_iter],
-            ['k', self.args.k]
-        ]
-
-        self.action_to_args['img_pairs'] = [
-            ['layer', self.args.layer],
-            ['num_epochs_co_act', self.args.num_epochs_co_act],
-            ['k', self.args.k]
-        ]
-
-        self.action_to_args['img_emb_co_act'] = [
-            ['dim', self.args.dim],
-            ['layer', self.args.layer],
-            ['lr_img_emb', self.args.lr_img_emb],
             ['k', self.args.k]
         ]
 
@@ -563,7 +534,6 @@ class DataPath:
             when_to_skip = [
                 self.args.train,
                 self.is_given_arg(self.args.proj_neuron_emb),
-                self.is_given_arg(self.args.img_pairs),
                 self.is_given_arg(self.args.dim_reduction),
                 self.is_given_arg(self.args.find_important_evo),
                 self.is_given_arg(self.args.eval_important_evo)
@@ -795,47 +765,6 @@ class DataPath:
     #     if self.is_given_arg(self.args.from_iter_img_emb):
     #         from_file_path = os.path.join(from_data_dir_path, 'img_emb.txt')
     #         self.path['img_emb_from'] = from_file_path
-
-    """
-    Setting paths for image pairs
-    """
-    def set_img_pairs_path(self):
-        if not self.need_to_gen_path('img_pairs'):
-            return
-        
-        # Basemodel nickname
-        if self.is_given_arg(self.args.basemodel_nickname):
-            basemodel_nickname = self.args.basemodel_nickname
-        else:
-            self.raise_err_for_ungiven_arg(
-                self.args.model_nickname, 'model_nickname'
-            )
-            basemodel_nickname = self.args.model_nickname
-
-        # Check user-given parameters
-        self.raise_err_for_ungiven_arg(
-            self.args.layer, 'layer'
-        )
-        self.raise_err_for_ungiven_arg(
-            self.args.num_epochs_co_act, 'num_epochs_co_act'
-        )
-        self.raise_err_for_ungiven_arg(
-            self.args.k, 'k'
-        )
-
-        # Image pairs path
-        apdx = self.gen_act_setting_str('img_pairs')
-        d_path, l_path = self.gen_data_log_sub_dir('img_pairs')
-        d_path = os.path.join(d_path, self.args.layer)
-        self.make_dir(d_path)
-        d_path = os.path.join(d_path, f'img_pairs-{apdx}.json')
-
-        # Log path
-        log_path = os.path.join(l_path, f'img_pairs-log-{apdx}.txt')
-
-        # File paths
-        self.path['img_pairs'] = d_path
-        self.path['img_pairs-log'] = log_path
 
     """
     Setting paths for image embedding with co-activation

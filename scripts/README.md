@@ -57,4 +57,6 @@ This process involves creating a foundational semantic space, for a user-given b
 
 ## 3. Evaluate the importance of concept evolution in a model
 
+
+
 ## 4. Generate example patches of neurons

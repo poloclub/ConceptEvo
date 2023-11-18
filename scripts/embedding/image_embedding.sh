@@ -12,7 +12,7 @@
 #     └── image_embedding
 #             └── <image_embedding_sub_dir_name>
 #                   ├── data
-#                   │     └── img_emb_<model_nickname>.json
+#                   │     └── img_emb_<model_nickname>.txt
 #                   └── log
 #                         ├── setting.txt
 #                         └── img_emb_log_<model_nickname>.txt

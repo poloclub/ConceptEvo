@@ -12,13 +12,16 @@
 #     └── neuron_embedding
 #             └── <neuron_embedding_sub_dir_name>
 #                   ├── data
-#                   │     ├── neuron_emb_<model_nickname>_<epoch>.json
-#                   │     ├── neuron_emb_vis_<model_nickname>_<epoch>.pdf
-#                   │     └── co_act_<model_nickname>_<epoch>.json
+#                   │     ├── neuron_emb_<model_nickname_in_file*>.json
+#                   │     ├── neuron_emb_vis_<model_nickname_in_file*>.pdf
+#                   │     └── co_act_<model_nickname_in_file*>.json
 #                   └── log
 #                         ├── setting.txt
-#                         └── neuron_emb_log_<model_nickname>_<epoch>.txt
+#                         └── neuron_emb_log_<model_nickname_in_file*>.txt
 #
+# <model_nickname_in_file*> depends on the model's training status:
+# - For models trained up to a specific epoch, <model_nickname>_<epoch>
+# - For pretrained models, <model_nickname>
 ###############################################################################
 
 ###############################################################################

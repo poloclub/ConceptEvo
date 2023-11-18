@@ -1,7 +1,7 @@
 ###############################################################################
 # responsive_neurons.sh
 # 
-# Find the most stimulating images for each neuron in the base model.
+# Identify neurons that are most responsive to each sampled image.
 # Run this script at `../../src` where `main.py` exists.
 # 
 # The result will be saved at
@@ -9,11 +9,14 @@
 #     └── responsive_neurons
 #           └── <responsive_neurons_sub_dir_name>
 #                 ├── data
-#                 │     └── responsive_neurons_<model_nickname>_<epoch>.json
+#                 │     └── responsive_neurons_<model_nickname_in_file*>.json
 #                 └── log
 #                       ├── setting.txt
-#                       └── responsive_neurons_log_<model_nickname>_<epoch>.txt
+#                       └── responsive_neurons_log_<model_nickname_in_file*>.txt
 #
+# <model_nickname_in_file*> depends on the model's training status:
+# - For models trained up to a specific epoch, <model_nickname>_<epoch>
+# - For pretrained models, <model_nickname>
 ###############################################################################
 
 ###############################################################################

@@ -1,8 +1,11 @@
 ###############################################################################
 # sample_images.sh
 # 
-# Sample images.
+# Select a random subset of training images.
 # Run this script at `../../src` where `main.py` exists.
+#
+# This takes training images from <input_image_path> and 
+# stores the randomly sampled images at <output_image_path>.
 ###############################################################################
 
 ###############################################################################

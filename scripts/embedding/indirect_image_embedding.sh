@@ -1,7 +1,7 @@
 ###############################################################################
 # indirect_image_embedding.sh
 # 
-# Create image embeddings from base model's neuron embeddings.
+# Indirectly represent images that are not covered by the base model's stimuli.
 # Run this script at `../../src` where `main.py` exists.
 ###############################################################################
 
@@ -12,7 +12,7 @@
 #     └── indirect_image_embedding
 #             └── <indirect_image_embedding_sub_dir_name>
 #                   ├── data
-#                   │     └── indirect_img_emb_<model_nickname>.json
+#                   │     └── indirect_img_emb_<model_nickname>.txt
 #                   └── log
 #                         ├── setting.txt
 #                         └── indirect_img_emb_log_<model_nickname>.txt

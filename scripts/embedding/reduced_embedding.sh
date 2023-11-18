@@ -1,8 +1,7 @@
 ###############################################################################
 # reduced_embedding.sh
 # 
-# Create 2D embedding of the base model and non-base models 
-# on the unified semantic space.
+# Create 2D neuron embedding for both the base and non-base models.
 # 
 # Run this script at `../../src` where `main.py` exists.
 ###############################################################################
@@ -12,13 +11,17 @@
 # 
 # ../../data
 #     └── reduced_embedding
-#             └── reduced_embedding_sub_dir_name
+#             └── <reduced_embedding_sub_dir_name>
 #                   ├── data
-#                   │     ├── reduced_emb_<model_nickname>_<epoch>.json
-#                   │     └── reduced_emb_vis_<model_nickname>_<epoch>.pdf
+#                   │     ├── reduced_emb_<model_nickname_in_file*>.json
+#                   │     └── reduced_emb_vis_<model_nickname_in_file*>.pdf
 #                   └── log
 #                         ├── setting.txt
 #                         └── reduced_emb_log.txt
+#
+# <model_nickname_in_file*> depends on the model's training status:
+# - For models trained up to a specific epoch, <model_nickname>_<epoch>
+# - For pretrained models, <model_nickname>
 ###############################################################################
 
 ###############################################################################

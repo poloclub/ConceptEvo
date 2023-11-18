@@ -12,11 +12,15 @@
 #     └── proj_embedding
 #             └── proj_embedding_sub_dir_name
 #                   ├── data
-#                   │     ├── proj_emb_<model_nickname>_<epoch>.json
-#                   │     └── proj_emb_vis_<model_nickname>_<epoch>.pdf
+#                   │     ├── proj_emb_<model_nickname_in_file*>.json
+#                   │     └── proj_emb_vis_<model_nickname_in_file*>.pdf
 #                   └── log
 #                         ├── setting.txt
-#                         └── proj_emb_log_<model_nickname>_<epoch>.txt
+#                         └── proj_emb_log_<model_nickname_in_file*>.txt
+#
+# <model_nickname_in_file*> depends on the model's training status:
+# - For models trained up to a specific epoch, <model_nickname>_<epoch>
+# - For pretrained models, <model_nickname>
 ###############################################################################
 
 ###############################################################################

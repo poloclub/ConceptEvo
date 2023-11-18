@@ -9,11 +9,14 @@
 #     └── stimulus
 #           └── <stimulus_sub_dir_name>
 #                 ├── data
-#                 │     └── stimulus_<model_nickname>_<epoch>.json
+#                 │     └── stimulus_<model_nickname_in_file*>.json
 #                 └── log
 #                       ├── setting.txt
-#                       └── stimulus_log_<model_nickname>_<epoch>.txt
+#                       └── stimulus_log_<model_nickname_in_file*>.txt
 #
+# <model_nickname_in_file*> depends on the model's training status:
+# - For models trained up to a specific epoch, <model_nickname>_<epoch>
+# - For pretrained models, <model_nickname>
 ###############################################################################
 
 ###############################################################################

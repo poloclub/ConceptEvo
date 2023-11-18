@@ -1,9 +1,7 @@
 ## 0. Preliminary Note: Script Setup and Execution
 Before diving into the usage of these scripts, please ensure they are properly placed and executed:
 
-- **❗️Move script files❗️**: Relocate all script files to the `../src` directory, where `main.py` is located. This ensures that the scripts can interact correctly with the main application.
-
-- **Execute scripts in `../src`**: Run a script file within the `../src` directory for it to function as intended.
+- **❗️Move script files❗️**: Relocate all script files to the `../src` directory, where `main.py` is located. This ensures that the scripts can interact correctly with the main application. Run a script file within the `../src` directory for it to function as intended.
 
 - **Details in scripts**: Each script includes comprehensive guidance on setting hyperparameters, as well as the location where the results will be saved.
 
@@ -20,7 +18,7 @@ Before diving into the usage of these scripts, please ensure they are properly p
     - Create example patches of neurons in a model, using `example_patch.sh`.
 
 ## 2. Embedding
-The following steps are aligned with the steps described in Section 3.2 of the [📄 ConceptEvo paper](https://arxiv.org/abs/2203.16475).
+The following steps are aligned with the steps described in Section 3.2 of the 📄[ConceptEvo paper](https://arxiv.org/abs/2203.16475).
 
 ### Step 1: Creating the base semantic space
 This process involves creating a foundational semantic space, for a user-given base model.

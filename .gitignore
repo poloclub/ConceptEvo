@@ -8,47 +8,18 @@
 # Ignore __pycache__
 __pycache__/
 
-# Ignore node_modules/
-node_modules/
-yarn.lock
-
-# Ignore trained models' checkpoint
-*.pth
-
-# Ignore neuron feature images
-*.jpg
-
-# Ignore script file in src/
-src/*.sh
-
 # Ignore big data
-data/indirect_image_embedding/
-data/responsive_neurons/
-data/reduced_embedding/
-data/proj_embedding/
-src/utils/notebook/*
-image_embedding/
-neuron_embedding/
-src/utils/notebook/sort-important-evolutions-by-class.ipynb
-data/img_pairs/
-data/example_patch/
-src/utils/notebook/img-emb-from-layer-act.ipynb
-data/fig/emb-post/
-src/utils/notebook/data/
-data/layer_act/
-data/important_neuron/
-data/important_neuron_act_map/
-data/neuron_feature/
-data/act_map/
-data/embedding/
-src/utils/notebook/old/analyze-data.ipynb
-data/neuron_feature-old/
-data/neuron_feature (old)/
-data/embedding-old/
-data/find_important_evo/
 data/model/
-data/co_act/
+data/example_patch/
+data/image_embedding/
+data/indirect_image_embedding/
+data/neuron_embedding/
+data/proj_embedding/
+data/reduced_embedding/
+data/responsive_neurons/
 data/stimulus/
-data/human-experiment.zip
-data/human-experiment/
-data/eval_important_evo/
+src/utils/notebook/*
+src/utils/notebook/sort-important-evolutions-by-class.ipynb
+src/utils/notebook/img-emb-from-layer-act.ipynb
+src/utils/notebook/data/
+src/utils/notebook/old/analyze-data.ipynb

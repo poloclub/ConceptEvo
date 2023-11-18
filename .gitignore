@@ -22,6 +22,8 @@ yarn.lock
 src/*.sh
 
 # Ignore big data
+data/indirect_image_embedding/
+data/responsive_neurons/
 data/reduced_embedding/
 data/proj_embedding/
 src/utils/notebook/*

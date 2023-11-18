@@ -1,5 +1,5 @@
 # ConceptEvo
-ConceptEvo is a unified interpretation framework that reveals the inception and evolution of concepts during DNN training. For detialed insights behind ConceptEvo, refer to our paper: 📄 [ConceptEvo](https://arxiv.org/abs/2203.16475).
+ConceptEvo is a unified interpretation framework that reveals the inception and evolution of concepts during DNN training. For detialed insights behind ConceptEvo, refer to the [📄 ConceptEvo paper](https://arxiv.org/abs/2203.16475).
 
 ## About ConceptEvo
 ConceptEvo generates a **unified semantic space** that enables side-by-side comparison of different models during training. This space is a visual and analytic tool that facilitates a deeper understanding of how models evolve and learn.

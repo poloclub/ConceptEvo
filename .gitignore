@@ -18,6 +18,7 @@ data/proj_embedding/
 data/reduced_embedding/
 data/responsive_neurons/
 data/stimulus/
+data/important_evo/
 src/utils/notebook/*
 src/utils/notebook/sort-important-evolutions-by-class.ipynb
 src/utils/notebook/img-emb-from-layer-act.ipynb

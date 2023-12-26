@@ -37,6 +37,6 @@ ConceptEvo is the result of the collaborative efforts of a team of researchers f
   - **Affiliation**: Georgia Tech
   - **Email**: [judy@gatech.edu](mailto:judy@gatech.edu)
 
-- **Duen Horng Chau**
+- **Polo Chau**
   - **Affiliation**: Georgia Tech
   - **Email**: [polo@gatech.edu](mailto:polo@gatech.edu)

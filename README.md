@@ -1,5 +1,5 @@
 # ConceptEvo
-ConceptEvo is a unified interpretation framework that reveals the inception and evolution of concepts during DNN training. For detialed insights behind ConceptEvo, refer to the 📄[ConceptEvo paper](https://arxiv.org/abs/2203.16475).
+ConceptEvo is a unified interpretation framework that reveals the inception and evolution of concepts during DNN training. For detailed insights behind ConceptEvo, refer to the [ConceptEvo paper](https://arxiv.org/abs/2203.16475).
 
 ## About ConceptEvo
 ConceptEvo generates a **unified semantic space** that enables side-by-side comparison of different models during training. This space is a visual and analytic tool that facilitates a deeper understanding of how models evolve and learn.
@@ -27,9 +27,9 @@ This will automatically install all the required packages listed in `requirement
 
 ## Usage
 To make the most out of ConceptEvo, follow these guidelines:
-- **Access Sample Scripts**: Navigate to the `./scripts` directory. Here, you'll find a collection of sample scripts demonstrating various functionalities of ConceptEvo.
+- **Access sample scripts**: Navigate to the `./scripts` directory. Here, you'll find a collection of sample scripts demonstrating various functionalities of ConceptEvo.
 
-- **Execute Scripts**: To run these scripts, move to the `./src` directory in your terminal and execute the desired script. 
+- **Execute scripts**: To run these scripts, move to the `./src` directory in your terminal and execute the desired script. 
 
 ## Credits
 ConceptEvo was created by Haekyu Park, Seongmin Lee, Benjamin Hoover, Austin P. Wright, Omar Shaikh, Rahul Duggal, Nilaksh Das, Kevin Li, Judy Hoffman, and Duen Horng (Polo) Chau.
@@ -42,7 +42,7 @@ Encountering issues or have queries? We encourage you to:
 
 - **Open an Issue**: For technical problems or feature suggestions, feel free to open an issue on our GitHub repository.
 
-- **Reach Out to the Authors**: For more in-depth questions or discussions, feel free to contact the authors directly. The contact information is available in [Authors.md](./Authors.md).
+- **Reach out to the authors**: For more in-depth questions or discussions, feel free to contact the authors directly. The contact information is available in [Authors.md](./Authors.md).
 
 ## Citation
 If you find ConceptEvo useful in your research, please consider citing our paper! Here is the BibTeX entry for your convenience:

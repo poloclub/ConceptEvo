@@ -74,8 +74,8 @@ stimulus_sub_dir_name=train_0.1
 
 ###############################################################################
 python main.py \
-    --gpu $gpu \
     --neuron_embedding True \
+    --gpu $gpu \
     --model_name $model_name \
     --model_nickname $model_nickname \
     --epoch $epoch \

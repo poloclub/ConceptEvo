@@ -47,6 +47,9 @@
 # topk_e=?
 # ex_patch_size_ratio=?
 # batch_size=?
+# crop=?
+# mask=?
+# inverse_mask=?
 # 
 # For example:
 gpu=0
@@ -67,6 +70,9 @@ python main.py \
     --epoch $epoch \
     --topk_e $topk_e \
     --ex_patch_size_ratio $ex_patch_size_ratio \
+    --crop True \
+    --mask False \
+    --inverse_mask False \
     --batch_size $batch_size 
 ###############################################################################
 

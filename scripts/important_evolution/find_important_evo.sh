@@ -2,72 +2,114 @@
 # find_important_evo.sh
 # 
 # Find the most important evolutions.
-# Run this script at `../src` where `main.py` exists.
+# Run this script at `../../src` where `main.py` exists.
 # 
-# The result will be saved at
-# `../data/find_important_evo/<model_nickname>/data/`.
-# 
-# Two files will be saved:
-#  - 1) `sensitivity-<apdx*>.json`:
-#       Sensitivity of each neuron's evolution to given sampled images
-#       
-#  - 2) `score-<apdx*>.json`:
-#       Score of each neurons' evolution for the label prediction
-# 
-#  where apdx* is:
-#  '-'.join([
-#      label=<label>,
-#      num_sampled_imgs=<num_sampled_imgs>
-#      from=<from_model_nickname>
-#      to=<to_model_nickname>
-#      idx=<idx>
-#  ])      
+# The result will be saved at:
+#
+# ../../data
+#     └── important_evo
+#             └── <important_evo_sub_dir_name>
+#                   └── label=<label>
+#                         └── num_sampled_imgs=<num_sampled_imgs>
+#                             ├── data
+#                             │     ├── sensitivity_idx=<idx>.json
+#                             │     └── score_idx=<idx>.json
+#                             └── log
+#                                   ├── setting.txt
+#                                   └── find_important_evo_log_idx=<idx>.txt
+#
 ###############################################################################
 
 ###############################################################################
-# Provide a correct value for each "?" below:
-# 
-# gpu=?
-# label=?
-# batch_size=?
-# model_name=?
-# model_nickname=?
-# from_model_nickname=?
-# from_model_path=?
-# to_model_nickname=?
-# to_model_path=?
-# num_sampled_imgs=?
-# idx=?
-# 
-# For example:
+# Hyperparameters: Modify them below as you want
+
+# 0. GPU Selection
+# Specify the GPU device index you want to use (usually 0, 1, etc.)
 gpu=0
-label=457
+
+# 1. Batch Size
+# Set the batch size
 batch_size=50
+
+# 2. Target Label
+# Define the classification label for which you want to find important evolutions
+label=457
+
+# 3. Model name
+# The name of the DNN model. 
+# Currently ['vgg16', 'inception_v3', 'convnext'] are available.
 model_name=convnext
-model_nickname=convnext_0.004
-from_epoch=3
-from_model_nickname="$model_nickname"_"$from_epoch"
-from_model_path=../data/model/"$model_nickname"/data/model-"$from_epoch".pth 
-to_epoch=96
-to_model_nickname="$model_nickname"_"$to_epoch"
-to_model_path=../data/model/"$model_nickname"/data/model-"$to_epoch".pth 
+
+# 4. From model (Before target evolution)
+# Provide the file path of the model, whose important evolutions you want to analyze. 
+# This model should represent the state "before" the target evolution.
+from_model_path=../data/model/convnext_0.004/data/model-3.pth
+
+# 5. To model (After target evolution)
+# Provide the file path of the model, whose important evolutions you want to analyze. 
+# This model should represent the state "after" the target evolution.
+to_model_path=../data/model/convnext_0.004/data/model-91.pth
+
+# 6. The name of subdirectory for output
+# Specify a subdirectory name for storing the important evolutions,
+# which should be unique for each (from_model, to_model) pair. 
+important_evo_sub_dir_name=convnext_0.004_3_91
+
+# 7. (Optional) The file path of image index ranges by class
+# Provide the file path that contains mappings between each class and 
+# the class' image index ranges. 
+#
+# Each entry in the mapping consists of:
+# - 'key': a class
+# - 'val': a list representing the range of image indices for the class,
+#          that looks like [start_idx, end_idx]
+#
+# This mapping is used to create a training dataset subset with images belonging to 
+# a specific class. See how `label_subset` uses the `start_idx` and `end_idx`):
+#
+# ```
+# import json
+# from torchvision import datasets, transforms
+#
+# label_img_idx_path = a file path given by the user
+# label = a label given by the user
+#
+# label_idx_dict = json.load(label_img_idx_path)
+# start_idx, end_idx = label_idx_dict[label]
+#
+# training_dataset = datasets.ImageFolder(
+#     train_data_path, 
+#     data_transform
+# )
+# label_subset = torch.utils.data.Subset(
+#     training_dataset, 
+#     range(start_idx, end_idx)
+# )
+# ```
 label_img_idx_path=../data/ILSVRC2012_label_img_idx.json
+
+# 8. The number of sampled images
+# Define the number of images to be sampled from the entire set of images 
+# associated with the user-specified label.
 num_sampled_imgs=250
+
+# 9. Run index
+# This index determines the order of execution among multiple runs of the same 
+# process, which is aimed at finding important evolutions. It helps track the 
+# progression of each run.
 idx=0
 ###############################################################################
 
 ###############################################################################
 python main.py \
+    --find_important_evo True \
     --gpu $gpu \
-    --find_important_evo T \
-    --label $label \
     --batch_size $batch_size \
+    --label $label \
     --model_name $model_name \
-    --model_nickname $model_nickname \
-    --from_model_nickname $from_model_nickname \
     --from_model_path $from_model_path \
-    --to_model_nickname $to_model_nickname \
     --to_model_path $to_model_path \
+    --important_evo_sub_dir_name $important_evo_sub_dir_name \
     --label_img_idx_path $label_img_idx_path \
     --num_sampled_imgs $num_sampled_imgs \
     --idx $idx

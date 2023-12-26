@@ -5,6 +5,8 @@ Before diving into the usage of these scripts, please ensure they are properly p
 
 - **Details in scripts**: Each script includes comprehensive guidance on setting hyperparameters, as well as the location where the results will be saved.
 
+- **Input data format**:
+
 - **Recommended Order**: Below is a suggested sequence for using these scripts. Feel free to skip any that are not applicable to your requirements.
 
 ## 1. Train and test a model
@@ -23,6 +25,10 @@ The following steps are aligned with the steps described in Section 3.2 of the ð
 ### Step 1: Creating the base semantic space
 This process involves creating a foundational semantic space, for a user-given base model.
 
+- **Step 1.0: Randomly Sample Images**: 
+    - **Objective**: Select a random subset of training images.
+    - **Script**: Execute `sample_images.sh` to perform this action. 
+
 - **Step 1.1: Finding stimuli**
     - **Description**: Generate stimuli for neurons in the base model.
     - **Script**: Use `stimulus.sh` to create these stimuli.
@@ -35,17 +41,15 @@ This process involves creating a foundational semantic space, for a user-given b
 
 - **Step 2.1: Image embedding**
     - **Description**: This process involves randomly sampling training images and computing those images' embedding, in order to approximate neuron embeddings in the base model. 
-    - **2.1.1 Randomly Sample Images**: 
-        - **Objective**: Select a random subset of training images.
-        - **Script**: Execute `sample_images.sh` to perform this action. 
-    - **2.1.2 Compute Most Responsive Neurons**: 
-        - **Objective**: Identify and focus on the neurons in the base model that are most responsive to each sampled image. 
+    - **2.1.1 Compute Most Responsive Neurons**: 
+        - **Objective**: Identify and focus on the neurons in the **base model** that are most responsive to each sampled image. 
         - **Details**: These responsive neurons are crucial in the gradient descent process for minimizing the difference between the original neuron embeddings and their approximations.
         - **Script**: Run `responsive_neurons.sh` for this analysis.
-    - **2.1.3 Learn Image Embedding**: 
+        - **Model = base model**
+    - **2.1.2 Learn Image Embedding**: 
         - **Objective**: Learn embeddings of the sampled images, such that they help in reducing the gap between the original and approximated neuron embeddings from the base model.
         - **Script**: Use `image_embedding.sh` to execute this learning process. 
-    - **2.1.4 Learn Image Embeddings that are not covered by the base models' neurons**
+    - **2.1.3 Learn Image Embeddings that are not covered by the base models' neurons**
         - **Objectvie**: Indirectly represent images that are not covered by the base model's stimuli, focusing on common neuron activation by images.
         - **Script**: Use `indirect_image_embedding.sh`. 
 

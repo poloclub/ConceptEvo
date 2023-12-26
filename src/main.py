@@ -120,7 +120,6 @@ def main():
 
 
 def load_model(args, data_path):
-
     when_to_skip_loading_model = [
         args.sample_images,
         args.neuron_embedding,

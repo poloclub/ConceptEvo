@@ -31,7 +31,7 @@ class FindImportantEvo:
         
         self.start_idx = -1
         self.end_idx = -1
-        self.input_size = self.from_model.input_size
+        self.input_size = self.from_model.get_input_size()
         self.num_classes = self.from_model.num_classes
         self.data_loader = None
         
@@ -51,21 +51,9 @@ class FindImportantEvo:
     Initial setting
     """
     def init_setting(self):
-        self.init_device()
-        self.init_data_loader()
-    
-    def init_device(self):
-        self.device = torch.device(
-            'cuda:{}'.format(self.args.gpu) if torch.cuda.is_available() 
-            else 'cpu'
-        )
-        print(f'Run on {self.device}')
-
-    def init_data_loader(self):
+        S = self.from_model.get_input_size()
         data_transform = transforms.Compose([
-            transforms.Resize(
-                (self.from_model.input_size, self.from_model.input_size)
-            ),
+            transforms.Resize((S, S)),
             transforms.ToTensor(),
             transforms.Normalize(*self.from_model.input_normalization)
         ])
@@ -121,12 +109,12 @@ class FindImportantEvo:
     Find important evolution
     """
     def find_imp_evo(self):
-        tic, total = time(), len(self.data_loader.dataset)
+        tic, total = time(), self.args.num_sampled_imgs
         with tqdm(total=total) as pbar:
             for batch_idx, (imgs, labels) in enumerate(self.data_loader):
                 # Find important evolution for one batch
-                self.find_imp_evo_one_batch(imgs, labels)
-                pbar.update(self.args.batch_size)
+                self.find_imp_evo_one_batch(imgs, labels, pbar)
+                # pbar.update(self.args.batch_size)
 
                 # Find evolutions for only a few batches
                 # Basically sampling the first few shuffled batches
@@ -139,7 +127,7 @@ class FindImportantEvo:
         log = 'Find important evo: {:.2f} sec'.format(toc - tic)
         self.write_log(log)
 
-    def find_imp_evo_one_batch(self, imgs, labels):
+    def find_imp_evo_one_batch(self, imgs, labels, pbar):
         # Forward pass
         imgs = imgs.to(self.device)
         labels = labels.to(self.device)
@@ -148,9 +136,9 @@ class FindImportantEvo:
         f_maps = {'from': from_f_maps, 'to': to_f_maps}
         
         # Compute importance score
-        self.compute_sensitivity(imgs, f_maps)
+        self.compute_sensitivity(imgs, f_maps, pbar)
 
-    def compute_sensitivity(self, imgs, f_maps):
+    def compute_sensitivity(self, imgs, f_maps, pbar):
         num_layers = len(self.to_model.layers)
         for img_idx, img in enumerate(imgs):
             for layer_idx in range(num_layers - 1):
@@ -179,12 +167,12 @@ class FindImportantEvo:
                     if neuron_id not in self.sensitivity[layer_name]:
                         self.sensitivity[layer_name][neuron_id] = []
                     self.sensitivity[layer_name][neuron_id].append(sens)
+            pbar.update(1)
 
-    
     def compute_importance_score(self):
         # Load sensitivity 
         if len(self.sensitivity) == 0:
-            path = self.data_path.get_path('find_important_evo-sensitivity')
+            path = self.data_path.get_path('find_important_evo_sensitivity')
             self.sensitivity = self.load_json(path)
 
         # Compute score
@@ -210,17 +198,15 @@ class FindImportantEvo:
             )
             self.importance_score[layer_name] = sorted_scores
 
-
     def save_results(self):
         if self.args.find_important_evo:
             # Save sensitivity score
-            path = self.data_path.get_path('find_important_evo-sensitivity')
+            path = self.data_path.get_path('find_important_evo_sensitivity')
             self.save_json(self.sensitivity, path)
 
         # Save importance score
-        path = self.data_path.get_path('find_important_evo-score')
+        path = self.data_path.get_path('find_important_evo_score')
         self.save_json(self.importance_score, path)
-
     
     """
     Handle external files (e.g., output, log, ...)
@@ -230,30 +216,20 @@ class FindImportantEvo:
             data = json.load(f)
         return data
 
-
     def save_json(self, data, file_path):
         with open(file_path, 'w') as f:
             json.dump(data, f)
 
-    
     def write_first_log(self):
-        hyperpara_setting = self.data_path.gen_act_setting_str(
-            'find_important_evo', '\n'
-        )
-        
         log = 'Find important evolution\n\n'
-        log += 'from_model_nickname: {}\n'.format(self.args.from_model_nickname)
         log += 'from_model_path: {}\n'.format(self.args.from_model_path)
-        log += 'to_model_nickname: {}\n'.format(self.args.to_model_nickname)
         log += 'to_model_path: {}\n'.format(self.args.to_model_path)
         log += 'label: {}\n'.format(self.args.label)
-        log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
 
-    
     def write_log(self, log, append=True):
         if self.args.find_important_evo:
             log_opt = 'a' if append else 'w'
-            path = self.data_path.get_path('find_important_evo-log')
+            path = self.data_path.get_path('find_important_evo_log')
             with open(path, log_opt) as f:
                 f.write(log + '\n')

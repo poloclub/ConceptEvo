@@ -30,3 +30,24 @@ class ExamplePatchArgs:
             type=int,
             help='The number of example patches for a neuron'
         )
+
+        self.parser.add_argument(
+            '--crop', 
+            default=True, 
+            type=parse_bool_arg,
+            help='Whether to compute cropped example patch'
+        )
+
+        self.parser.add_argument(
+            '--mask', 
+            default=False, 
+            type=parse_bool_arg,
+            help='Whether to compute masked example patch'
+        )
+
+        self.parser.add_argument(
+            '--inverse_mask', 
+            default=False, 
+            type=parse_bool_arg,
+            help='Whether to compute inverse masked example patch'
+        )

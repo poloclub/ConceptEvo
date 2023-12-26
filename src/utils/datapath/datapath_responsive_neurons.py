@@ -37,7 +37,7 @@ class DataPathResponsiveNeurons:
         self.gen_data_paths()
 
     def gen_data_paths(self):
-        # Check if data paths for example patches are necessary
+        # Check if data paths for responsive neurons are necessary
         if True not in self.actions_requiring_paths:
             return
 
@@ -59,8 +59,8 @@ class DataPathResponsiveNeurons:
                 raise ValueError(log)
 
         # Check if hyperparameters are given
+        log = ''
         for arg, val in self.setting:
-            log = ''
             if not self.util.is_arg_given(val):
                 if arg == 'responsive_neurons_image_path':
                     if self.args.responsive_neurons:

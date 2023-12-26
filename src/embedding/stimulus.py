@@ -167,8 +167,6 @@ class Stimulus:
         log = 'Compute stimulus\n\n'
         log += f'model_nickname: {self.args.model_nickname}\n'
         log += f'model_path: {self.data_path.get_path("model_path")}\n'
-        log += f'stimulus_image_path: {self.data_path.get_path("stimulus_image_path")}\n'
-        log += f'topk_s: {self.data_path.get_path("topk_s")}\n'
         self.write_log(log, False)
 
     def load_json(self, file_path):

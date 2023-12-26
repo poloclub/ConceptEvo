@@ -24,8 +24,9 @@ class EvalImportantEvo:
         self.to_model = to_model
         self.from_model.model.eval()
         self.to_model.model.eval()
+        self.device = self.from_model.device
 
-        self.input_size = self.from_model.input_size
+        self.input_size = self.from_model.get_input_size()
         self.num_classes = self.from_model.num_classes
         self.data_loader = None
 
@@ -49,15 +50,7 @@ class EvalImportantEvo:
     """
     def init_setting(self):
         self.init_pred_dict()
-        self.init_device()
         self.init_data_loader()
-
-    def init_device(self):
-        self.device = torch.device(
-            'cuda:{}'.format(self.args.gpu) if torch.cuda.is_available() 
-            else 'cpu'
-        )
-        print(f'Run on {self.device}')
     
     def init_pred_dict(self):
         for train_test in ['train', 'test']:
@@ -94,7 +87,7 @@ class EvalImportantEvo:
     def init_data_loader(self):
         data_transform = transforms.Compose([
             transforms.Resize(
-                (self.from_model.input_size, self.from_model.input_size)
+                (self.input_size, self.input_size)
             ),
             transforms.ToTensor(),
             transforms.Normalize(*self.from_model.input_normalization)
@@ -191,7 +184,7 @@ class EvalImportantEvo:
         self.write_log(log)
 
     def load_imp_evo(self):
-        path = self.data_path.get_path('find_important_evo-score')
+        path = self.data_path.get_path('find_important_evo_score')
         self.imp_evo = self.load_json(path)
 
     def eval_imp_evo_one_batch(self, imgs, labels, if_test=False):
@@ -345,21 +338,14 @@ class EvalImportantEvo:
         self.save_json(self.pred, path)    
     
     def write_first_log(self):
-        hyperpara_setting = self.data_path.gen_act_setting_str(
-            'eval_important_evo', '\n'
-        )
-        
         log = 'Evaluate important evolution\n\n'
-        log += 'from_model_nickname: {}\n'.format(self.args.from_model_nickname)
         log += 'from_model_path: {}\n'.format(self.args.from_model_path)
-        log += 'to_model_nickname: {}\n'.format(self.args.to_model_nickname)
         log += 'to_model_path: {}\n'.format(self.args.to_model_path)
         log += 'label: {}\n'.format(self.args.label)
-        log += hyperpara_setting + '\n\n'
         self.write_log(log, False)
     
     def write_log(self, log, append=True):
         log_opt = 'a' if append else 'w'
-        path = self.data_path.get_path('eval_important_evo-log')
+        path = self.data_path.get_path('eval_important_evo_log')
         with open(path, log_opt) as f:
             f.write(log + '\n')

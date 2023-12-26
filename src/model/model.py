@@ -146,6 +146,7 @@ class Model:
                 model_path = self.data_path.get_path("to_model_path")
             else:
                 model_path = self.data_path.get_path("model_path")
+            print(f"Load model from {model_path}")
             self.ckpt = torch.load(model_path, map_location=self.device)
 
     def load_saved_model(self):
@@ -161,8 +162,10 @@ class Model:
 
     def save_layer_info(self):
         # Save model information
-        s = str(self.model)
         p = self.data_path.get_path("model_info")
+        if p is None:
+            return
+        s = str(self.model)
         with open(p, "w") as f:
             f.write(s + "\n")
 

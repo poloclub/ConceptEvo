@@ -264,7 +264,6 @@ class Emb:
     def write_first_log(self):
         log = 'Compute neuron Embedding\n\n'
         log += f'model_nickname: {self.model_nickname}\n'
-        log += f'model_path: {self.data_path.get_path("model_path")}\n'
         log += self.data_path.data_path_neuron_embedding.para_info
         log += '\n'
         self.write_log(log, False)

@@ -78,6 +78,13 @@ class ExamplePatch:
             raw_data_transform
         )
 
+        # Ensure that at least one store option (crop, mask, inverse_mask) is True
+        options = [self.args.crop, self.args.mask, self.args.inverse_mask]
+        if True not in options:
+            msg = 'No store option is set. Please enable at least one option: '
+            msg += '--crop, --mask, --inverse_mask'
+            raise ValueError("An error message explaining the issue")
+
     def get_layer_info(self):
         self.layers = self.model.layers[:]
         self.layers_for_ex_patch = self.model.layers_for_ex_patch[:]
@@ -200,7 +207,14 @@ class ExamplePatch:
 
         # Save example patches
         total = np.sum([len(ex_patch_json[layer]) for layer in ex_patch_json])
+        options = {
+            'crop': self.args.crop, 
+            'mask': self.args.mask, 
+            'inverse_mask': self.args.inverse_mask
+        }
         for key in ['crop', 'mask', 'inverse_mask']:
+            if not options[key]:
+                continue
             tic = time()
             with tqdm(total=total) as pbar:
                 for layer in ex_patch_json:

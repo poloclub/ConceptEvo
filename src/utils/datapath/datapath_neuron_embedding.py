@@ -37,7 +37,7 @@ class DataPathNeuronEmbedding:
         self.gen_data_paths()
 
     def gen_data_paths(self):
-        # Check if data paths for example patches are necessary
+        # Check if data paths for neuron embedding are necessary
         if True not in self.actions_requiring_paths:
             return
 
@@ -53,8 +53,8 @@ class DataPathNeuronEmbedding:
                 raise ValueError(log)
 
         # Check if hyperparameters are given
+        log = ''
         for arg, val in self.para:
-            log = ''
             if not self.util.is_arg_given(val):
                 log += f'{arg} is not given or invalid (the value is {val}).\n'
         if len(log) > 0:
@@ -110,4 +110,5 @@ class DataPathNeuronEmbedding:
         setting_info_path = os.path.join(log_dir_path, 'setting.txt')
         with open(setting_info_path, 'w') as f:
             f.write(self.para_info)
-
+        if self.util.is_arg_given(self.args.model_path):
+            f.write(f'\nModel path = {self.args.model_path}\n')
